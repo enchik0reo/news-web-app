@@ -1,0 +1,5 @@
+syntax = "proto3";
+
+package news;
+
+option go_package = "news.v1;newsv1";

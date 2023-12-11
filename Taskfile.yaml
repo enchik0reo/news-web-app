@@ -1,0 +1,27 @@
+version: "3"
+
+tasks:
+  run:
+    desc: "Run main.go"
+    cmds:
+      - go run ./cmd/apiserver/main.go
+
+  build:
+    desc: "Build binary file"
+    cmds:
+      - go build -v ./cmd/apiserver
+
+  dup:
+    desc: "Up docker-compose"
+    cmds:
+      - docker-compose up -d
+
+  mup:
+    desc: "Run migrator action up"
+    cmds:
+      - go run ./migrations/migrator/migrator.go --action=up
+
+  mdown:
+    desc: "Run migrator action down"
+    cmds:
+      - go run ./migrations/migrator/migrator.go --action=down
