@@ -1,15 +1,20 @@
 version: "3"
 
 tasks:
-  run:
-    desc: "Run main.go"
+  run_auth:
+    desc: "Run auth service"
     cmds:
-      - go run ./cmd/apiserver/main.go
+      - go run ./app/authService/cmd/auth_service/main.go
 
-  build:
-    desc: "Build binary file"
+  run_news:
+    desc: "Run news service"
     cmds:
-      - go build -v ./cmd/apiserver
+      - go run ./app/newsService/cmd/news_service/main.go
+
+  run_web:
+    desc: "Run web service"
+    cmds:
+      - go run ./app/webService/cmd/web_service/main.go
 
   dup:
     desc: "Up docker-compose"

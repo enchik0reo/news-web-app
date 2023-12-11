@@ -1,6 +1,6 @@
 package app
 
-import "newsWebApp/webService/internal/config"
+import "newsWebApp/app/webService/internal/config"
 
 type App struct {
 	cfg *config.Config

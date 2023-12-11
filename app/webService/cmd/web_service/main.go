@@ -1,6 +1,6 @@
 package main
 
-import "newsWebApp/webService/internal/app"
+import "newsWebApp/app/webService/internal/app"
 
 func main() {
 	app.New().Run()
