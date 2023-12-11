@@ -1,15 +1,16 @@
 package app
 
 import (
-	"fmt"
+	"log/slog"
 
 	"newsWebApp/app/authService/internal/config"
+	"newsWebApp/app/authService/internal/logs"
 )
 
 type App struct {
 	cfg *config.Config
-	/* log         *slog.Logger
-	userStor    *psql.Storage
+	log *slog.Logger
+	/* userStor    *psql.Storage
 	sessionStor *redis.Storage
 	auth        *auth.Auth
 	gRPCServer  *grpcsrv.Server */
@@ -21,7 +22,7 @@ func New() *App {
 
 	a.cfg = config.MustLoad()
 
-	// TODO Инициализировать логгер
+	a.log = logs.Setup(a.cfg.Env)
 
 	// TODO Инициализировать users хранилище
 
@@ -35,8 +36,8 @@ func New() *App {
 }
 
 func (a *App) Run() {
+	a.log.Info("starting grpc auth service", slog.Int("port", a.cfg.GRPC.Port))
 
-	fmt.Printf("%+v\n", a.cfg)
 	// TODO Запустить сервер приложения в отдельной горутине
 
 	// TODO Graceful shutdown
