@@ -186,7 +186,7 @@ func (a *Auth) Refresh(ctx context.Context, refrToken string) (int64, string, st
 
 		return id, newAccToken, newRefToken, nil
 	} else {
-		a.log.Error("old refresh token != refresh token", "old", oldRefreshToken, "now", refrToken)
+		a.log.Error("old refresh token != refresh token from user", "old", oldRefreshToken, "now", refrToken)
 
 		return 0, "", "", services.ErrInvalidToken
 	}
