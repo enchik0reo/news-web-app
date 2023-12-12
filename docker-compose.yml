@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16.1-bullseye
+    restart: always
+    container_name: news_web_app
+    environment:
+     - POSTGRES_USER=postgres
+     - POSTGRES_PASSWORD=qwerty
+     - POSTGRES_DB=go_news
+    ports:
+     - 5432:5432
+  
+  redis:
+    image: redis:7.2.3-bookworm 
+    restart: always
+    ports:
+      - 6379:6379
+    environment:
+      - ALLOW_EMPTY_PASSWORD=yes
