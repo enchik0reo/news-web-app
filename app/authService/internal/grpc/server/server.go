@@ -37,7 +37,7 @@ func (s *Server) Start() error {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 
-	s.log.Info("gRPC server is running", slog.String("addr", l.Addr().String()))
+	s.log.Info("auth gRPC server is running", slog.String("addr", l.Addr().String()))
 
 	if err := s.gRPCServer.Serve(l); err != nil {
 		if !errors.Is(err, grpc.ErrServerStopped) {
@@ -49,7 +49,7 @@ func (s *Server) Start() error {
 }
 
 func (s *Server) Stop() {
-	s.log.Info("stopping gRPC server")
+	s.log.Info("stopping auth gRPC server")
 
 	s.gRPCServer.GracefulStop()
 }

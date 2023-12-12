@@ -60,8 +60,6 @@ func (a *App) MustRun() {
 		}
 	}()
 
-	a.log.Info("auth grpc service is running")
-
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, syscall.SIGTERM, syscall.SIGINT)
 	<-stop
