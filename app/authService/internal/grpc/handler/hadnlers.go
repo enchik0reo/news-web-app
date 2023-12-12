@@ -1,4 +1,4 @@
-package grpc
+package handler
 
 import (
 	"context"
@@ -8,12 +8,19 @@ import (
 	"google.golang.org/grpc"
 )
 
+type AuthService interface {
+	SaveUser(ctx context.Context, email string, password string) (int64, error)
+	LoginUser(ctx context.Context, email, password string) (int64, string, string, error)
+	Parse(ctx context.Context, acToken string) (int64, error)
+	Refresh(ctx context.Context, refToken string) (int64, string, string, error)
+}
+
 type serverAPI struct {
 	authv1.UnimplementedAuthServer
 	authService AuthService
 }
 
-func register(gRPC *grpc.Server, aS AuthService) {
+func Register(gRPC *grpc.Server, aS AuthService) {
 	authv1.RegisterAuthServer(gRPC, &serverAPI{authService: aS})
 }
 

@@ -1,4 +1,4 @@
-package grpc
+package server
 
 import (
 	"errors"
@@ -6,12 +6,10 @@ import (
 	"log/slog"
 	"net"
 
+	"newsWebApp/app/authService/internal/grpc/handler"
+
 	"google.golang.org/grpc"
 )
-
-type AuthService interface {
-	// TODO
-}
 
 type Server struct {
 	port       int
@@ -19,10 +17,10 @@ type Server struct {
 	gRPCServer *grpc.Server
 }
 
-func NewServer(log *slog.Logger, port int, authService AuthService) *Server {
+func New(log *slog.Logger, port int, authService handler.AuthService) *Server {
 	grpcSrv := grpc.NewServer()
 
-	register(grpcSrv, authService)
+	handler.Register(grpcSrv, authService)
 
 	return &Server{
 		port:       port,

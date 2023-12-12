@@ -7,41 +7,36 @@ import (
 	"syscall"
 
 	"newsWebApp/app/authService/internal/config"
-	"newsWebApp/app/authService/internal/grpc"
+	grpcServer "newsWebApp/app/authService/internal/grpc/server"
 	"newsWebApp/app/authService/internal/logs"
+	"newsWebApp/app/authService/internal/services/auth"
 )
 
 type App struct {
 	cfg *config.Config
 	log *slog.Logger
-	/*
-		userStor    *psql.Storage
-		sessionStor *redis.Storage
-		auth        *auth.Auth
-	*/
-	gRPCServer *grpc.Server
+	/* 	userStor    *psql.Storage
+	   	sessionStor *redis.Storage */
+	auth       *auth.Auth
+	gRPCServer *grpcServer.Server
 }
 
 func New() *App {
 	a := App{}
-	//var err error
+	var err error
 
 	a.cfg = config.MustLoad()
 
 	a.log = logs.Setup(a.cfg.Env)
 
-	// TODO Инициализировать users хранилище
+	a.auth = auth.New(a.userStor, a.sessionStor, a.log, &a.cfg.Manager)
 
-	// TODO Инициализировать sessions хранилище
-
-	// TODO Auth Service
-
-	a.gRPCServer = grpc.NewServer(a.log, a.cfg.GRPC.Port, nil)
+	a.gRPCServer = grpcServer.New(a.log, a.cfg.GRPC.Port, nil)
 
 	return &a
 }
 
-func (a *App) Run() {
+func (a *App) MustRun() {
 	a.log.Info("starting auth grpc service", "env", a.cfg.Env, "port", a.cfg.GRPC.Port)
 
 	go func() {
@@ -61,13 +56,6 @@ func (a *App) Run() {
 }
 
 func (a *App) mustStop() {
-	/* if err := a.userStor.CloseConn(); err != nil {
-		a.log.Error("error closing connection to user storage", "err store", err.Error())
-	}
-
-	if err := a.sessionStor.CloseConn(); err != nil {
-		a.log.Error("error closing connection to session storage", "err store", err.Error())
-	} */
 
 	a.gRPCServer.Stop()
 
