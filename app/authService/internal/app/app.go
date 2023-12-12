@@ -15,8 +15,8 @@ import (
 type App struct {
 	cfg *config.Config
 	log *slog.Logger
-	/* 	userStor    *psql.Storage
-	   	sessionStor *redis.Storage */
+	/* userStor    *psql.Storage
+	sessionStor *redis.Storage */
 	auth       *auth.Auth
 	gRPCServer *grpcServer.Server
 }
