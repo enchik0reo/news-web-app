@@ -16,10 +16,6 @@ type Request struct {
 	Password string `json:"password" validate:"required"`
 }
 
-var (
-	ErrInvalidCredetials = "invalid credentials"
-)
-
 func index() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("It's a home page"))
@@ -40,12 +36,17 @@ func signUp(service AuthService) http.HandlerFunc {
 
 		id, err := service.SaveUser(ctx, req.Email, req.Password)
 		if err != nil {
-			if errors.Is(err, services.ErrUserExists) {
-				http.Error(w, "user already exists", http.StatusBadRequest)
+			switch {
+			case errors.Is(err, services.ErrUserExists):
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			case errors.Is(err, services.ErrInvalidValue):
+				http.Error(w, err.Error(), http.StatusUnprocessableEntity)
+				return
+			default:
+				http.Error(w, "internal error", http.StatusInternalServerError)
 				return
 			}
-			http.Error(w, err.Error(), http.StatusUnprocessableEntity)
-			return
 		}
 
 		w.WriteHeader(http.StatusCreated)
@@ -67,12 +68,17 @@ func signIn(service AuthService) http.HandlerFunc {
 
 		id, acsToken, refToken, err := service.LoginUser(ctx, req.Email, req.Password)
 		if err != nil {
-			if errors.Is(err, services.ErrUserDoesntExists) {
-				http.Error(w, ErrInvalidCredetials, http.StatusUnauthorized)
+			switch {
+			case errors.Is(err, services.ErrUserDoesntExists):
+				http.Error(w, err.Error(), http.StatusUnauthorized)
+				return
+			case errors.Is(err, services.ErrInvalidValue):
+				http.Error(w, err.Error(), http.StatusUnprocessableEntity)
+				return
+			default:
+				http.Error(w, "internal error", http.StatusInternalServerError)
 				return
 			}
-			http.Error(w, "failed to get user", http.StatusInternalServerError)
-			return
 		}
 
 		w.Header().Add("Authorization", "Bearer "+acsToken)

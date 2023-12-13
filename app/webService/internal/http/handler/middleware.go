@@ -26,14 +26,15 @@ func authMw(service AuthService) func(http.Handler) http.Handler {
 
 			id, err := service.Parse(ctx, header)
 			if err != nil {
-				if errors.Is(err, services.ErrTokenExpired) {
+				switch {
+				case errors.Is(err, services.ErrTokenExpired):
 					cookie, err := r.Cookie("refresh_token")
 					if err != nil {
 						if errors.Is(err, http.ErrNoCookie) {
 							http.Error(w, "authorization error, please sign-in", http.StatusBadRequest)
 							return
 						}
-						http.Error(w, "server error", http.StatusInternalServerError)
+						http.Error(w, "internal error", http.StatusInternalServerError)
 						return
 					}
 
@@ -42,12 +43,17 @@ func authMw(service AuthService) func(http.Handler) http.Handler {
 
 					id, acsToken, refToken, err := service.Refresh(ctx, cookie.Value)
 					if err != nil {
-						if errors.Is(err, services.ErrSessionNotFound) {
+						switch {
+						case errors.Is(err, services.ErrSessionNotFound):
 							http.Error(w, "session expired, please sign-in", http.StatusUnauthorized)
 							return
+						case errors.Is(err, services.ErrInvalidValue):
+							http.Error(w, "incorrect session, please sign-in", http.StatusInternalServerError)
+							return
+						default:
+							http.Error(w, "internal error", http.StatusInternalServerError)
+							return
 						}
-						http.Error(w, "incorrect session, please sign-in", http.StatusInternalServerError)
-						return
 					}
 
 					w.Header().Add("Authorization", "Bearer "+acsToken)
@@ -67,10 +73,15 @@ func authMw(service AuthService) func(http.Handler) http.Handler {
 					w.Header().Add("id", fmt.Sprint(id))
 
 					next.ServeHTTP(w, r)
-				} else {
-					http.Error(w, "authorization error", http.StatusUnauthorized)
+
+				case errors.Is(err, services.ErrInvalidToken):
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					return
+				default:
+					http.Error(w, "internal error", http.StatusInternalServerError)
 					return
 				}
+
 			} else {
 				w.Header().Add("id", fmt.Sprint(id))
 
