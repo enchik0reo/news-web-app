@@ -10,9 +10,10 @@ import (
 	"syscall"
 
 	"newsWebApp/app/webService/internal/config"
-	"newsWebApp/app/webService/internal/grpc/auth"
+	"newsWebApp/app/webService/internal/http/handler"
 	"newsWebApp/app/webService/internal/http/server"
 	"newsWebApp/app/webService/internal/logs"
+	"newsWebApp/app/webService/internal/services/auth"
 )
 
 type App struct {
@@ -39,7 +40,7 @@ func New() *App {
 		os.Exit(1)
 	}
 
-	handler := http.Handler
+	handler := handler.New(a.authClient, a.log)
 
 	a.srv = server.New(handler, &a.cfg.Server, a.log)
 
@@ -47,7 +48,7 @@ func New() *App {
 }
 
 func (a *App) MustRun() {
-	a.log.Info("starting web service", "env", a.cfg.Env, "port", a.cfg.GRPC.Port)
+	a.log.Info("starting web service", "env", a.cfg.Env, "address", a.cfg.Server.Address)
 
 	go func() {
 		if err := a.srv.Start(); err != nil {

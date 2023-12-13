@@ -4,6 +4,8 @@ go 1.21.4
 
 require (
 	github.com/fatih/color v1.16.0
+	github.com/go-chi/chi v1.5.5
+	github.com/go-chi/chi/v5 v5.0.10
 	github.com/go-playground/validator/v10 v10.16.0
 	github.com/golang-jwt/jwt/v5 v5.2.0
 	github.com/golang-migrate/migrate/v4 v4.16.2
