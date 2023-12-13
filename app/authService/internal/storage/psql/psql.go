@@ -40,13 +40,13 @@ func (s *Storage) CloseConn() error {
 	return s.db.Close()
 }
 
-func (s *Storage) SaveUser(ctx context.Context, email string, hashPass []byte) (int64, error) {
-	stmt, err := s.db.Prepare("INSERT INTO users (email, password_hash) VALUES ($1, $2) RETURNING user_id")
+func (s *Storage) SaveUser(ctx context.Context, userName string, email string, hashPass []byte) (int64, error) {
+	stmt, err := s.db.Prepare("INSERT INTO users (user_name, email, password_hash) VALUES ($1, $2, $3) RETURNING user_id")
 	if err != nil {
 		return 0, fmt.Errorf("can't prepare statement: %w", err)
 	}
 
-	row := stmt.QueryRowContext(ctx, email, hashPass)
+	row := stmt.QueryRowContext(ctx, userName, email, hashPass)
 
 	if err := row.Err(); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -65,7 +65,7 @@ func (s *Storage) SaveUser(ctx context.Context, email string, hashPass []byte) (
 }
 
 func (s *Storage) GetUserByEmail(ctx context.Context, email string) (*models.User, error) {
-	stmt, err := s.db.Prepare("SELECT user_id, email, password_hash FROM users WHERE email = $1")
+	stmt, err := s.db.Prepare("SELECT user_id, user_name, email, password_hash FROM users WHERE email = $1")
 	if err != nil {
 		return nil, fmt.Errorf("can't prepare statement: %w", err)
 	}
@@ -81,7 +81,7 @@ func (s *Storage) GetUserByEmail(ctx context.Context, email string) (*models.Use
 
 	u := models.User{}
 
-	if err := row.Scan(&u.ID, &u.Email, &u.PassHash); err != nil {
+	if err := row.Scan(&u.ID, &u.Name, &u.Email, &u.PassHash); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, storage.ErrUserNotFound
 		}

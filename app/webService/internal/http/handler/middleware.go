@@ -24,7 +24,7 @@ func authMw(service AuthService) func(http.Handler) http.Handler {
 			ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 			defer cancel()
 
-			id, err := service.Parse(ctx, header)
+			id, userName, err := service.Parse(ctx, header)
 			if err != nil {
 				switch {
 				case errors.Is(err, services.ErrTokenExpired):
@@ -41,7 +41,7 @@ func authMw(service AuthService) func(http.Handler) http.Handler {
 					ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 					defer cancel()
 
-					id, acsToken, refToken, err := service.Refresh(ctx, cookie.Value)
+					id, userName, acsToken, refToken, err := service.Refresh(ctx, cookie.Value)
 					if err != nil {
 						switch {
 						case errors.Is(err, services.ErrSessionNotFound):
@@ -71,6 +71,7 @@ func authMw(service AuthService) func(http.Handler) http.Handler {
 					http.SetCookie(w, &ck)
 
 					w.Header().Add("id", fmt.Sprint(id))
+					w.Header().Add("user_name", userName)
 
 					next.ServeHTTP(w, r)
 
@@ -84,6 +85,7 @@ func authMw(service AuthService) func(http.Handler) http.Handler {
 
 			} else {
 				w.Header().Add("id", fmt.Sprint(id))
+				w.Header().Add("user_name", userName)
 
 				next.ServeHTTP(w, r)
 			}

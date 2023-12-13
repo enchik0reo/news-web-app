@@ -12,6 +12,7 @@ import (
 )
 
 type Request struct {
+	UserName string `json:"user_name"`
 	Email    string `json:"email" validate:"required,email"`
 	Password string `json:"password" validate:"required"`
 }
@@ -34,7 +35,7 @@ func signUp(service AuthService) http.HandlerFunc {
 		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 		defer cancel()
 
-		id, err := service.SaveUser(ctx, req.Email, req.Password)
+		id, err := service.SaveUser(ctx, req.UserName, req.Email, req.Password)
 		if err != nil {
 			switch {
 			case errors.Is(err, services.ErrUserExists):
@@ -66,7 +67,7 @@ func signIn(service AuthService) http.HandlerFunc {
 		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 		defer cancel()
 
-		id, acsToken, refToken, err := service.LoginUser(ctx, req.Email, req.Password)
+		id, userName, acsToken, refToken, err := service.LoginUser(ctx, req.Email, req.Password)
 		if err != nil {
 			switch {
 			case errors.Is(err, services.ErrUserDoesntExists):
@@ -96,6 +97,7 @@ func signIn(service AuthService) http.HandlerFunc {
 		http.SetCookie(w, &ck)
 
 		w.Header().Add("id", fmt.Sprint(id))
+		w.Header().Add("user_name", userName)
 
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(map[string]string{

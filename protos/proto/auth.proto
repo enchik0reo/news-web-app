@@ -12,8 +12,9 @@ service Auth {
 }
 
 message SaveUserRequest {
-   string email = 1;
-   string password = 2;
+    string user_name = 1;
+    string email = 2;
+    string password = 3;
 }
 
 message SaveUserResponse {
@@ -27,8 +28,9 @@ message LoginUserRequest {
 
 message LoginUserResponse {
     int64 user_id = 1;
-    string access_token =2;
-    string refresh_token=3;
+    string user_name = 2;
+    string access_token =3;
+    string refresh_token=4;
 }
 
 message ParseRequest {
@@ -37,6 +39,7 @@ message ParseRequest {
 
 message ParseResponse {
     int64 user_id = 1;
+    string user_name = 2;
 }
 
 message RefreshRequest {
@@ -45,6 +48,7 @@ message RefreshRequest {
 
 message RefreshResponse{
     int64 user_id = 1;
-    string access_token =2;
-    string refresh_token=3;
+    string user_name = 2;
+    string access_token =3;
+    string refresh_token=4;
 }

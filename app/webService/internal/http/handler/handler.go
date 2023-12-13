@@ -10,10 +10,10 @@ import (
 )
 
 type AuthService interface {
-	SaveUser(ctx context.Context, email string, password string) (int64, error)
-	LoginUser(ctx context.Context, email, password string) (int64, string, string, error)
-	Parse(ctx context.Context, acToken string) (int64, error)
-	Refresh(ctx context.Context, refToken string) (int64, string, string, error)
+	SaveUser(ctx context.Context, userName string, email string, password string) (int64, error)
+	LoginUser(ctx context.Context, email, password string) (int64, string, string, string, error)
+	Parse(ctx context.Context, acToken string) (int64, string, error)
+	Refresh(ctx context.Context, refToken string) (int64, string, string, string, error)
 }
 
 // TODO

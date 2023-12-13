@@ -13,10 +13,10 @@ import (
 )
 
 type AuthService interface {
-	SaveUser(ctx context.Context, email string, password string) (int64, error)
-	LoginUser(ctx context.Context, email, password string) (int64, string, string, error)
-	Parse(ctx context.Context, acToken string) (int64, error)
-	Refresh(ctx context.Context, refToken string) (int64, string, string, error)
+	SaveUser(ctx context.Context, userName string, email string, password string) (int64, error)
+	LoginUser(ctx context.Context, email, password string) (int64, string, string, string, error)
+	Parse(ctx context.Context, acToken string) (int64, string, error)
+	Refresh(ctx context.Context, refToken string) (int64, string, string, string, error)
 }
 
 type serverAPI struct {
@@ -29,7 +29,7 @@ func Register(gRPC *grpc.Server, aS AuthService) {
 }
 
 func (s *serverAPI) SaveUser(ctx context.Context, req *authv1.SaveUserRequest) (*authv1.SaveUserResponse, error) {
-	id, err := s.authService.SaveUser(ctx, req.GetEmail(), req.GetPassword())
+	id, err := s.authService.SaveUser(ctx, req.GetUserName(), req.GetEmail(), req.GetPassword())
 	if err != nil {
 		switch {
 		case errors.Is(err, services.ErrInvalidValue):
@@ -47,7 +47,7 @@ func (s *serverAPI) SaveUser(ctx context.Context, req *authv1.SaveUserRequest) (
 }
 
 func (s *serverAPI) LoginUser(ctx context.Context, req *authv1.LoginUserRequest) (*authv1.LoginUserResponse, error) {
-	id, acsToken, refTokren, err := s.authService.LoginUser(ctx, req.GetEmail(), req.GetPassword())
+	id, userName, acsToken, refTokren, err := s.authService.LoginUser(ctx, req.GetEmail(), req.GetPassword())
 	if err != nil {
 		switch {
 		case errors.Is(err, services.ErrInvalidValue):
@@ -61,13 +61,14 @@ func (s *serverAPI) LoginUser(ctx context.Context, req *authv1.LoginUserRequest)
 
 	return &authv1.LoginUserResponse{
 		UserId:       id,
+		UserName:     userName,
 		AccessToken:  acsToken,
 		RefreshToken: refTokren,
 	}, nil
 }
 
 func (s *serverAPI) Parse(ctx context.Context, req *authv1.ParseRequest) (*authv1.ParseResponse, error) {
-	id, err := s.authService.Parse(ctx, req.GetAccessToken())
+	id, userName, err := s.authService.Parse(ctx, req.GetAccessToken())
 	if err != nil {
 		switch {
 		case errors.Is(err, services.ErrTokenExpired):
@@ -80,12 +81,13 @@ func (s *serverAPI) Parse(ctx context.Context, req *authv1.ParseRequest) (*authv
 	}
 
 	return &authv1.ParseResponse{
-		UserId: id,
+		UserId:   id,
+		UserName: userName,
 	}, nil
 }
 
 func (s *serverAPI) Refresh(ctx context.Context, req *authv1.RefreshRequest) (*authv1.RefreshResponse, error) {
-	id, acsToken, refTokren, err := s.authService.Refresh(ctx, req.GetRefreshToken())
+	id, userName, acsToken, refTokren, err := s.authService.Refresh(ctx, req.GetRefreshToken())
 	if err != nil {
 		switch {
 		case errors.Is(err, services.ErrSessionNotFound):
@@ -99,6 +101,7 @@ func (s *serverAPI) Refresh(ctx context.Context, req *authv1.RefreshRequest) (*a
 
 	return &authv1.RefreshResponse{
 		UserId:       id,
+		UserName:     userName,
 		AccessToken:  acsToken,
 		RefreshToken: refTokren,
 	}, nil
