@@ -52,8 +52,10 @@ func (a *App) MustRun() {
 
 	go func() {
 		if err := a.srv.Start(); err != nil {
-			a.log.Error("failed ower working web service", "err", err.Error())
-			os.Exit(1)
+			if !errors.Is(err, http.ErrServerClosed) {
+				a.log.Error("failed ower working web service", "err", err.Error())
+				os.Exit(1)
+			}
 		}
 	}()
 
@@ -69,9 +71,7 @@ func (a *App) mustStop() {
 	defer cancel()
 
 	if err := a.srv.Stop(ctx); err != nil {
-		if !errors.Is(err, http.ErrServerClosed) {
-			a.log.Error("error closing connection to web server", "err store", err.Error())
-		}
+		a.log.Error("error closing connection to web server", "err store", err.Error())
 	}
 
 	a.log.Info("web service stoped gracefully")

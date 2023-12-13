@@ -53,7 +53,7 @@ func New(usrS UserStorage, sesS SessionStorage, l *slog.Logger, cfg *config.Toke
 }
 
 func (a *Auth) SaveUser(ctx context.Context, userName string, email string, pass string) (int64, error) {
-	if err := validateUser(email, pass); err != nil {
+	if err := validateUserForSave(userName, email, pass); err != nil {
 		a.log.Warn("failed get validate user", "err", err.Error())
 
 		return 0, services.ErrInvalidValue
@@ -82,7 +82,7 @@ func (a *Auth) SaveUser(ctx context.Context, userName string, email string, pass
 }
 
 func (a *Auth) LoginUser(ctx context.Context, email, pass string) (int64, string, string, string, error) {
-	if err := validateUser(email, pass); err != nil {
+	if err := validateUserForLogin(email, pass); err != nil {
 		a.log.Warn("failed get validate user", "err", err.Error())
 
 		return 0, "", "", "", services.ErrInvalidValue
@@ -192,7 +192,24 @@ func (a *Auth) Refresh(ctx context.Context, refrToken string) (int64, string, st
 	}
 }
 
-func validateUser(email string, pass string) error {
+func validateUserForSave(userName string, email string, pass string) error {
+	if err := validator.New(validator.WithRequiredStructEnabled()).
+		Var(email, "required,email"); err != nil {
+		return err
+	}
+
+	if userName == "" {
+		return errors.New("user name is required")
+	}
+
+	if pass == "" {
+		return errors.New("password is required")
+	}
+
+	return nil
+}
+
+func validateUserForLogin(email string, pass string) error {
 	if err := validator.New(validator.WithRequiredStructEnabled()).
 		Var(email, "required,email"); err != nil {
 		return err
