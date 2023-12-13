@@ -13,13 +13,13 @@ import (
 	"newsWebApp/app/webService/internal/http/handler"
 	"newsWebApp/app/webService/internal/http/server"
 	"newsWebApp/app/webService/internal/logs"
-	"newsWebApp/app/webService/internal/services/auth"
+	"newsWebApp/app/webService/internal/services/authgrpc"
 )
 
 type App struct {
 	cfg        *config.Config
 	log        *slog.Logger
-	authClient *auth.Client
+	authClient *authgrpc.Client
 	srv        *server.Server
 }
 
@@ -34,7 +34,7 @@ func New() *App {
 	ctx, cancel := context.WithTimeout(context.Background(), a.cfg.Server.Timeout)
 	defer cancel()
 
-	a.authClient, err = auth.New(ctx, a.log, a.cfg.GRPC.Port, a.cfg.GRPC.Timeout, a.cfg.GRPC.RetriesCount)
+	a.authClient, err = authgrpc.New(ctx, a.log, a.cfg.GRPC.Port, a.cfg.GRPC.Timeout, a.cfg.GRPC.RetriesCount)
 	if err != nil {
 		a.log.Error("failed to create new auth client", "err", err)
 		os.Exit(1)

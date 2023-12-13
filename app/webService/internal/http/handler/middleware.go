@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -20,7 +21,10 @@ func authMw(service AuthService) func(http.Handler) http.Handler {
 				header = r.FormValue("token")
 			}
 
-			id, err := service.Parse(header)
+			ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+			defer cancel()
+
+			id, err := service.Parse(ctx, header)
 			if err != nil {
 				if errors.Is(err, services.ErrTokenExpired) {
 					cookie, err := r.Cookie("refresh_token")
@@ -33,7 +37,10 @@ func authMw(service AuthService) func(http.Handler) http.Handler {
 						return
 					}
 
-					id, acsToken, refToken, err := service.Refresh(cookie.Value)
+					ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+					defer cancel()
+
+					id, acsToken, refToken, err := service.Refresh(ctx, cookie.Value)
 					if err != nil {
 						if errors.Is(err, services.ErrSessionNotFound) {
 							http.Error(w, "session expired, please sign-in", http.StatusUnauthorized)

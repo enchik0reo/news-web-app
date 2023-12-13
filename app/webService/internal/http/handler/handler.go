@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"log/slog"
 	"net/http"
 
@@ -9,18 +10,18 @@ import (
 )
 
 type AuthService interface {
-	SaveUser(email string, password string) (int64, error)
-	LoginUser(email, password string) (int64, string, string, error)
-	Parse(acToken string) (int64, error)
-	Refresh(refToken string) (int64, string, string, error)
+	SaveUser(ctx context.Context, email string, password string) (int64, error)
+	LoginUser(ctx context.Context, email, password string) (int64, string, string, error)
+	Parse(ctx context.Context, acToken string) (int64, error)
+	Refresh(ctx context.Context, refToken string) (int64, string, string, error)
 }
 
 // TODO
 type NewsService interface {
-	SaveArticle()          // Чтоб сохранять
-	GetPostedArticles()    // Чтоб отображать на главной странице опубликованные новости
-	AllNotPostedArticles() // Чтоб смотреть не опубликованные новости
-	MarkArticlePosted()    // Чтоб пометить новость как опубликованную
+	SaveArticle(ctx context.Context)          // Чтоб сохранять
+	GetPostedArticles(ctx context.Context)    // Чтоб отображать на главной странице опубликованные новости
+	AllNotPostedArticles(ctx context.Context) // Чтоб смотреть не опубликованные новости
+	MarkArticlePosted(ctx context.Context)    // Чтоб пометить новость как опубликованную
 }
 
 func New(auth AuthService, log *slog.Logger) http.Handler {

@@ -1,10 +1,12 @@
 package handler
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
+	"time"
 
 	"newsWebApp/app/webService/internal/services"
 )
@@ -33,7 +35,10 @@ func signUp(service AuthService) http.HandlerFunc {
 			return
 		}
 
-		id, err := service.SaveUser(req.Email, req.Password)
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		defer cancel()
+
+		id, err := service.SaveUser(ctx, req.Email, req.Password)
 		if err != nil {
 			if errors.Is(err, services.ErrUserExists) {
 				http.Error(w, "user already exists", http.StatusBadRequest)
@@ -57,7 +62,10 @@ func signIn(service AuthService) http.HandlerFunc {
 			return
 		}
 
-		id, acsToken, refToken, err := service.LoginUser(req.Email, req.Password)
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		defer cancel()
+
+		id, acsToken, refToken, err := service.LoginUser(ctx, req.Email, req.Password)
 		if err != nil {
 			if errors.Is(err, services.ErrUserDoesntExists) {
 				http.Error(w, ErrInvalidCredetials, http.StatusUnauthorized)
