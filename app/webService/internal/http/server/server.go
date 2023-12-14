@@ -43,7 +43,7 @@ func newHTTPServer(handler http.Handler, cfg *config.HttpServer) *http.Server {
 }
 
 func (s *Server) Start() error {
-	s.log.Info("starting web server", "address", s.cfg.Address)
+	s.log.Info("web server is running", "address", s.cfg.Address)
 	return s.server.ListenAndServe()
 }
 
