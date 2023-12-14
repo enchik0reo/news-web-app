@@ -1,9 +1,16 @@
 version: "3"
 
 tasks:
-  protogen:
+  auth_gen:
     aliasses:
-      - gen
-    desc: "Generate code from proto files"
+      - gena
+    desc: "Generate auth code from proto files"
     cmds:
-     - protoc -I proto proto/*.proto --go_out=./gen/go --go_opt=paths=source_relative --go-grpc_out=./gen/go/ --go-grpc_opt=paths=source_relative
+     - protoc -I proto proto/auth.proto --go_out=./gen/go/auth --go_opt=paths=source_relative --go-grpc_out=./gen/go/auth --go-grpc_opt=paths=source_relative
+
+  news_gen:
+    aliasses:
+      - genn
+    desc: "Generate news code from proto files"
+    cmds:
+     - protoc -I proto proto/news.proto --go_out=./gen/go/news --go_opt=paths=source_relative --go-grpc_out=./gen/go/news --go-grpc_opt=paths=source_relative

@@ -62,7 +62,7 @@ func (c *Client) SaveUser(ctx context.Context, userName string, email string, pa
 	resp, err := c.api.SaveUser(ctx, &authv1.SaveUserRequest{UserName: userName, Email: email, Password: password})
 	if err != nil {
 		switch {
-		case errors.Is(err, status.Error(codes.InvalidArgument, "invalid email or password")):
+		case errors.Is(err, status.Error(codes.InvalidArgument, "invalid credentials")):
 			return 0, services.ErrInvalidValue
 		case errors.Is(err, status.Error(codes.AlreadyExists, "user already exists")):
 			return 0, services.ErrUserExists

@@ -33,7 +33,7 @@ func (s *serverAPI) SaveUser(ctx context.Context, req *authv1.SaveUserRequest) (
 	if err != nil {
 		switch {
 		case errors.Is(err, services.ErrInvalidValue):
-			return nil, status.Error(codes.InvalidArgument, "invalid email or password")
+			return nil, status.Error(codes.InvalidArgument, "invalid credentials")
 		case errors.Is(err, services.ErrUserExists):
 			return nil, status.Error(codes.AlreadyExists, "user already exists")
 		default:
