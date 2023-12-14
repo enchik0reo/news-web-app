@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"crypto/tls"
 	"log/slog"
 	"net/http"
 
@@ -25,12 +26,19 @@ func New(handler http.Handler, c *config.HttpServer, l *slog.Logger) *Server {
 }
 
 func newHTTPServer(handler http.Handler, cfg *config.HttpServer) *http.Server {
+	tlsConfig := &tls.Config{
+		PreferServerCipherSuites: true,
+		CurvePreferences:         []tls.CurveID{tls.X25519, tls.CurveP256},
+	}
+
 	return &http.Server{
-		Addr:         cfg.Address,
-		Handler:      handler,
-		ReadTimeout:  cfg.Timeout,
-		WriteTimeout: cfg.Timeout,
-		IdleTimeout:  cfg.IdleTimeout,
+		Addr:           cfg.Address,
+		Handler:        handler,
+		TLSConfig:      tlsConfig,
+		ReadTimeout:    cfg.Timeout,
+		WriteTimeout:   cfg.Timeout,
+		IdleTimeout:    cfg.IdleTimeout,
+		MaxHeaderBytes: 524288,
 	}
 }
 

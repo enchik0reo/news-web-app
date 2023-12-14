@@ -55,7 +55,7 @@ func signUp(service AuthService) http.HandlerFunc {
 	}
 }
 
-func signIn(service AuthService) http.HandlerFunc {
+func login(service AuthService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		req := new(Request)
 

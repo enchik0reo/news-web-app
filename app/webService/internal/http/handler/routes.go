@@ -33,8 +33,8 @@ func New(auth AuthService, log *slog.Logger) http.Handler {
 	r.Use(middleware.URLFormat)
 
 	r.Get("/", index())
-	r.Post("/sign-up", signUp(auth))
-	r.Post("/sign-in", signIn(auth))
+	r.Post("/signup", signUp(auth))
+	r.Post("/login", login(auth))
 
 	r.Route("/profile", func(r chi.Router) {
 		r.Use(authMw(auth))
