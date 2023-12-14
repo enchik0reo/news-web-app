@@ -1,5 +1,7 @@
 package app
 
+import "newsWebApp/app/newsService/internal/config"
+
 // TODO
 /* type NewsService interface {
 	SaveArticle(ctx context.Context)          // Чтоб сохранять
@@ -9,10 +11,13 @@ package app
 } */
 
 type App struct {
+	cfg *config.Config
 }
 
 func New() *App {
 	a := App{}
+
+	a.cfg = config.MustLoad()
 
 	return &a
 }

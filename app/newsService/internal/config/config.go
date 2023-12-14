@@ -11,11 +11,9 @@ import (
 )
 
 type Config struct {
-	Env            string       `yaml:"env" env-required:"true"`
-	UserStorage    Postgres     `yaml:"psql_storage"`
-	SessionStorage Redis        `yaml:"redis_storage"`
-	Manager        TokenManager `yaml:"token_managment"`
-	GRPC           GRPCConfig   `yaml:"grpc_auth"`
+	Env         string     `yaml:"env" env-required:"true"`
+	UserStorage Postgres   `yaml:"psql_storage"`
+	GRPC        GRPCConfig `yaml:"grpc_news"`
 }
 
 type Postgres struct {
@@ -26,17 +24,6 @@ type Postgres struct {
 	Password string `env:"POSTGRES_PASSWORD"`
 	DBName   string `yaml:"dbname"`
 	SSLMode  string `yaml:"sslmode"`
-}
-
-type Redis struct {
-	Host string `yaml:"host"`
-	Port string `yaml:"port"`
-}
-
-type TokenManager struct {
-	AccessTokenTTL  time.Duration `yaml:"access_token_ttl"`
-	RefreshTokenTTL time.Duration `yaml:"refresh_token_ttl"`
-	SecretKey       string        `env:"SECRET_KEY"`
 }
 
 type GRPCConfig struct {
@@ -59,11 +46,6 @@ func MustLoad() *Config {
 	cfg.UserStorage.Password = os.Getenv("POSTGRES_PASSWORD")
 	if cfg.UserStorage.Password == "" {
 		panic("postgress password is not specified in environment variables")
-	}
-
-	cfg.Manager.SecretKey = os.Getenv("SECRET_KEY")
-	if cfg.Manager.SecretKey == "" {
-		panic("secret key is not specified in environment variables")
 	}
 
 	return cfg
