@@ -11,9 +11,9 @@ import (
 )
 
 type Config struct {
-	Env         string     `yaml:"env" env-required:"true"`
-	UserStorage Postgres   `yaml:"psql_storage"`
-	GRPC        GRPCConfig `yaml:"grpc_news"`
+	Env     string     `yaml:"env" env-required:"true"`
+	Storage Postgres   `yaml:"psql_storage"`
+	GRPC    GRPCConfig `yaml:"grpc_news"`
 }
 
 type Postgres struct {
@@ -43,8 +43,8 @@ func MustLoad() *Config {
 		panic("failed to read config: " + err.Error())
 	}
 
-	cfg.UserStorage.Password = os.Getenv("POSTGRES_PASSWORD")
-	if cfg.UserStorage.Password == "" {
+	cfg.Storage.Password = os.Getenv("POSTGRES_PASSWORD")
+	if cfg.Storage.Password == "" {
 		panic("postgress password is not specified in environment variables")
 	}
 
