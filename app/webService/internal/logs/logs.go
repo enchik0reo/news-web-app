@@ -27,7 +27,7 @@ func Setup(env string) *slog.Logger {
 
 	switch env {
 	case envLocal:
-		log = SetupPrettySlog()
+		log = setupPrettySlog()
 	case envDev:
 		log = slog.New(
 			slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}),
@@ -41,7 +41,7 @@ func Setup(env string) *slog.Logger {
 	return log
 }
 
-func SetupPrettySlog() *slog.Logger {
+func setupPrettySlog() *slog.Logger {
 	opts := PrettyHandlerOptions{
 		SlogOpts: &slog.HandlerOptions{
 			Level: slog.LevelDebug,

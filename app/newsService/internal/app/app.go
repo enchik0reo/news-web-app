@@ -1,6 +1,11 @@
 package app
 
-import "newsWebApp/app/newsService/internal/config"
+import (
+	"log/slog"
+
+	"newsWebApp/app/newsService/internal/config"
+	"newsWebApp/app/newsService/internal/logs"
+)
 
 // TODO
 /* type NewsService interface {
@@ -12,12 +17,15 @@ import "newsWebApp/app/newsService/internal/config"
 
 type App struct {
 	cfg *config.Config
+	log *slog.Logger
 }
 
 func New() *App {
 	a := App{}
 
 	a.cfg = config.MustLoad()
+
+	a.log = logs.Setup(a.cfg.Env)
 
 	return &a
 }
