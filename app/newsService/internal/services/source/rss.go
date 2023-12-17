@@ -13,25 +13,17 @@ import (
 )
 
 type RSSSource struct {
-	URL        string
-	SourceID   int64
-	SourceName string
+	URL  string
+	ID   int64
+	Name string
 }
 
 func NewRRSSourceFromModel(m models.Source) RSSSource {
 	return RSSSource{
-		URL:        m.FeedURL,
-		SourceID:   m.ID,
-		SourceName: m.Name,
+		URL:  m.FeedURL,
+		ID:   m.ID,
+		Name: m.Name,
 	}
-}
-
-func (s RSSSource) ID() int64 {
-	return s.SourceID
-}
-
-func (s RSSSource) Name() string {
-	return s.SourceName
 }
 
 func (s RSSSource) Fetch(ctx context.Context) ([]models.Item, error) {
