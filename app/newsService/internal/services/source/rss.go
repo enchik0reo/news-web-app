@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"time"
 
 	"newsWebApp/app/newsService/internal/models"
 
@@ -13,21 +14,33 @@ import (
 )
 
 type RSSSource struct {
-	URL  string
-	ID   int64
-	Name string
+	sourceURL  string
+	sourceID   int64
+	sourceName string
 }
 
 func NewRRSSourceFromModel(m models.Source) RSSSource {
 	return RSSSource{
-		URL:  m.FeedURL,
-		ID:   m.ID,
-		Name: m.Name,
+		sourceURL:  m.FeedURL,
+		sourceID:   m.ID,
+		sourceName: m.Name,
 	}
 }
 
-func (s RSSSource) Fetch(ctx context.Context) ([]models.Item, error) {
-	feed, err := s.loadFeed(ctx, s.URL)
+func (s RSSSource) ID() int64 {
+	return s.sourceID
+}
+
+func (s RSSSource) Name() string {
+	return s.sourceName
+}
+
+func (s RSSSource) URL() string {
+	return s.sourceURL
+}
+
+func (s RSSSource) IntervalFetch(ctx context.Context) ([]models.Item, error) {
+	feed, err := s.loadFeed(ctx, s.sourceURL)
 	if err != nil {
 		return nil, fmt.Errorf("can't load feed: %v", err)
 	}
@@ -39,7 +52,7 @@ func (s RSSSource) Fetch(ctx context.Context) ([]models.Item, error) {
 			Title:      rssItem.Title,
 			Categories: rssItem.Categories,
 			Link:       rssItem.Link,
-			Date:       rssItem.Date,
+			Date:       rssItem.Date.UTC(),
 		}
 
 		resp, err := http.Get(itm.Link)
@@ -67,6 +80,36 @@ func (s RSSSource) Fetch(ctx context.Context) ([]models.Item, error) {
 	}
 
 	return items, nil
+}
+
+func (s RSSSource) FetchFromUser(ctx context.Context, userID int64, link string) (models.Item, error) {
+	itm := models.Item{}
+
+	resp, err := http.Get(link)
+	if err != nil {
+		return itm, fmt.Errorf("failed to download %s: %v", link, err)
+	}
+
+	parsedURL, err := url.Parse(link)
+	if err != nil {
+		return itm, fmt.Errorf("error parsing url %s: %v", link, err)
+	}
+
+	article, err := readability.FromReader(resp.Body, parsedURL)
+	if err != nil {
+		return itm, fmt.Errorf("failed to parse %s: %v", link, err)
+	}
+
+	itm.Title = article.Title
+	itm.Link = link
+	itm.Date = time.Now().UTC()
+	itm.Excerpt = article.Excerpt
+	itm.ImageURL = article.Image
+	itm.SourceName = article.SiteName
+
+	resp.Body.Close()
+
+	return itm, nil
 }
 
 func (s RSSSource) loadFeed(ctx context.Context, url string) (*rss.Feed, error) {

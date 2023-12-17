@@ -10,7 +10,7 @@ import (
 	"newsWebApp/app/newsService/internal/storage"
 )
 
-func (s *Storage) SourcesList(ctx context.Context) ([]models.Source, error) {
+func (s *Storage) SourceList(ctx context.Context) ([]models.Source, error) {
 	stmt, err := s.db.PrepareContext(ctx, "SELECT source_id, name, feed_url FROM sources")
 	if err != nil {
 		return nil, fmt.Errorf("can't prepare statement: %w", err)

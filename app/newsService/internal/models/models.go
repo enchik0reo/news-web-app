@@ -2,6 +2,12 @@ package models
 
 import "time"
 
+type Source struct {
+	ID      int64
+	Name    string
+	FeedURL string
+}
+
 // In RSS ...
 type Item struct {
 	Title      string
@@ -11,12 +17,6 @@ type Item struct {
 	Excerpt    string
 	ImageURL   string
 	SourceName string
-}
-
-type Source struct {
-	ID      int64
-	Name    string
-	FeedURL string
 }
 
 // In Database ...
