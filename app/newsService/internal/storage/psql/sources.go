@@ -56,14 +56,53 @@ func (s *Storage) SourseByID(ctx context.Context, id int64) (*models.Source, err
 		return nil, fmt.Errorf("can't get source: %w", err)
 	}
 
-	sour := models.Source{}
+	source := models.Source{}
 
-	if err := row.Scan(&sour.ID, &sour.Name, &sour.FeedURL); err != nil {
+	if err := row.Scan(&source.ID, &source.Name, &source.FeedURL); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, storage.ErrSourceNotFound
 		}
 		return nil, fmt.Errorf("can't scan source: %w", err)
 	}
 
-	return &sour, nil
+	return &source, nil
+}
+
+func (s *Storage) Add(ctx context.Context, source models.Source) (int64, error) {
+	stmt, err := s.db.PrepareContext(ctx, "INSERT INTO sources (name, feed_url) VALUES ($1, $2) RETURNING source_id")
+	if err != nil {
+		return 0, fmt.Errorf("can't prepare statement: %w", err)
+	}
+	defer stmt.Close()
+
+	row := stmt.QueryRowContext(ctx, source)
+
+	if err := row.Err(); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return 0, storage.ErrSourceExists
+		}
+		return 0, fmt.Errorf("can't insert source: %w", err)
+	}
+
+	var id int64
+
+	if err := row.Scan(&id); err != nil {
+		return 0, fmt.Errorf("can't get last insert id: %w", err)
+	}
+
+	return id, nil
+}
+
+func (s *Storage) Delete(ctx context.Context, id int64) error {
+	stmt, err := s.db.PrepareContext(ctx, "DELETE FROM sources WHERE source_id = $1")
+	if err != nil {
+		return fmt.Errorf("can't prepare statement: %w", err)
+	}
+	defer stmt.Close()
+
+	if _, err := stmt.ExecContext(ctx, id); err != nil {
+		return fmt.Errorf("can't delete source from db: %v", err)
+	}
+
+	return nil
 }
