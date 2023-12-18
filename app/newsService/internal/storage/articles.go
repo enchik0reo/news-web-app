@@ -19,7 +19,7 @@ func NewArticleStorage(db *sql.DB) *ArticleStorage {
 }
 
 func (s *ArticleStorage) Save(ctx context.Context, article models.Article) error {
-	stmt, err := s.db.PrepareContext(ctx, `INSERT INTO articles (source_id, user_id, title, link, excerpt, image, published_at) 
+	stmt, err := s.db.PrepareContext(ctx, `INSERT INTO articles (user_id, source_name, title, link, excerpt, image, published_at) 
 	VALUES ($1, $2, $3, $4, $5) ON CONFLICT DO NOTHING`)
 	if err != nil {
 		return fmt.Errorf("can't prepare statement: %w", err)
@@ -27,18 +27,60 @@ func (s *ArticleStorage) Save(ctx context.Context, article models.Article) error
 	defer stmt.Close()
 
 	if _, err := stmt.ExecContext(ctx,
-		article.SourceID,
 		article.UserID,
+		article.SourceName,
 		article.Title,
 		article.Link,
 		article.Excerpt,
 		article.ImageURL,
-		article.PostedAt,
+		article.PublishedAt.Format(time.RFC3339),
 	); err != nil {
 		return fmt.Errorf("can't insert article: %v", err)
 	}
 
 	return nil
+}
+
+func (s *ArticleStorage) LatestPosted(ctx context.Context, limit int64) ([]models.Article, error) {
+	stmt, err := s.db.PrepareContext(ctx, `SELECT u.user_name AS user_name, source_name, title, link, excerpt, image, published_at, created_at, posted_at FROM articles a 
+	LEFT JOIN users u ON u.user_id = a.user_id 
+	WHERE a.posted_at IS NOT NULL 
+	ORDER BY a.posted_at DESC LIMIT $1`)
+	if err != nil {
+		return nil, fmt.Errorf("can't prepare statement: %w", err)
+	}
+	defer stmt.Close()
+
+	var articles []models.Article
+
+	rows, err := stmt.QueryContext(ctx, limit)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrNoLatestArticles
+		}
+		return nil, fmt.Errorf("can't get articles from db: %v", err)
+	}
+
+	for rows.Next() {
+		articl := models.Article{}
+		err = rows.Scan(&articl.UserID,
+			&articl.SourceName,
+			&articl.Title,
+			&articl.Link,
+			&articl.Excerpt,
+			&articl.ImageURL,
+			&articl.PublishedAt,
+			&articl.CreatedAt,
+			&articl.PostedAt,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("can't scan model article: %w", err)
+		}
+
+		articles = append(articles, articl)
+	}
+
+	return articles, nil
 }
 
 func (s *ArticleStorage) NewestNotPosted(ctx context.Context) (*models.Article, error) {
@@ -81,7 +123,7 @@ func (s *ArticleStorage) MarkPosted(ctx context.Context, id int64) error {
 }
 
 func (s *ArticleStorage) notPostedFromUsers(ctx context.Context) (*models.Article, error) {
-	stmt, err := s.db.PrepareContext(ctx, `SELECT (user_id, title, link, excerpt, image, published_at, created_at) FROM articles '
+	stmt, err := s.db.PrepareContext(ctx, `SELECT user_id, source_name, title, link, excerpt, image, published_at, created_at FROM articles 
 	WHERE posted_at IS NULL AND user_id > 0 
 	ORDER BY published_at DESC LIMIT 1`)
 	if err != nil {
@@ -101,6 +143,7 @@ func (s *ArticleStorage) notPostedFromUsers(ctx context.Context) (*models.Articl
 	article := models.Article{}
 
 	if err := row.Scan(&article.UserID,
+		&article.SourceName,
 		&article.Title,
 		&article.Link,
 		&article.Excerpt,
@@ -118,7 +161,7 @@ func (s *ArticleStorage) notPostedFromUsers(ctx context.Context) (*models.Articl
 }
 
 func (s *ArticleStorage) notPostedFromBot(ctx context.Context) (*models.Article, error) {
-	stmt, err := s.db.PrepareContext(ctx, `SELECT (source_id, title, link, excerpt, image, published_at, created_at) FROM articles '
+	stmt, err := s.db.PrepareContext(ctx, `SELECT user_id, source_name, title, link, excerpt, image, published_at, created_at FROM articles 
 	WHERE posted_at IS NULL 
 	ORDER BY published_at DESC LIMIT 1`)
 	if err != nil {
@@ -138,6 +181,7 @@ func (s *ArticleStorage) notPostedFromBot(ctx context.Context) (*models.Article,
 	article := models.Article{}
 
 	if err := row.Scan(&article.UserID,
+		&article.SourceName,
 		&article.Title,
 		&article.Link,
 		&article.Excerpt,

@@ -55,7 +55,7 @@ func (f *IntervalFetcher) Start(ctx context.Context) error {
 	ticker := time.NewTicker(f.fetchInterval)
 	defer ticker.Stop()
 
-	if err := f.IntervalFetch(ctx); err != nil {
+	if err := f.intervalFetch(ctx); err != nil {
 		return fmt.Errorf("can't do interval fetch: %v", err)
 	}
 
@@ -64,14 +64,14 @@ func (f *IntervalFetcher) Start(ctx context.Context) error {
 		case <-ctx.Done():
 			return ctx.Err()
 		case <-ticker.C:
-			if err := f.IntervalFetch(ctx); err != nil {
+			if err := f.intervalFetch(ctx); err != nil {
 				return fmt.Errorf("can't do interval fetch: %v", err)
 			}
 		}
 	}
 }
 
-func (f *IntervalFetcher) IntervalFetch(ctx context.Context) error {
+func (f *IntervalFetcher) intervalFetch(ctx context.Context) error {
 	sources, err := f.sources.GetList(ctx)
 	if err != nil {
 		return fmt.Errorf("can't get soures: %v", err)
@@ -93,8 +93,8 @@ func (f *IntervalFetcher) IntervalFetch(ctx context.Context) error {
 				return
 			}
 
-			if err := f.saveItems(ctx, rssSource.ID(), items); err != nil {
-				f.log.Error("Processing items from source", "source name", rssSource.Name(), "err", err.Error())
+			if err := f.saveItems(ctx, rssSource.Name(), items); err != nil {
+				f.log.Error("Saving items in articles", "source name", rssSource.Name(), "err", err.Error())
 				return
 			}
 		}(rssSource)
@@ -105,7 +105,7 @@ func (f *IntervalFetcher) IntervalFetch(ctx context.Context) error {
 	return nil
 }
 
-func (f *IntervalFetcher) saveItems(ctx context.Context, rssSourceID int64, items []models.Item) error {
+func (f *IntervalFetcher) saveItems(ctx context.Context, rssSourceName string, items []models.Item) error {
 	wg := new(sync.WaitGroup)
 
 	for _, item := range items {
@@ -119,7 +119,7 @@ func (f *IntervalFetcher) saveItems(ctx context.Context, rssSourceID int64, item
 			}
 
 			if err := f.articles.Save(ctx, models.Article{
-				SourceID:    rssSourceID,
+				SourceName:  rssSourceName,
 				Title:       item.Title,
 				Link:        item.Link,
 				Excerpt:     item.Excerpt,

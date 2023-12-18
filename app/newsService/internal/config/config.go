@@ -11,9 +11,10 @@ import (
 )
 
 type Config struct {
-	Env     string     `yaml:"env" env-required:"true"`
-	Storage Postgres   `yaml:"psql_storage"`
-	GRPC    GRPCConfig `yaml:"grpc_news"`
+	Env      string      `yaml:"env" env-required:"true"`
+	Storage  Postgres    `yaml:"psql_storage"`
+	GRPC     GRPCConfig  `yaml:"grpc_news"`
+	Managmer NewsManager `yaml:"news_managment"`
 }
 
 type Postgres struct {
@@ -29,6 +30,13 @@ type Postgres struct {
 type GRPCConfig struct {
 	Port    int           `yaml:"port"`
 	Timeout time.Duration `yaml:"timeout"`
+}
+
+type NewsManager struct {
+	FilterKeywords       []string      `yaml:"filter_keywords"`
+	FetchInterval        time.Duration `yaml:"fetch_interval"`
+	NotificationInterval time.Duration `yaml:"notification_interval"`
+	ArticlesLimit        int64         `yaml:"articles_limit"`
 }
 
 func MustLoad() *Config {

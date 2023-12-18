@@ -22,8 +22,8 @@ type Item struct {
 // In Database ...
 type Article struct {
 	ID          int64
-	SourceID    int64
 	UserID      int64
+	SourceName  string
 	Title       string
 	Link        string
 	Excerpt     string

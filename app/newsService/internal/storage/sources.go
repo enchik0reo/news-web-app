@@ -38,7 +38,7 @@ func (s *SourceStorage) GetList(ctx context.Context) ([]models.Source, error) {
 		sour := models.Source{}
 		err = rows.Scan(&sour.ID, &sour.Name, &sour.FeedURL)
 		if err != nil {
-			return nil, fmt.Errorf("can't scan model: %w", err)
+			return nil, fmt.Errorf("can't scan model source: %w", err)
 		}
 
 		sources = append(sources, sour)

@@ -16,8 +16,8 @@ CREATE TABLE IF NOT EXISTS sources (
 
 CREATE TABLE IF NOT EXISTS articles (
     article_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    source_id INT,
     user_id INT,
+    source_name VARCHAR(255),
     title VARCHAR(255) NOT NULL,
     link VARCHAR(255) NOT NULL UNIQUE,
     excerpt TEXT NOT NULL,
@@ -26,7 +26,5 @@ CREATE TABLE IF NOT EXISTS articles (
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
     posted_at TIMESTAMP
 );
-
-ALTER TABLE articles ADD CONSTRAINT fk_articles_source_id FOREIGN KEY (source_id) REFERENCES sources (source_id) ON DELETE CASCADE;
 
 ALTER TABLE articles ADD CONSTRAINT fk_articles_user_id FOREIGN KEY (user_id) REFERENCES users (user_id) ON DELETE CASCADE;
