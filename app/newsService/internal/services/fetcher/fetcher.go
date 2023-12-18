@@ -17,17 +17,16 @@ type ArticleStorage interface {
 }
 
 type SourceStorage interface {
-	SourceList(ctx context.Context) ([]models.Source, error)
+	GetList(ctx context.Context) ([]models.Source, error)
 }
 
 type Source interface {
 	ID() int64
 	Name() string
 	IntervalFetch(ctx context.Context) ([]models.Item, error)
-	FetchFromUser(ctx context.Context, userID int64, link string) (models.Item, error)
 }
 
-type Fetcher struct {
+type IntervalFetcher struct {
 	articles ArticleStorage
 	sources  SourceStorage
 
@@ -42,8 +41,8 @@ func New(
 	fetchInterval time.Duration,
 	filterKeywords []string,
 	log *slog.Logger,
-) *Fetcher {
-	return &Fetcher{
+) *IntervalFetcher {
+	return &IntervalFetcher{
 		articles:       articleStorage,
 		sources:        soureProvider,
 		fetchInterval:  fetchInterval,
@@ -52,8 +51,28 @@ func New(
 	}
 }
 
-func (f *Fetcher) IntervalFetch(ctx context.Context) error {
-	sources, err := f.sources.SourceList(ctx)
+func (f *IntervalFetcher) Start(ctx context.Context) error {
+	ticker := time.NewTicker(f.fetchInterval)
+	defer ticker.Stop()
+
+	if err := f.IntervalFetch(ctx); err != nil {
+		return fmt.Errorf("can't do interval fetch: %v", err)
+	}
+
+	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-ticker.C:
+			if err := f.IntervalFetch(ctx); err != nil {
+				return fmt.Errorf("can't do interval fetch: %v", err)
+			}
+		}
+	}
+}
+
+func (f *IntervalFetcher) IntervalFetch(ctx context.Context) error {
+	sources, err := f.sources.GetList(ctx)
 	if err != nil {
 		return fmt.Errorf("can't get soures: %v", err)
 	}
@@ -86,43 +105,7 @@ func (f *Fetcher) IntervalFetch(ctx context.Context) error {
 	return nil
 }
 
-func (f *Fetcher) FetchFromUser(ctx context.Context, userID int64, link string) {
-	src := models.Source{}
-
-	rssSource := source.NewRRSSourceFromModel(src)
-
-	item, err := rssSource.FetchFromUser(ctx, userID, link)
-	if err != nil {
-		f.log.Error("Fetching items from user", "user id", userID, "err", err.Error())
-		return
-	}
-
-	if err := f.saveItem(ctx, userID, item); err != nil {
-		f.log.Error("Processing items from user", "user id", userID, "err", err.Error())
-		return
-	}
-}
-
-func (f *Fetcher) saveItem(ctx context.Context, userID int64, item models.Item) error {
-	if f.itemShouldBeSkipped(item) {
-		return nil
-	}
-
-	if err := f.articles.Save(ctx, models.Article{
-		UserID:      userID,
-		Title:       item.Title,
-		Link:        item.Link,
-		Excerpt:     item.Excerpt,
-		ImageURL:    item.ImageURL,
-		PublishedAt: item.Date,
-	}); err != nil {
-		return fmt.Errorf("can't save item: %v", err)
-	}
-
-	return nil
-}
-
-func (f *Fetcher) saveItems(ctx context.Context, rssSourceID int64, items []models.Item) error {
+func (f *IntervalFetcher) saveItems(ctx context.Context, rssSourceID int64, items []models.Item) error {
 	wg := new(sync.WaitGroup)
 
 	for _, item := range items {
@@ -155,7 +138,7 @@ func (f *Fetcher) saveItems(ctx context.Context, rssSourceID int64, items []mode
 	return nil
 }
 
-func (f *Fetcher) itemShouldBeSkipped(item models.Item) bool {
+func (f *IntervalFetcher) itemShouldBeSkipped(item models.Item) bool {
 	l := len(item.Categories)
 
 	if l == 0 {
@@ -164,8 +147,6 @@ func (f *Fetcher) itemShouldBeSkipped(item models.Item) bool {
 
 			if titleContainsKeyword {
 				return false
-			} else {
-				return true
 			}
 		}
 	} else {
@@ -178,7 +159,9 @@ func (f *Fetcher) itemShouldBeSkipped(item models.Item) bool {
 		for _, keyword := range f.filterKeywords {
 			titleContainsKeyword := strings.Contains(strings.ToLower(item.Title), keyword)
 
-			if _, ok := categoriesSet[keyword]; ok || titleContainsKeyword {
+			_, categoryContainsKeyword := categoriesSet[keyword]
+
+			if categoryContainsKeyword || titleContainsKeyword {
 				return false
 			}
 		}

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"time"
 
 	"newsWebApp/app/newsService/internal/models"
 
@@ -71,8 +70,13 @@ func (s RSSSource) IntervalFetch(ctx context.Context) ([]models.Item, error) {
 		}
 
 		itm.SourceName = article.SiteName
-		itm.ImageURL = article.Image
 		itm.Excerpt = article.Excerpt
+
+		if article.Image == "" {
+			itm.ImageURL = "/static/img/empty.png"
+		} else {
+			itm.ImageURL = article.Image
+		}
 
 		resp.Body.Close()
 
@@ -80,36 +84,6 @@ func (s RSSSource) IntervalFetch(ctx context.Context) ([]models.Item, error) {
 	}
 
 	return items, nil
-}
-
-func (s RSSSource) FetchFromUser(ctx context.Context, userID int64, link string) (models.Item, error) {
-	itm := models.Item{}
-
-	resp, err := http.Get(link)
-	if err != nil {
-		return itm, fmt.Errorf("failed to download %s: %v", link, err)
-	}
-
-	parsedURL, err := url.Parse(link)
-	if err != nil {
-		return itm, fmt.Errorf("error parsing url %s: %v", link, err)
-	}
-
-	article, err := readability.FromReader(resp.Body, parsedURL)
-	if err != nil {
-		return itm, fmt.Errorf("failed to parse %s: %v", link, err)
-	}
-
-	itm.Title = article.Title
-	itm.Link = link
-	itm.Date = time.Now().UTC()
-	itm.Excerpt = article.Excerpt
-	itm.ImageURL = article.Image
-	itm.SourceName = article.SiteName
-
-	resp.Body.Close()
-
-	return itm, nil
 }
 
 func (s RSSSource) loadFeed(ctx context.Context, url string) (*rss.Feed, error) {

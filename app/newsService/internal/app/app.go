@@ -1,6 +1,7 @@
 package app
 
 import (
+	"database/sql"
 	"log/slog"
 	"os"
 
@@ -10,9 +11,9 @@ import (
 )
 
 type App struct {
-	cfg  *config.Config
-	log  *slog.Logger
-	stor *psql.Storage
+	cfg *config.Config
+	log *slog.Logger
+	db  *sql.DB
 }
 
 func New() *App {
@@ -23,15 +24,28 @@ func New() *App {
 
 	a.log = logs.Setup(a.cfg.Env)
 
-	a.stor, err = psql.New(a.cfg.Storage)
+	a.db, err = psql.New(a.cfg.Storage)
 	if err != nil {
 		a.log.Error("failed to create new news storage", "err", err)
 		os.Exit(1)
 	}
 
+	/* sourceStor := storage.NewSourceStorage(a.db)
+	articleStor := storage.NewArticleStorage(a.db) */
+
 	return &a
 }
 
 func (a *App) MustRun() {
+	a.log.Info("starting news grpc service", "env", a.cfg.Env, "port", a.cfg.GRPC.Port)
 
+	a.mustStop()
+}
+
+func (a *App) mustStop() {
+	if err := a.db.Close(); err != nil {
+		a.log.Error("error closing connection to news storage", "err store", err.Error())
+	}
+
+	a.log.Info("news grpc service stoped gracefully")
 }
