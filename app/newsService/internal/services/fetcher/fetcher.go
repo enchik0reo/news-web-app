@@ -20,13 +20,17 @@ type SourceStorage interface {
 	GetList(ctx context.Context) ([]models.Source, error)
 }
 
-type Source interface {
+type RSSSource interface {
 	ID() int64
 	Name() string
-	IntervalFetch(ctx context.Context) ([]models.Item, error)
+	IntervalLoad(ctx context.Context) ([]models.Item, error)
 }
 
-type IntervalFetcher struct {
+type UserSource interface {
+	LoadFromUser(ctx context.Context) (models.Item, error)
+}
+
+type Fetcher struct {
 	articles ArticleStorage
 	sources  SourceStorage
 
@@ -41,8 +45,8 @@ func New(
 	fetchInterval time.Duration,
 	filterKeywords []string,
 	log *slog.Logger,
-) *IntervalFetcher {
-	return &IntervalFetcher{
+) *Fetcher {
+	return &Fetcher{
 		articles:       articleStorage,
 		sources:        soureProvider,
 		fetchInterval:  fetchInterval,
@@ -51,7 +55,7 @@ func New(
 	}
 }
 
-func (f *IntervalFetcher) Start(ctx context.Context) error {
+func (f *Fetcher) Start(ctx context.Context) error {
 	const op = "services.fetcher.start"
 
 	ticker := time.NewTicker(f.fetchInterval)
@@ -75,7 +79,38 @@ func (f *IntervalFetcher) Start(ctx context.Context) error {
 	}
 }
 
-func (f *IntervalFetcher) intervalFetch(ctx context.Context) error {
+func (f *Fetcher) SaveArticleFromUser(ctx context.Context, userID int64, link string) error {
+	const op = "services.fetcher.save_item-from_user"
+
+	userSource := source.NewUserSource(userID, link)
+
+	item, err := userSource.LoadFromUser(ctx)
+	if err != nil {
+		f.log.Error("Can't fetch items from link", "link", link, "err", err.Error())
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	if f.itemShouldBeSkipped(item) {
+		return nil
+	}
+
+	if err := f.articles.Save(ctx, models.Article{
+		UserID:      userID,
+		SourceName:  item.SourceName,
+		Title:       item.Title,
+		Link:        item.Link,
+		Excerpt:     item.Excerpt,
+		ImageURL:    item.ImageURL,
+		PublishedAt: item.Date,
+	}); err != nil {
+		f.log.Error("Can't save item", "err", err.Error())
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	return nil
+}
+
+func (f *Fetcher) intervalFetch(ctx context.Context) error {
 	const op = "services.fetcher.interval_fetch"
 
 	sources, err := f.sources.GetList(ctx)
@@ -91,16 +126,16 @@ func (f *IntervalFetcher) intervalFetch(ctx context.Context) error {
 
 		rssSource := source.NewRRSSourceFromModel(src)
 
-		go func(rssSource Source) {
+		go func(rssSource RSSSource) {
 			defer wg.Done()
 
-			items, err := rssSource.IntervalFetch(ctx)
+			items, err := rssSource.IntervalLoad(ctx)
 			if err != nil {
 				f.log.Error("Can't fetch items from source", "source name", rssSource.Name(), "err", err.Error())
 				return
 			}
 
-			if err := f.saveItems(ctx, rssSource.Name(), items); err != nil {
+			if err := f.saveItems(ctx, items); err != nil {
 				f.log.Error("Can't save items in articles", "source name", rssSource.Name(), "err", err.Error())
 				return
 			}
@@ -112,7 +147,7 @@ func (f *IntervalFetcher) intervalFetch(ctx context.Context) error {
 	return nil
 }
 
-func (f *IntervalFetcher) saveItems(ctx context.Context, rssSourceName string, items []models.Item) error {
+func (f *Fetcher) saveItems(ctx context.Context, items []models.Item) error {
 	const op = "services.fetcher.save_items"
 
 	wg := new(sync.WaitGroup)
@@ -128,7 +163,7 @@ func (f *IntervalFetcher) saveItems(ctx context.Context, rssSourceName string, i
 			}
 
 			if err := f.articles.Save(ctx, models.Article{
-				SourceName:  rssSourceName,
+				SourceName:  item.SourceName,
 				Title:       item.Title,
 				Link:        item.Link,
 				Excerpt:     item.Excerpt,
@@ -148,7 +183,7 @@ func (f *IntervalFetcher) saveItems(ctx context.Context, rssSourceName string, i
 	return nil
 }
 
-func (f *IntervalFetcher) itemShouldBeSkipped(item models.Item) bool {
+func (f *Fetcher) itemShouldBeSkipped(item models.Item) bool {
 	l := len(item.Categories)
 
 	if l == 0 {

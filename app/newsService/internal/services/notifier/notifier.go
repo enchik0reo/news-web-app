@@ -18,9 +18,14 @@ type ArticleStorage interface {
 	LatestPosted(ctx context.Context, limit int64) ([]models.Article, error)
 	MarkPosted(ctx context.Context, id int64) error
 }
+type Saver interface {
+	SaveArticleFromUser(ctx context.Context, userID int64, link string) error
+}
 
 type Notifier struct {
-	articles      ArticleStorage
+	articles ArticleStorage
+	saver    Saver
+
 	sendInterval  time.Duration
 	articlesLimit int64
 	log           *slog.Logger
@@ -28,12 +33,14 @@ type Notifier struct {
 
 func New(
 	articles ArticleStorage,
+	saver Saver,
 	sendInterval time.Duration,
 	articlesLimit int64,
 	log *slog.Logger,
 ) *Notifier {
 	return &Notifier{
 		articles:      articles,
+		saver:         saver,
 		sendInterval:  sendInterval,
 		articlesLimit: articlesLimit,
 		log:           log,
@@ -64,21 +71,21 @@ func (n *Notifier) Start(ctx context.Context) error {
 	}
 }
 
-func (n *Notifier) SaveArticleFromUser(ctx context.Context, article models.Article) error {
+func (n *Notifier) SaveArticleFromUser(ctx context.Context, userID int64, link string) error {
 	const op = "services.notifier.save_article_from_user"
 
-	if err := n.articles.Save(ctx, article); err != nil {
-		n.log.Error("Can't save article", "err", err.Error())
+	if err := n.saver.SaveArticleFromUser(ctx, userID, link); err != nil {
+		n.log.Error("Can't save article from user", "err", err.Error())
 		return fmt.Errorf("%s: %w", op, err)
 	}
 
 	return nil
 }
 
-func (n *Notifier) SelectPostedArticles(ctx context.Context, limit int64) ([]models.Article, error) {
+func (n *Notifier) SelectPostedArticles(ctx context.Context) ([]models.Article, error) {
 	const op = "services.notifier.select_posted_articles"
 
-	articles, err := n.articles.LatestPosted(ctx, limit)
+	articles, err := n.articles.LatestPosted(ctx, n.articlesLimit)
 	if err != nil {
 		if errors.Is(err, storage.ErrNoLatestArticles) {
 			n.log.Debug("Can't get latest articles", "err", err.Error())

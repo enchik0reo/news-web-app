@@ -20,7 +20,7 @@ type App struct {
 	cfg   *config.Config
 	log   *slog.Logger
 	db    *sql.DB
-	fetch *fetcher.IntervalFetcher
+	fetch *fetcher.Fetcher
 	not   *notifier.Notifier
 }
 
@@ -45,7 +45,9 @@ func New() *App {
 
 	a.fetch = fetcher.New(articleStor, sourceStor, a.cfg.Manager.FetchInterval, a.cfg.Manager.FilterKeywords, a.log)
 
-	a.not = notifier.New(articleStor, a.cfg.Manager.NotificationInterval, a.cfg.Manager.ArticlesLimit, a.log)
+	a.not = notifier.New(articleStor, a.fetch, a.cfg.Manager.NotificationInterval, a.cfg.Manager.ArticlesLimit, a.log)
+
+	// GRPC NEW
 
 	return &a
 }

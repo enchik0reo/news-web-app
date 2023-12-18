@@ -38,7 +38,7 @@ func (s RSSSource) URL() string {
 	return s.sourceURL
 }
 
-func (s RSSSource) IntervalFetch(ctx context.Context) ([]models.Item, error) {
+func (s RSSSource) IntervalLoad(ctx context.Context) ([]models.Item, error) {
 	const op = "services.source.interval_fetch"
 
 	feed, err := s.loadFeed(ctx, s.sourceURL)
