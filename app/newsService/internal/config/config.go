@@ -11,10 +11,10 @@ import (
 )
 
 type Config struct {
-	Env      string      `yaml:"env" env-required:"true"`
-	Storage  Postgres    `yaml:"psql_storage"`
-	GRPC     GRPCConfig  `yaml:"grpc_news"`
-	Managmer NewsManager `yaml:"news_managment"`
+	Env     string      `yaml:"env" env-required:"true"`
+	Storage Postgres    `yaml:"psql_storage"`
+	GRPC    GRPCConfig  `yaml:"grpc_news"`
+	Manager NewsManager `yaml:"news_managment"`
 }
 
 type Postgres struct {

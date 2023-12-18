@@ -39,9 +39,11 @@ func (s RSSSource) URL() string {
 }
 
 func (s RSSSource) IntervalFetch(ctx context.Context) ([]models.Item, error) {
+	const op = "services.source.interval_fetch"
+
 	feed, err := s.loadFeed(ctx, s.sourceURL)
 	if err != nil {
-		return nil, fmt.Errorf("can't load feed: %v", err)
+		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
 	items := make([]models.Item, 0, len(feed.Items))
@@ -56,17 +58,17 @@ func (s RSSSource) IntervalFetch(ctx context.Context) ([]models.Item, error) {
 
 		resp, err := http.Get(itm.Link)
 		if err != nil {
-			return nil, fmt.Errorf("failed to download %s: %v", itm.Link, err)
+			return nil, fmt.Errorf("%s: %w", op, err)
 		}
 
 		parsedURL, err := url.Parse(itm.Link)
 		if err != nil {
-			return nil, fmt.Errorf("error parsing url %s: %v", itm.Link, err)
+			return nil, fmt.Errorf("%s: %w", op, err)
 		}
 
 		article, err := readability.FromReader(resp.Body, parsedURL)
 		if err != nil {
-			return nil, fmt.Errorf("failed to parse %s: %v", itm.Link, err)
+			return nil, fmt.Errorf("%s: %w", op, err)
 		}
 
 		itm.SourceName = article.SiteName
@@ -87,6 +89,8 @@ func (s RSSSource) IntervalFetch(ctx context.Context) ([]models.Item, error) {
 }
 
 func (s RSSSource) loadFeed(ctx context.Context, url string) (*rss.Feed, error) {
+	const op = "services.source.loaded_feed"
+
 	var feedCh = make(chan *rss.Feed)
 	var errCh = make(chan error)
 
@@ -102,9 +106,9 @@ func (s RSSSource) loadFeed(ctx context.Context, url string) (*rss.Feed, error) 
 
 	select {
 	case <-ctx.Done():
-		return nil, fmt.Errorf("canceled context: %v", ctx.Err())
+		return nil, fmt.Errorf("%s: %w", op, ctx.Err())
 	case err := <-errCh:
-		return nil, fmt.Errorf("can't load feed rss source, %v", err)
+		return nil, fmt.Errorf("%s: %w", op, err)
 	case feed := <-feedCh:
 		return feed, nil
 	}

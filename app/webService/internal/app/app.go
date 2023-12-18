@@ -31,12 +31,14 @@ func New() *App {
 
 	a.log = logs.Setup(a.cfg.Env)
 
+	a.log.With("service", "Web")
+
 	ctx, cancel := context.WithTimeout(context.Background(), a.cfg.Server.Timeout)
 	defer cancel()
 
 	a.authClient, err = authgrpc.New(ctx, a.log, a.cfg.GRPC.Port, a.cfg.GRPC.Timeout, a.cfg.GRPC.RetriesCount)
 	if err != nil {
-		a.log.Error("failed to create new auth client", "err", err)
+		a.log.Error("Failed to create new auth client", "err", err)
 		os.Exit(1)
 	}
 
@@ -48,12 +50,12 @@ func New() *App {
 }
 
 func (a *App) MustRun() {
-	a.log.Info("starting web service", "env", a.cfg.Env, "address", a.cfg.Server.Address)
+	a.log.Info("Starting web service", "env", a.cfg.Env, "address", a.cfg.Server.Address)
 
 	go func() {
 		if err := a.srv.Start(); err != nil {
 			if !errors.Is(err, http.ErrServerClosed) {
-				a.log.Error("failed ower working web service", "err", err.Error())
+				a.log.Error("Failed ower working web service", "err", err.Error())
 				os.Exit(1)
 			}
 		}
@@ -71,8 +73,8 @@ func (a *App) mustStop() {
 	defer cancel()
 
 	if err := a.srv.Stop(ctx); err != nil {
-		a.log.Error("error closing connection to web server", "err store", err.Error())
+		a.log.Error("Closing connection to web server", "err store", err.Error())
 	}
 
-	a.log.Info("web service stoped gracefully")
+	a.log.Info("Web service stoped gracefully")
 }

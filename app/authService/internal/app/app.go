@@ -31,15 +31,17 @@ func New() *App {
 
 	a.log = logs.Setup(a.cfg.Env)
 
+	a.log.With("service", "Auth")
+
 	a.userStor, err = psql.New(a.cfg.UserStorage)
 	if err != nil {
-		a.log.Error("failed to create new user storage", "err", err)
+		a.log.Error("Failed to create new user storage", "err", err)
 		os.Exit(1)
 	}
 
 	a.sessionStor, err = redis.New(a.cfg.SessionStorage.Host, a.cfg.SessionStorage.Port)
 	if err != nil {
-		a.log.Error("failed to create new session storage", "err", err)
+		a.log.Error("Failed to create new session storage", "err", err)
 		os.Exit(1)
 	}
 
@@ -51,11 +53,11 @@ func New() *App {
 }
 
 func (a *App) MustRun() {
-	a.log.Info("starting auth grpc service", "env", a.cfg.Env, "port", a.cfg.GRPC.Port)
+	a.log.Info("Starting auth grpc service", "env", a.cfg.Env, "port", a.cfg.GRPC.Port)
 
 	go func() {
 		if err := a.gRPCServer.Start(); err != nil {
-			a.log.Error("failed ower working auth grpc service", "err", err.Error())
+			a.log.Error("Failed ower working auth grpc service", "err", err.Error())
 			os.Exit(1)
 		}
 	}()
@@ -69,14 +71,14 @@ func (a *App) MustRun() {
 
 func (a *App) mustStop() {
 	if err := a.userStor.CloseConn(); err != nil {
-		a.log.Error("error closing connection to user storage", "err store", err.Error())
+		a.log.Error("Closing connection to user storage", "err store", err.Error())
 	}
 
 	if err := a.sessionStor.CloseConn(); err != nil {
-		a.log.Error("error closing connection to session storage", "err store", err.Error())
+		a.log.Error("Closing connection to session storage", "err store", err.Error())
 	}
 
 	a.gRPCServer.Stop()
 
-	a.log.Info("auth grpc service stoped gracefully")
+	a.log.Info("Auth grpc service stoped gracefully")
 }

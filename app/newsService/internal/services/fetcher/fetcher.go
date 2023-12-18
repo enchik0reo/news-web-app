@@ -52,11 +52,14 @@ func New(
 }
 
 func (f *IntervalFetcher) Start(ctx context.Context) error {
+	const op = "services.fetcher.start"
+
 	ticker := time.NewTicker(f.fetchInterval)
 	defer ticker.Stop()
 
 	if err := f.intervalFetch(ctx); err != nil {
-		return fmt.Errorf("can't do interval fetch: %v", err)
+		f.log.Error("Can't do interval fetch", "err", err.Error())
+		return fmt.Errorf("%s: %w", op, err)
 	}
 
 	for {
@@ -65,16 +68,20 @@ func (f *IntervalFetcher) Start(ctx context.Context) error {
 			return ctx.Err()
 		case <-ticker.C:
 			if err := f.intervalFetch(ctx); err != nil {
-				return fmt.Errorf("can't do interval fetch: %v", err)
+				f.log.Error("Can't do interval fetch", "err", err.Error())
+				return fmt.Errorf("%s: %w", op, err)
 			}
 		}
 	}
 }
 
 func (f *IntervalFetcher) intervalFetch(ctx context.Context) error {
+	const op = "services.fetcher.interval_fetch"
+
 	sources, err := f.sources.GetList(ctx)
 	if err != nil {
-		return fmt.Errorf("can't get soures: %v", err)
+		f.log.Error("Can't get soures", "err", err.Error())
+		return fmt.Errorf("%s: %w", op, err)
 	}
 
 	wg := new(sync.WaitGroup)
@@ -89,12 +96,12 @@ func (f *IntervalFetcher) intervalFetch(ctx context.Context) error {
 
 			items, err := rssSource.IntervalFetch(ctx)
 			if err != nil {
-				f.log.Error("Fetching items from source", "source name", rssSource.Name(), "err", err.Error())
+				f.log.Error("Can't fetch items from source", "source name", rssSource.Name(), "err", err.Error())
 				return
 			}
 
 			if err := f.saveItems(ctx, rssSource.Name(), items); err != nil {
-				f.log.Error("Saving items in articles", "source name", rssSource.Name(), "err", err.Error())
+				f.log.Error("Can't save items in articles", "source name", rssSource.Name(), "err", err.Error())
 				return
 			}
 		}(rssSource)
@@ -106,6 +113,8 @@ func (f *IntervalFetcher) intervalFetch(ctx context.Context) error {
 }
 
 func (f *IntervalFetcher) saveItems(ctx context.Context, rssSourceName string, items []models.Item) error {
+	const op = "services.fetcher.save_items"
+
 	wg := new(sync.WaitGroup)
 
 	for _, item := range items {
@@ -126,7 +135,8 @@ func (f *IntervalFetcher) saveItems(ctx context.Context, rssSourceName string, i
 				ImageURL:    item.ImageURL,
 				PublishedAt: item.Date,
 			}); err != nil {
-				return fmt.Errorf("can't save item: %v", err)
+				f.log.Error("Can't save item", "err", err.Error())
+				return fmt.Errorf("%s: %w", op, err)
 			}
 
 			return nil
