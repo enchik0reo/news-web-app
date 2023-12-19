@@ -23,6 +23,7 @@ type Item struct {
 type Article struct {
 	ID          int64
 	UserID      int64
+	UserName    string
 	SourceName  string
 	Title       string
 	Link        string

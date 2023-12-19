@@ -42,7 +42,7 @@ func (s *ArticleStorage) Save(ctx context.Context, article models.Article) error
 }
 
 func (s *ArticleStorage) LatestPosted(ctx context.Context, limit int64) ([]models.Article, error) {
-	stmt, err := s.db.PrepareContext(ctx, `SELECT u.user_name AS user_name, source_name, title, link, excerpt, image, published_at, created_at, posted_at FROM articles a 
+	stmt, err := s.db.PrepareContext(ctx, `SELECT u.user_name AS user_name, source_name, title, link, excerpt, image, posted_at FROM articles a 
 	LEFT JOIN users u ON u.user_id = a.user_id 
 	WHERE a.posted_at IS NOT NULL 
 	ORDER BY a.posted_at DESC LIMIT $1`)
@@ -63,14 +63,12 @@ func (s *ArticleStorage) LatestPosted(ctx context.Context, limit int64) ([]model
 
 	for rows.Next() {
 		articl := models.Article{}
-		err = rows.Scan(&articl.UserID,
+		err = rows.Scan(&articl.UserName,
 			&articl.SourceName,
 			&articl.Title,
 			&articl.Link,
 			&articl.Excerpt,
 			&articl.ImageURL,
-			&articl.PublishedAt,
-			&articl.CreatedAt,
 			&articl.PostedAt,
 		)
 		if err != nil {

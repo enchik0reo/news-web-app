@@ -7,9 +7,11 @@
 package newsv1
 
 import (
+	timestamp "github.com/golang/protobuf/ptypes/timestamp"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
+	sync "sync"
 )
 
 const (
@@ -19,21 +21,356 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+type SaveArticleRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	UserId int64  `protobuf:"varint,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	Link   string `protobuf:"bytes,2,opt,name=link,proto3" json:"link,omitempty"`
+}
+
+func (x *SaveArticleRequest) Reset() {
+	*x = SaveArticleRequest{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_news_proto_msgTypes[0]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *SaveArticleRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SaveArticleRequest) ProtoMessage() {}
+
+func (x *SaveArticleRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_news_proto_msgTypes[0]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SaveArticleRequest.ProtoReflect.Descriptor instead.
+func (*SaveArticleRequest) Descriptor() ([]byte, []int) {
+	return file_news_proto_rawDescGZIP(), []int{0}
+}
+
+func (x *SaveArticleRequest) GetUserId() int64 {
+	if x != nil {
+		return x.UserId
+	}
+	return 0
+}
+
+func (x *SaveArticleRequest) GetLink() string {
+	if x != nil {
+		return x.Link
+	}
+	return ""
+}
+
+type SaveArticleResponse struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+}
+
+func (x *SaveArticleResponse) Reset() {
+	*x = SaveArticleResponse{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_news_proto_msgTypes[1]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *SaveArticleResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SaveArticleResponse) ProtoMessage() {}
+
+func (x *SaveArticleResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_news_proto_msgTypes[1]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SaveArticleResponse.ProtoReflect.Descriptor instead.
+func (*SaveArticleResponse) Descriptor() ([]byte, []int) {
+	return file_news_proto_rawDescGZIP(), []int{1}
+}
+
+type GetArticlesRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+}
+
+func (x *GetArticlesRequest) Reset() {
+	*x = GetArticlesRequest{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_news_proto_msgTypes[2]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *GetArticlesRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetArticlesRequest) ProtoMessage() {}
+
+func (x *GetArticlesRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_news_proto_msgTypes[2]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetArticlesRequest.ProtoReflect.Descriptor instead.
+func (*GetArticlesRequest) Descriptor() ([]byte, []int) {
+	return file_news_proto_rawDescGZIP(), []int{2}
+}
+
+type Article struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	UserName   string               `protobuf:"bytes,1,opt,name=UserName,proto3" json:"UserName,omitempty"`
+	SourceName string               `protobuf:"bytes,2,opt,name=SourceName,proto3" json:"SourceName,omitempty"`
+	Title      string               `protobuf:"bytes,3,opt,name=Title,proto3" json:"Title,omitempty"`
+	Link       string               `protobuf:"bytes,4,opt,name=Link,proto3" json:"Link,omitempty"`
+	Excerpt    string               `protobuf:"bytes,5,opt,name=Excerpt,proto3" json:"Excerpt,omitempty"`
+	ImageURL   string               `protobuf:"bytes,6,opt,name=ImageURL,proto3" json:"ImageURL,omitempty"`
+	PostedAt   *timestamp.Timestamp `protobuf:"bytes,7,opt,name=PostedAt,proto3" json:"PostedAt,omitempty"`
+}
+
+func (x *Article) Reset() {
+	*x = Article{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_news_proto_msgTypes[3]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *Article) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Article) ProtoMessage() {}
+
+func (x *Article) ProtoReflect() protoreflect.Message {
+	mi := &file_news_proto_msgTypes[3]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Article.ProtoReflect.Descriptor instead.
+func (*Article) Descriptor() ([]byte, []int) {
+	return file_news_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *Article) GetUserName() string {
+	if x != nil {
+		return x.UserName
+	}
+	return ""
+}
+
+func (x *Article) GetSourceName() string {
+	if x != nil {
+		return x.SourceName
+	}
+	return ""
+}
+
+func (x *Article) GetTitle() string {
+	if x != nil {
+		return x.Title
+	}
+	return ""
+}
+
+func (x *Article) GetLink() string {
+	if x != nil {
+		return x.Link
+	}
+	return ""
+}
+
+func (x *Article) GetExcerpt() string {
+	if x != nil {
+		return x.Excerpt
+	}
+	return ""
+}
+
+func (x *Article) GetImageURL() string {
+	if x != nil {
+		return x.ImageURL
+	}
+	return ""
+}
+
+func (x *Article) GetPostedAt() *timestamp.Timestamp {
+	if x != nil {
+		return x.PostedAt
+	}
+	return nil
+}
+
+type GetArticlesResponse struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Articles []*Article `protobuf:"bytes,1,rep,name=Articles,proto3" json:"Articles,omitempty"`
+}
+
+func (x *GetArticlesResponse) Reset() {
+	*x = GetArticlesResponse{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_news_proto_msgTypes[4]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *GetArticlesResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetArticlesResponse) ProtoMessage() {}
+
+func (x *GetArticlesResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_news_proto_msgTypes[4]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetArticlesResponse.ProtoReflect.Descriptor instead.
+func (*GetArticlesResponse) Descriptor() ([]byte, []int) {
+	return file_news_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *GetArticlesResponse) GetArticles() []*Article {
+	if x != nil {
+		return x.Articles
+	}
+	return nil
+}
+
 var File_news_proto protoreflect.FileDescriptor
 
 var file_news_proto_rawDesc = []byte{
 	0x0a, 0x0a, 0x6e, 0x65, 0x77, 0x73, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x12, 0x04, 0x6e, 0x65,
-	0x77, 0x73, 0x42, 0x10, 0x5a, 0x0e, 0x6e, 0x65, 0x77, 0x73, 0x2e, 0x76, 0x31, 0x3b, 0x6e, 0x65,
-	0x77, 0x73, 0x76, 0x31, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x77, 0x73, 0x1a, 0x1f, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2f, 0x70, 0x72, 0x6f, 0x74, 0x6f,
+	0x62, 0x75, 0x66, 0x2f, 0x74, 0x69, 0x6d, 0x65, 0x73, 0x74, 0x61, 0x6d, 0x70, 0x2e, 0x70, 0x72,
+	0x6f, 0x74, 0x6f, 0x22, 0x41, 0x0a, 0x12, 0x53, 0x61, 0x76, 0x65, 0x41, 0x72, 0x74, 0x69, 0x63,
+	0x6c, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x17, 0x0a, 0x07, 0x75, 0x73, 0x65,
+	0x72, 0x5f, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x03, 0x52, 0x06, 0x75, 0x73, 0x65, 0x72,
+	0x49, 0x64, 0x12, 0x12, 0x0a, 0x04, 0x6c, 0x69, 0x6e, 0x6b, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09,
+	0x52, 0x04, 0x6c, 0x69, 0x6e, 0x6b, 0x22, 0x15, 0x0a, 0x13, 0x53, 0x61, 0x76, 0x65, 0x41, 0x72,
+	0x74, 0x69, 0x63, 0x6c, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x14, 0x0a,
+	0x12, 0x47, 0x65, 0x74, 0x41, 0x72, 0x74, 0x69, 0x63, 0x6c, 0x65, 0x73, 0x52, 0x65, 0x71, 0x75,
+	0x65, 0x73, 0x74, 0x22, 0xdd, 0x01, 0x0a, 0x07, 0x41, 0x72, 0x74, 0x69, 0x63, 0x6c, 0x65, 0x12,
+	0x1a, 0x0a, 0x08, 0x55, 0x73, 0x65, 0x72, 0x4e, 0x61, 0x6d, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28,
+	0x09, 0x52, 0x08, 0x55, 0x73, 0x65, 0x72, 0x4e, 0x61, 0x6d, 0x65, 0x12, 0x1e, 0x0a, 0x0a, 0x53,
+	0x6f, 0x75, 0x72, 0x63, 0x65, 0x4e, 0x61, 0x6d, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52,
+	0x0a, 0x53, 0x6f, 0x75, 0x72, 0x63, 0x65, 0x4e, 0x61, 0x6d, 0x65, 0x12, 0x14, 0x0a, 0x05, 0x54,
+	0x69, 0x74, 0x6c, 0x65, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x05, 0x54, 0x69, 0x74, 0x6c,
+	0x65, 0x12, 0x12, 0x0a, 0x04, 0x4c, 0x69, 0x6e, 0x6b, 0x18, 0x04, 0x20, 0x01, 0x28, 0x09, 0x52,
+	0x04, 0x4c, 0x69, 0x6e, 0x6b, 0x12, 0x18, 0x0a, 0x07, 0x45, 0x78, 0x63, 0x65, 0x72, 0x70, 0x74,
+	0x18, 0x05, 0x20, 0x01, 0x28, 0x09, 0x52, 0x07, 0x45, 0x78, 0x63, 0x65, 0x72, 0x70, 0x74, 0x12,
+	0x1a, 0x0a, 0x08, 0x49, 0x6d, 0x61, 0x67, 0x65, 0x55, 0x52, 0x4c, 0x18, 0x06, 0x20, 0x01, 0x28,
+	0x09, 0x52, 0x08, 0x49, 0x6d, 0x61, 0x67, 0x65, 0x55, 0x52, 0x4c, 0x12, 0x36, 0x0a, 0x08, 0x50,
+	0x6f, 0x73, 0x74, 0x65, 0x64, 0x41, 0x74, 0x18, 0x07, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1a, 0x2e,
+	0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e,
+	0x54, 0x69, 0x6d, 0x65, 0x73, 0x74, 0x61, 0x6d, 0x70, 0x52, 0x08, 0x50, 0x6f, 0x73, 0x74, 0x65,
+	0x64, 0x41, 0x74, 0x22, 0x40, 0x0a, 0x13, 0x47, 0x65, 0x74, 0x41, 0x72, 0x74, 0x69, 0x63, 0x6c,
+	0x65, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x29, 0x0a, 0x08, 0x41, 0x72,
+	0x74, 0x69, 0x63, 0x6c, 0x65, 0x73, 0x18, 0x01, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x0d, 0x2e, 0x6e,
+	0x65, 0x77, 0x73, 0x2e, 0x41, 0x72, 0x74, 0x69, 0x63, 0x6c, 0x65, 0x52, 0x08, 0x41, 0x72, 0x74,
+	0x69, 0x63, 0x6c, 0x65, 0x73, 0x32, 0x8e, 0x01, 0x0a, 0x04, 0x4e, 0x65, 0x77, 0x73, 0x12, 0x42,
+	0x0a, 0x0b, 0x53, 0x61, 0x76, 0x65, 0x41, 0x72, 0x74, 0x69, 0x63, 0x6c, 0x65, 0x12, 0x18, 0x2e,
+	0x6e, 0x65, 0x77, 0x73, 0x2e, 0x53, 0x61, 0x76, 0x65, 0x41, 0x72, 0x74, 0x69, 0x63, 0x6c, 0x65,
+	0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x19, 0x2e, 0x6e, 0x65, 0x77, 0x73, 0x2e, 0x53,
+	0x61, 0x76, 0x65, 0x41, 0x72, 0x74, 0x69, 0x63, 0x6c, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e,
+	0x73, 0x65, 0x12, 0x42, 0x0a, 0x0b, 0x47, 0x65, 0x74, 0x41, 0x72, 0x74, 0x69, 0x63, 0x6c, 0x65,
+	0x73, 0x12, 0x18, 0x2e, 0x6e, 0x65, 0x77, 0x73, 0x2e, 0x47, 0x65, 0x74, 0x41, 0x72, 0x74, 0x69,
+	0x63, 0x6c, 0x65, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x19, 0x2e, 0x6e, 0x65,
+	0x77, 0x73, 0x2e, 0x47, 0x65, 0x74, 0x41, 0x72, 0x74, 0x69, 0x63, 0x6c, 0x65, 0x73, 0x52, 0x65,
+	0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x42, 0x10, 0x5a, 0x0e, 0x6e, 0x65, 0x77, 0x73, 0x2e, 0x76,
+	0x31, 0x3b, 0x6e, 0x65, 0x77, 0x73, 0x76, 0x31, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
-var file_news_proto_goTypes = []interface{}{}
+var (
+	file_news_proto_rawDescOnce sync.Once
+	file_news_proto_rawDescData = file_news_proto_rawDesc
+)
+
+func file_news_proto_rawDescGZIP() []byte {
+	file_news_proto_rawDescOnce.Do(func() {
+		file_news_proto_rawDescData = protoimpl.X.CompressGZIP(file_news_proto_rawDescData)
+	})
+	return file_news_proto_rawDescData
+}
+
+var file_news_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
+var file_news_proto_goTypes = []interface{}{
+	(*SaveArticleRequest)(nil),  // 0: news.SaveArticleRequest
+	(*SaveArticleResponse)(nil), // 1: news.SaveArticleResponse
+	(*GetArticlesRequest)(nil),  // 2: news.GetArticlesRequest
+	(*Article)(nil),             // 3: news.Article
+	(*GetArticlesResponse)(nil), // 4: news.GetArticlesResponse
+	(*timestamp.Timestamp)(nil), // 5: google.protobuf.Timestamp
+}
 var file_news_proto_depIdxs = []int32{
-	0, // [0:0] is the sub-list for method output_type
-	0, // [0:0] is the sub-list for method input_type
-	0, // [0:0] is the sub-list for extension type_name
-	0, // [0:0] is the sub-list for extension extendee
-	0, // [0:0] is the sub-list for field type_name
+	5, // 0: news.Article.PostedAt:type_name -> google.protobuf.Timestamp
+	3, // 1: news.GetArticlesResponse.Articles:type_name -> news.Article
+	0, // 2: news.News.SaveArticle:input_type -> news.SaveArticleRequest
+	2, // 3: news.News.GetArticles:input_type -> news.GetArticlesRequest
+	1, // 4: news.News.SaveArticle:output_type -> news.SaveArticleResponse
+	4, // 5: news.News.GetArticles:output_type -> news.GetArticlesResponse
+	4, // [4:6] is the sub-list for method output_type
+	2, // [2:4] is the sub-list for method input_type
+	2, // [2:2] is the sub-list for extension type_name
+	2, // [2:2] is the sub-list for extension extendee
+	0, // [0:2] is the sub-list for field type_name
 }
 
 func init() { file_news_proto_init() }
@@ -41,18 +378,81 @@ func file_news_proto_init() {
 	if File_news_proto != nil {
 		return
 	}
+	if !protoimpl.UnsafeEnabled {
+		file_news_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*SaveArticleRequest); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_news_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*SaveArticleResponse); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_news_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*GetArticlesRequest); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_news_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*Article); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_news_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*GetArticlesResponse); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_news_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   0,
+			NumMessages:   5,
 			NumExtensions: 0,
-			NumServices:   0,
+			NumServices:   1,
 		},
 		GoTypes:           file_news_proto_goTypes,
 		DependencyIndexes: file_news_proto_depIdxs,
+		MessageInfos:      file_news_proto_msgTypes,
 	}.Build()
 	File_news_proto = out.File
 	file_news_proto_rawDesc = nil
