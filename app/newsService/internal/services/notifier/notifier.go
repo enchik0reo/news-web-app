@@ -89,7 +89,7 @@ func (n *Notifier) SelectPostedArticles(ctx context.Context) ([]models.Article, 
 	if err != nil {
 		if errors.Is(err, storage.ErrNoLatestArticles) {
 			n.log.Debug("Can't get latest articles", "err", err.Error())
-			return nil, services.ErrNoPublishArticles
+			return nil, services.ErrNoPublishedArticles
 		}
 		n.log.Error("Can't get latest articles", "err", err.Error())
 		return nil, fmt.Errorf("%s: %w", op, err)

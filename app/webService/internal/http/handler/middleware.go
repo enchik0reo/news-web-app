@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"time"
 
-	"newsWebApp/app/webService/internal/services"
+	"newsWebApp/app/webService/internal/clients"
 
 	"github.com/go-chi/chi/middleware"
 )
@@ -27,7 +27,7 @@ func authMw(service AuthService) func(http.Handler) http.Handler {
 			id, userName, err := service.Parse(ctx, header)
 			if err != nil {
 				switch {
-				case errors.Is(err, services.ErrTokenExpired):
+				case errors.Is(err, clients.ErrTokenExpired):
 					cookie, err := r.Cookie("refresh_token")
 					if err != nil {
 						if errors.Is(err, http.ErrNoCookie) {
@@ -44,10 +44,10 @@ func authMw(service AuthService) func(http.Handler) http.Handler {
 					id, userName, acsToken, refToken, err := service.Refresh(ctx, cookie.Value)
 					if err != nil {
 						switch {
-						case errors.Is(err, services.ErrSessionNotFound):
+						case errors.Is(err, clients.ErrSessionNotFound):
 							http.Error(w, "session expired, please sign-in", http.StatusUnauthorized)
 							return
-						case errors.Is(err, services.ErrInvalidValue):
+						case errors.Is(err, clients.ErrInvalidValue):
 							http.Error(w, "incorrect session, please sign-in", http.StatusInternalServerError)
 							return
 						default:
@@ -75,7 +75,7 @@ func authMw(service AuthService) func(http.Handler) http.Handler {
 
 					next.ServeHTTP(w, r)
 
-				case errors.Is(err, services.ErrInvalidToken):
+				case errors.Is(err, clients.ErrInvalidToken):
 					http.Error(w, err.Error(), http.StatusBadRequest)
 					return
 				default:

@@ -39,8 +39,8 @@ func (s *serverAPI) SaveArticle(ctx context.Context, req *newsv1.SaveArticleRequ
 func (s *serverAPI) GetArticles(ctx context.Context, req *newsv1.GetArticlesRequest) (*newsv1.GetArticlesResponse, error) {
 	articles, err := s.newsService.SelectPostedArticles(ctx)
 	if err != nil {
-		if errors.Is(err, services.ErrNoPublishArticles) {
-			return nil, status.Error(codes.NotFound, "there are no publish articles")
+		if errors.Is(err, services.ErrNoPublishedArticles) {
+			return nil, status.Error(codes.NotFound, "there are no published articles")
 		} else {
 			return nil, status.Error(codes.Internal, "internal error")
 		}

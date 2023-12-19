@@ -11,9 +11,10 @@ import (
 )
 
 type Config struct {
-	Env    string     `yaml:"env" env-required:"true"`
-	Server HttpServer `yaml:"http_server"`
-	GRPC   GRPCConfig `yaml:"grpc"`
+	Env      string     `yaml:"env" env-required:"true"`
+	Server   HttpServer `yaml:"http_server"`
+	AuthGRPC GRPCConfig `yaml:"grpc_auth"`
+	NewsGRPC GRPCConfig `yaml:"grpc_news"`
 }
 
 type HttpServer struct {

@@ -7,7 +7,7 @@ import (
 	"log/slog"
 	"time"
 
-	"newsWebApp/app/webService/internal/services"
+	"newsWebApp/app/webService/internal/clients"
 	authv1 "newsWebApp/protos/gen/go/auth"
 
 	grpclog "github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/logging"
@@ -29,7 +29,7 @@ func New(
 	timeout time.Duration,
 	retriesCount int,
 ) (*Client, error) {
-	const op = "grpc.New"
+	const op = "authgrpc.New"
 
 	retryOpts := []grpcretry.CallOption{
 		grpcretry.WithCodes(codes.Aborted, codes.DeadlineExceeded),
@@ -63,9 +63,9 @@ func (c *Client) SaveUser(ctx context.Context, userName string, email string, pa
 	if err != nil {
 		switch {
 		case errors.Is(err, status.Error(codes.InvalidArgument, "invalid credentials")):
-			return 0, services.ErrInvalidValue
+			return 0, clients.ErrInvalidValue
 		case errors.Is(err, status.Error(codes.AlreadyExists, "user already exists")):
-			return 0, services.ErrUserExists
+			return 0, clients.ErrUserExists
 		default:
 			return 0, err
 		}
@@ -79,9 +79,9 @@ func (c *Client) LoginUser(ctx context.Context, email, password string) (int64, 
 	if err != nil {
 		switch {
 		case errors.Is(err, status.Error(codes.InvalidArgument, "invalid email or password")):
-			return 0, "", "", "", services.ErrInvalidValue
+			return 0, "", "", "", clients.ErrInvalidValue
 		case errors.Is(err, status.Error(codes.NotFound, "wrong email or password")):
-			return 0, "", "", "", services.ErrUserDoesntExists
+			return 0, "", "", "", clients.ErrUserDoesntExists
 		default:
 			return 0, "", "", "", err
 		}
@@ -95,9 +95,9 @@ func (c *Client) Parse(ctx context.Context, acToken string) (int64, string, erro
 	if err != nil {
 		switch {
 		case errors.Is(err, status.Error(codes.NotFound, "token expired")):
-			return 0, "", services.ErrTokenExpired
+			return 0, "", clients.ErrTokenExpired
 		case errors.Is(err, status.Error(codes.InvalidArgument, "invalid argument")):
-			return 0, "", services.ErrInvalidToken
+			return 0, "", clients.ErrInvalidToken
 		default:
 			return 0, "", err
 		}
@@ -111,9 +111,9 @@ func (c *Client) Refresh(ctx context.Context, refToken string) (int64, string, s
 	if err != nil {
 		switch {
 		case errors.Is(err, status.Error(codes.NotFound, "session expired")):
-			return 0, "", "", "", services.ErrSessionNotFound
+			return 0, "", "", "", clients.ErrSessionNotFound
 		case errors.Is(err, status.Error(codes.InvalidArgument, "invalid argument")):
-			return 0, "", "", "", services.ErrInvalidToken
+			return 0, "", "", "", clients.ErrInvalidToken
 		default:
 			return 0, "", "", "", err
 		}

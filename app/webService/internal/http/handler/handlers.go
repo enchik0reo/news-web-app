@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"time"
 
-	"newsWebApp/app/webService/internal/services"
+	"newsWebApp/app/webService/internal/clients"
 )
 
 type Request struct {
@@ -38,10 +38,10 @@ func signUp(service AuthService) http.HandlerFunc {
 		id, err := service.SaveUser(ctx, req.UserName, req.Email, req.Password)
 		if err != nil {
 			switch {
-			case errors.Is(err, services.ErrUserExists):
+			case errors.Is(err, clients.ErrUserExists):
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
-			case errors.Is(err, services.ErrInvalidValue):
+			case errors.Is(err, clients.ErrInvalidValue):
 				http.Error(w, err.Error(), http.StatusUnprocessableEntity)
 				return
 			default:
@@ -70,10 +70,10 @@ func login(service AuthService) http.HandlerFunc {
 		id, userName, acsToken, refToken, err := service.LoginUser(ctx, req.Email, req.Password)
 		if err != nil {
 			switch {
-			case errors.Is(err, services.ErrUserDoesntExists):
+			case errors.Is(err, clients.ErrUserDoesntExists):
 				http.Error(w, err.Error(), http.StatusUnauthorized)
 				return
-			case errors.Is(err, services.ErrInvalidValue):
+			case errors.Is(err, clients.ErrInvalidValue):
 				http.Error(w, err.Error(), http.StatusUnprocessableEntity)
 				return
 			default:

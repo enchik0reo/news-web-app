@@ -9,17 +9,19 @@ import (
 	"os/signal"
 	"syscall"
 
+	"newsWebApp/app/webService/internal/clients/authgrpc"
+	"newsWebApp/app/webService/internal/clients/newsgrpc"
 	"newsWebApp/app/webService/internal/config"
 	"newsWebApp/app/webService/internal/http/handler"
 	"newsWebApp/app/webService/internal/http/server"
 	"newsWebApp/app/webService/internal/logs"
-	"newsWebApp/app/webService/internal/services/authgrpc"
 )
 
 type App struct {
 	cfg        *config.Config
 	log        *slog.Logger
 	authClient *authgrpc.Client
+	newsClient *newsgrpc.Client
 	srv        *server.Server
 }
 
@@ -33,12 +35,28 @@ func New() *App {
 
 	a.log.With("service", "Web")
 
-	ctx, cancel := context.WithTimeout(context.Background(), a.cfg.Server.Timeout)
-	defer cancel()
+	ctx, cacnel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer cacnel()
 
-	a.authClient, err = authgrpc.New(ctx, a.log, a.cfg.GRPC.Port, a.cfg.GRPC.Timeout, a.cfg.GRPC.RetriesCount)
+	a.authClient, err = authgrpc.New(ctx,
+		a.log,
+		a.cfg.AuthGRPC.Port,
+		a.cfg.AuthGRPC.Timeout,
+		a.cfg.AuthGRPC.RetriesCount,
+	)
 	if err != nil {
 		a.log.Error("Failed to create new auth client", "err", err)
+		os.Exit(1)
+	}
+
+	a.newsClient, err = newsgrpc.New(ctx,
+		a.log,
+		a.cfg.NewsGRPC.Port,
+		a.cfg.NewsGRPC.Timeout,
+		a.cfg.NewsGRPC.RetriesCount,
+	)
+	if err != nil {
+		a.log.Error("Failed to create new news client", "err", err)
 		os.Exit(1)
 	}
 
