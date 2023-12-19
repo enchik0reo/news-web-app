@@ -33,6 +33,7 @@ func (s *SourceStorage) GetList(ctx context.Context) ([]models.Source, error) {
 		}
 		return nil, fmt.Errorf("can't get sources: %w", err)
 	}
+	defer rows.Close()
 
 	for rows.Next() {
 		sour := models.Source{}

@@ -54,8 +54,12 @@ func (n *Notifier) Start(ctx context.Context) error {
 	defer ticker.Stop()
 
 	if err := n.selectAndSendArticle(ctx); err != nil {
-		n.log.Error("Can't select and sent article", "err", err.Error())
-		return fmt.Errorf("%s: %w", op, err)
+		if errors.Is(err, services.ErrNoNewArticles) {
+			n.log.Debug("Can't select and sent article", "err", err.Error())
+		} else {
+			n.log.Error("Can't select and sent article", "err", err.Error())
+			return fmt.Errorf("%s: %w", op, err)
+		}
 	}
 
 	for {
@@ -64,8 +68,12 @@ func (n *Notifier) Start(ctx context.Context) error {
 			return ctx.Err()
 		case <-ticker.C:
 			if err := n.selectAndSendArticle(ctx); err != nil {
-				n.log.Error("Can't select and sent article", "err", err.Error())
-				return fmt.Errorf("%s: %w", op, err)
+				if errors.Is(err, services.ErrNoNewArticles) {
+					n.log.Debug("Can't select and sent article", "err", err.Error())
+				} else {
+					n.log.Error("Can't select and sent article", "err", err.Error())
+					return fmt.Errorf("%s: %w", op, err)
+				}
 			}
 		}
 	}

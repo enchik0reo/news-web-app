@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"log/slog"
 	"os"
 	"os/signal"
@@ -46,7 +47,8 @@ func New() *App {
 	articleStor := storage.NewArticleStorage(a.db)
 
 	a.fetcher = fetcher.New(articleStor,
-		sourceStor, a.cfg.Manager.FetchInterval,
+		sourceStor,
+		a.cfg.Manager.FetchInterval,
 		a.cfg.Manager.FilterKeywords,
 		a.log,
 	)
@@ -78,15 +80,19 @@ func (a *App) MustRun() {
 
 	go func() {
 		if err := a.fetcher.Start(ctx); err != nil {
-			a.log.Error("Failed ower working fetcher", "err store", err.Error())
-			os.Exit(1)
+			if !errors.Is(err, context.Canceled) {
+				a.log.Error("Failed ower working fetcher", "err store", err.Error())
+				os.Exit(1)
+			}
 		}
 	}()
 
 	go func() {
 		if err := a.notifier.Start(ctx); err != nil {
-			a.log.Error("Failed ower working notifier", "err store", err.Error())
-			os.Exit(1)
+			if !errors.Is(err, context.Canceled) {
+				a.log.Error("Failed ower working notifier", "err store", err.Error())
+				os.Exit(1)
+			}
 		}
 	}()
 

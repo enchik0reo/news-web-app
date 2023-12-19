@@ -2,6 +2,7 @@ package fetcher
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"strings"
@@ -9,7 +10,9 @@ import (
 	"time"
 
 	"newsWebApp/app/newsService/internal/models"
+	"newsWebApp/app/newsService/internal/services"
 	"newsWebApp/app/newsService/internal/services/source"
+	"newsWebApp/app/newsService/internal/storage"
 )
 
 type ArticleStorage interface {
@@ -31,8 +34,8 @@ type UserSource interface {
 }
 
 type Fetcher struct {
-	articles ArticleStorage
-	sources  SourceStorage
+	articleStor ArticleStorage
+	sourceStor  SourceStorage
 
 	fetchInterval  time.Duration
 	filterKeywords []string
@@ -41,14 +44,14 @@ type Fetcher struct {
 
 func New(
 	articleStorage ArticleStorage,
-	soureProvider SourceStorage,
+	soureStorage SourceStorage,
 	fetchInterval time.Duration,
 	filterKeywords []string,
 	log *slog.Logger,
 ) *Fetcher {
 	return &Fetcher{
-		articles:       articleStorage,
-		sources:        soureProvider,
+		articleStor:    articleStorage,
+		sourceStor:     soureStorage,
 		fetchInterval:  fetchInterval,
 		filterKeywords: filterKeywords,
 		log:            log,
@@ -62,8 +65,12 @@ func (f *Fetcher) Start(ctx context.Context) error {
 	defer ticker.Stop()
 
 	if err := f.intervalFetch(ctx); err != nil {
-		f.log.Error("Can't do interval fetch", "err", err.Error())
-		return fmt.Errorf("%s: %w", op, err)
+		if errors.Is(err, services.ErrNoSources) {
+			f.log.Debug("Can't do interval fetch", "err", err.Error())
+		} else {
+			f.log.Error("Can't do interval fetch", "err", err.Error())
+			return fmt.Errorf("%s: %w", op, err)
+		}
 	}
 
 	for {
@@ -72,8 +79,12 @@ func (f *Fetcher) Start(ctx context.Context) error {
 			return ctx.Err()
 		case <-ticker.C:
 			if err := f.intervalFetch(ctx); err != nil {
-				f.log.Error("Can't do interval fetch", "err", err.Error())
-				return fmt.Errorf("%s: %w", op, err)
+				if errors.Is(err, services.ErrNoSources) {
+					f.log.Debug("Can't do interval fetch", "err", err.Error())
+				} else {
+					f.log.Error("Can't do interval fetch", "err", err.Error())
+					return fmt.Errorf("%s: %w", op, err)
+				}
 			}
 		}
 	}
@@ -94,7 +105,7 @@ func (f *Fetcher) SaveArticleFromUser(ctx context.Context, userID int64, link st
 		return nil
 	}
 
-	if err := f.articles.Save(ctx, models.Article{
+	if err := f.articleStor.Save(ctx, models.Article{
 		UserID:      userID,
 		SourceName:  item.SourceName,
 		Title:       item.Title,
@@ -113,10 +124,19 @@ func (f *Fetcher) SaveArticleFromUser(ctx context.Context, userID int64, link st
 func (f *Fetcher) intervalFetch(ctx context.Context) error {
 	const op = "services.fetcher.interval_fetch"
 
-	sources, err := f.sources.GetList(ctx)
-	if err != nil {
-		f.log.Error("Can't get soures", "err", err.Error())
-		return fmt.Errorf("%s: %w", op, err)
+	sources, err := f.sourceStor.GetList(ctx)
+	if err != nil || len(sources) == 0 {
+		switch {
+		case len(sources) == 0:
+			f.log.Debug("Can't get soures")
+			return services.ErrNoSources
+		case errors.Is(err, storage.ErrNoSources):
+			f.log.Debug("Can't get soures", "err", err.Error())
+			return services.ErrNoSources
+		default:
+			f.log.Error("Can't get soures", "err", err.Error())
+			return fmt.Errorf("%s: %w", op, err)
+		}
 	}
 
 	wg := new(sync.WaitGroup)
@@ -131,12 +151,12 @@ func (f *Fetcher) intervalFetch(ctx context.Context) error {
 
 			items, err := rssSource.IntervalLoad(ctx)
 			if err != nil {
-				f.log.Error("Can't fetch items from source", "source name", rssSource.Name(), "err", err.Error())
+				f.log.Warn("Can't fetch items from source", "source name", rssSource.Name(), "err", err.Error())
 				return
 			}
 
 			if err := f.saveItems(ctx, items); err != nil {
-				f.log.Error("Can't save items in articles", "source name", rssSource.Name(), "err", err.Error())
+				f.log.Warn("Can't save items in articles", "source name", rssSource.Name(), "err", err.Error())
 				return
 			}
 		}(rssSource)
@@ -162,7 +182,7 @@ func (f *Fetcher) saveItems(ctx context.Context, items []models.Item) error {
 				return nil
 			}
 
-			if err := f.articles.Save(ctx, models.Article{
+			if err := f.articleStor.Save(ctx, models.Article{
 				SourceName:  item.SourceName,
 				Title:       item.Title,
 				Link:        item.Link,
