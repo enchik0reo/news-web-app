@@ -45,9 +45,18 @@ func New() *App {
 	sourceStor := storage.NewSourceStorage(a.db)
 	articleStor := storage.NewArticleStorage(a.db)
 
-	a.fetcher = fetcher.New(articleStor, sourceStor, a.cfg.Manager.FetchInterval, a.cfg.Manager.FilterKeywords, a.log)
+	a.fetcher = fetcher.New(articleStor,
+		sourceStor, a.cfg.Manager.FetchInterval,
+		a.cfg.Manager.FilterKeywords,
+		a.log,
+	)
 
-	a.notifier = notifier.New(articleStor, a.fetcher, a.cfg.Manager.NotificationInterval, a.cfg.Manager.ArticlesLimit, a.log)
+	a.notifier = notifier.New(articleStor,
+		a.fetcher,
+		a.cfg.Manager.NotificationInterval,
+		a.cfg.Manager.ArticlesLimit,
+		a.log,
+	)
 
 	a.gRPCServer = grpcServer.New(a.cfg.GRPC.Port, a.log, a.notifier)
 

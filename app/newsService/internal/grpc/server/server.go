@@ -1,17 +1,21 @@
 package server
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"log/slog"
 	"net"
 
 	"newsWebApp/app/newsService/internal/grpc/handler"
+	"newsWebApp/app/newsService/internal/models"
 
 	"google.golang.org/grpc"
 )
 
 type NewsService interface {
+	SaveArticleFromUser(ctx context.Context, userID int64, link string) error
+	SelectPostedArticles(ctx context.Context) ([]models.Article, error)
 }
 
 type Server struct {

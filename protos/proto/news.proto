@@ -4,8 +4,6 @@ package news;
 
 option go_package = "news.v1;newsv1";
 
-import "google/protobuf/timestamp.proto";
-
 service News{
     rpc SaveArticle (SaveArticleRequest) returns (SaveArticleResponse);
     rpc GetArticles (GetArticlesRequest) returns (GetArticlesResponse);
@@ -29,7 +27,7 @@ message Article {
 	string Link = 4;
 	string Excerpt = 5;
 	string ImageURL = 6;
-	google.protobuf.Timestamp PostedAt = 7;
+	string PostedAt = 7;
 }
 
 message GetArticlesResponse {
