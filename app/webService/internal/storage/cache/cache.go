@@ -3,6 +3,8 @@ package cache
 import (
 	"context"
 	"fmt"
+	"path/filepath"
+	"text/template"
 	"time"
 
 	"newsWebApp/app/webService/internal/models"
@@ -12,15 +14,22 @@ import (
 )
 
 type Cache struct {
-	c      *redis.Client
-	expire time.Duration
-	limit  int
+	c         *redis.Client
+	expire    time.Duration
+	limit     int
+	Templates map[string]*template.Template
 }
 
-func New(ctx context.Context, host, port string, expire time.Duration, limit int) (*Cache, error) {
+func New(ctx context.Context, host, port string, expire time.Duration, limit int, tempPath string) (*Cache, error) {
+	tc, err := newTemplateCache(tempPath)
+	if err != nil {
+		return nil, fmt.Errorf("can't create templates cache: %w", err)
+	}
+
 	c := Cache{
-		expire: expire,
-		limit:  limit,
+		expire:    expire,
+		limit:     limit,
+		Templates: tc,
 	}
 
 	addr := host + ":" + port
@@ -93,4 +102,48 @@ func (c *Cache) GetArticles(ctx context.Context) ([]models.Article, error) {
 
 func (c *Cache) CloseConn() error {
 	return c.c.Close()
+}
+
+var functions = template.FuncMap{
+	"humanDate": humanDate,
+}
+
+func humanDate(t time.Time) string {
+	if t.IsZero() {
+		return ""
+	}
+
+	return t.UTC().Format("02 Jan 2006 at 15:04")
+}
+
+func newTemplateCache(dir string) (map[string]*template.Template, error) {
+	cache := map[string]*template.Template{}
+
+	pages, err := filepath.Glob(filepath.Join(dir, "*.page.tmpl"))
+	if err != nil {
+		return nil, err
+	}
+
+	for _, page := range pages {
+		name := filepath.Base(page)
+
+		ts, err := template.New(name).Funcs(functions).ParseFiles(page)
+		if err != nil {
+			return nil, err
+		}
+
+		ts, err = ts.ParseGlob(filepath.Join(dir, "*.layout.tmpl"))
+		if err != nil {
+			return nil, err
+		}
+
+		ts, err = ts.ParseGlob(filepath.Join(dir, "*.partial.tmpl"))
+		if err != nil {
+			return nil, err
+		}
+
+		cache[name] = ts
+	}
+
+	return cache, nil
 }

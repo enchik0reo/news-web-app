@@ -20,9 +20,10 @@ type Config struct {
 }
 
 type HttpServer struct {
-	Address     string        `yaml:"address" env-default:"localhost:8080"`
-	Timeout     time.Duration `yaml:"timeout" env-default:"5s"`
-	IdleTimeout time.Duration `yaml:"idle_timeout" env-default:"90s"`
+	Address       string        `yaml:"address" env-default:"localhost:8080"`
+	Timeout       time.Duration `yaml:"timeout" env-default:"5s"`
+	IdleTimeout   time.Duration `yaml:"idle_timeout" env-default:"90s"`
+	TemplatesPath string        `yaml:"templates_path"`
 }
 
 type GRPCConfig struct {

@@ -63,7 +63,13 @@ func New() *App {
 		os.Exit(1)
 	}
 
-	a.cache, err = cache.New(ctx, a.cfg.Cache.Host, a.cfg.Cache.Port, a.cfg.Cache.Expire, a.cfg.Manager.ArticlesLimit)
+	a.cache, err = cache.New(ctx,
+		a.cfg.Cache.Host,
+		a.cfg.Cache.Port,
+		a.cfg.Cache.Expire,
+		a.cfg.Manager.ArticlesLimit,
+		a.cfg.Server.TemplatesPath,
+	)
 	if err != nil {
 		a.log.Error("Failed to create new articles cache", "err", err)
 		os.Exit(1)
