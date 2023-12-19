@@ -1,22 +1,17 @@
 package server
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"log/slog"
 	"net"
 
-	"newsWebApp/app/authService/internal/grpc/handler"
+	"newsWebApp/app/newsService/internal/grpc/handler"
 
 	"google.golang.org/grpc"
 )
 
-type AuthService interface {
-	SaveUser(ctx context.Context, userName string, email string, password string) (int64, error)
-	LoginUser(ctx context.Context, email, password string) (int64, string, string, string, error)
-	Parse(ctx context.Context, acToken string) (int64, string, error)
-	Refresh(ctx context.Context, refToken string) (int64, string, string, string, error)
+type NewsService interface {
 }
 
 type Server struct {
@@ -25,10 +20,10 @@ type Server struct {
 	gRPCServer *grpc.Server
 }
 
-func New(port int, log *slog.Logger, authService AuthService) *Server {
+func New(port int, log *slog.Logger, newsService NewsService) *Server {
 	grpcSrv := grpc.NewServer()
 
-	handler.Register(grpcSrv, authService)
+	handler.Register(grpcSrv, newsService)
 
 	return &Server{
 		port:       port,
@@ -45,7 +40,7 @@ func (s *Server) Start() error {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 
-	s.log.Info("Auth gRPC server is running", slog.String("addr", l.Addr().String()))
+	s.log.Info("News gRPC server is running", slog.String("addr", l.Addr().String()))
 
 	if err := s.gRPCServer.Serve(l); err != nil {
 		if !errors.Is(err, grpc.ErrServerStopped) {
@@ -57,7 +52,7 @@ func (s *Server) Start() error {
 }
 
 func (s *Server) Stop() {
-	s.log.Info("Stopping auth gRPC server")
+	s.log.Info("Stopping news gRPC server")
 
 	s.gRPCServer.GracefulStop()
 }

@@ -47,7 +47,7 @@ func New() *App {
 
 	a.auth = auth.New(a.userStor, a.sessionStor, a.log, &a.cfg.Manager)
 
-	a.gRPCServer = grpcServer.New(a.log, a.cfg.GRPC.Port, a.auth)
+	a.gRPCServer = grpcServer.New(a.cfg.GRPC.Port, a.log, a.auth)
 
 	return &a
 }

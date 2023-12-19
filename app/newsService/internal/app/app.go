@@ -9,6 +9,7 @@ import (
 	"syscall"
 
 	"newsWebApp/app/newsService/internal/config"
+	grpcServer "newsWebApp/app/newsService/internal/grpc/server"
 	"newsWebApp/app/newsService/internal/logs"
 	"newsWebApp/app/newsService/internal/services/fetcher"
 	"newsWebApp/app/newsService/internal/services/notifier"
@@ -17,11 +18,12 @@ import (
 )
 
 type App struct {
-	cfg   *config.Config
-	log   *slog.Logger
-	db    *sql.DB
-	fetch *fetcher.Fetcher
-	not   *notifier.Notifier
+	cfg        *config.Config
+	log        *slog.Logger
+	db         *sql.DB
+	fetcher    *fetcher.Fetcher
+	notifier   *notifier.Notifier
+	gRPCServer *grpcServer.Server
 }
 
 func New() *App {
@@ -43,11 +45,11 @@ func New() *App {
 	sourceStor := storage.NewSourceStorage(a.db)
 	articleStor := storage.NewArticleStorage(a.db)
 
-	a.fetch = fetcher.New(articleStor, sourceStor, a.cfg.Manager.FetchInterval, a.cfg.Manager.FilterKeywords, a.log)
+	a.fetcher = fetcher.New(articleStor, sourceStor, a.cfg.Manager.FetchInterval, a.cfg.Manager.FilterKeywords, a.log)
 
-	a.not = notifier.New(articleStor, a.fetch, a.cfg.Manager.NotificationInterval, a.cfg.Manager.ArticlesLimit, a.log)
+	a.notifier = notifier.New(articleStor, a.fetcher, a.cfg.Manager.NotificationInterval, a.cfg.Manager.ArticlesLimit, a.log)
 
-	// GRPC NEW
+	a.gRPCServer = grpcServer.New(a.cfg.GRPC.Port, a.log, a.notifier)
 
 	return &a
 }
@@ -55,20 +57,27 @@ func New() *App {
 func (a *App) MustRun() {
 	a.log.Info("Starting news grpc service", "env", a.cfg.Env, "port", a.cfg.GRPC.Port)
 
-	// GRPC START
+	go func() {
+		if err := a.gRPCServer.Start(); err != nil {
+			a.log.Error("Failed ower working news grpc service", "err", err.Error())
+			os.Exit(1)
+		}
+	}()
 
 	ctx, cacnel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cacnel()
 
 	go func() {
-		if err := a.fetch.Start(ctx); err != nil {
-			a.log.Error("Working fetcher", "err store", err.Error())
+		if err := a.fetcher.Start(ctx); err != nil {
+			a.log.Error("Failed ower working fetcher", "err store", err.Error())
+			os.Exit(1)
 		}
 	}()
 
 	go func() {
-		if err := a.not.Start(ctx); err != nil {
-			a.log.Error("Working notifier", "err store", err.Error())
+		if err := a.notifier.Start(ctx); err != nil {
+			a.log.Error("Failed ower working notifier", "err store", err.Error())
+			os.Exit(1)
 		}
 	}()
 
@@ -84,7 +93,7 @@ func (a *App) mustStop() {
 		a.log.Error("Closing connection to news storage", "err store", err.Error())
 	}
 
-	// GRPC STOP
+	a.gRPCServer.Stop()
 
 	a.log.Info("News grpc service stoped gracefully")
 }
