@@ -1,6 +1,7 @@
 package app
 
 import (
+	"context"
 	"log/slog"
 	"os"
 	"os/signal"
@@ -39,7 +40,10 @@ func New() *App {
 		os.Exit(1)
 	}
 
-	a.sessionStor, err = redis.New(a.cfg.SessionStorage.Host, a.cfg.SessionStorage.Port)
+	ctx, cacnel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer cacnel()
+
+	a.sessionStor, err = redis.New(ctx, a.cfg.SessionStorage.Host, a.cfg.SessionStorage.Port, a.cfg.Manager.RefreshTokenTTL)
 	if err != nil {
 		a.log.Error("Failed to create new session storage", "err", err)
 		os.Exit(1)

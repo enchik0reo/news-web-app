@@ -15,7 +15,7 @@ import (
 type ArticleStorage interface {
 	Save(ctx context.Context, article models.Article) error
 	NewestNotPosted(ctx context.Context) (*models.Article, error)
-	LatestPosted(ctx context.Context, limit int64) ([]models.Article, error)
+	LatestPosted(ctx context.Context, limit int) ([]models.Article, error)
 	MarkPosted(ctx context.Context, id int64) error
 }
 type Saver interface {
@@ -27,7 +27,7 @@ type Notifier struct {
 	saver    Saver
 
 	sendInterval  time.Duration
-	articlesLimit int64
+	articlesLimit int
 	log           *slog.Logger
 }
 
@@ -35,7 +35,7 @@ func New(
 	articles ArticleStorage,
 	saver Saver,
 	sendInterval time.Duration,
-	articlesLimit int64,
+	articlesLimit int,
 	log *slog.Logger,
 ) *Notifier {
 	return &Notifier{

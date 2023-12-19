@@ -41,7 +41,7 @@ func (s *ArticleStorage) Save(ctx context.Context, article models.Article) error
 	return nil
 }
 
-func (s *ArticleStorage) LatestPosted(ctx context.Context, limit int64) ([]models.Article, error) {
+func (s *ArticleStorage) LatestPosted(ctx context.Context, limit int) ([]models.Article, error) {
 	stmt, err := s.db.PrepareContext(ctx, `SELECT u.user_name AS user_name, source_name, title, link, excerpt, image, posted_at FROM articles a 
 	LEFT JOIN users u ON u.user_id = a.user_id 
 	WHERE a.posted_at IS NOT NULL 

@@ -23,7 +23,7 @@ type UserStorage interface {
 }
 
 type SessionStorage interface {
-	SetSession(ctx context.Context, userID int64, refToken string, expire time.Duration) error
+	SetSession(ctx context.Context, userID int64, refToken string) error
 	GetSessionToken(ctx context.Context, userID int64) (string, error)
 }
 
@@ -113,7 +113,7 @@ func (a *Auth) LoginUser(ctx context.Context, email, pass string) (int64, string
 		return 0, "", "", "", errCantLoginUser
 	}
 
-	if err = a.sessionStorage.SetSession(ctx, user.ID, refToken, a.refreshTokenTTL); err != nil {
+	if err = a.sessionStorage.SetSession(ctx, user.ID, refToken); err != nil {
 		a.log.Error("Failed to create session", "err", err.Error())
 
 		return 0, "", "", "", errCantLoginUser
@@ -178,7 +178,7 @@ func (a *Auth) Refresh(ctx context.Context, refrToken string) (int64, string, st
 			return 0, "", "", "", errCantLoginUser
 		}
 
-		if err = a.sessionStorage.SetSession(ctx, id, newRefToken, a.refreshTokenTTL); err != nil {
+		if err = a.sessionStorage.SetSession(ctx, id, newRefToken); err != nil {
 			a.log.Error("Failed to create session", "err", err.Error())
 
 			return 0, "", "", "", errCantLoginUser

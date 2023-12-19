@@ -11,10 +11,12 @@ import (
 )
 
 type Config struct {
-	Env      string     `yaml:"env" env-required:"true"`
-	Server   HttpServer `yaml:"http_server"`
-	AuthGRPC GRPCConfig `yaml:"grpc_auth"`
-	NewsGRPC GRPCConfig `yaml:"grpc_news"`
+	Env      string         `yaml:"env" env-required:"true"`
+	Server   HttpServer     `yaml:"http_server"`
+	AuthGRPC GRPCConfig     `yaml:"grpc_auth"`
+	NewsGRPC GRPCConfig     `yaml:"grpc_news"`
+	Cache    Redis          `yaml:"redis_storage"`
+	Manager  ArticleManager `yaml:"news_managment"`
 }
 
 type HttpServer struct {
@@ -27,6 +29,16 @@ type GRPCConfig struct {
 	Port         int           `yaml:"port"`
 	Timeout      time.Duration `yaml:"timeout"`
 	RetriesCount int           `yaml:"retries_count"`
+}
+
+type ArticleManager struct {
+	ArticlesLimit int `yaml:"articles_limit"`
+}
+
+type Redis struct {
+	Host   string        `yaml:"host"`
+	Port   string        `yaml:"port"`
+	Expire time.Duration `yaml:"expire"`
 }
 
 func MustLoad() *Config {

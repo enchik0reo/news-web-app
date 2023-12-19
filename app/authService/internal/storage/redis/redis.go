@@ -11,11 +11,14 @@ import (
 )
 
 type Storage struct {
-	c *redis.Client
+	c      *redis.Client
+	expire time.Duration
 }
 
-func New(host, port string) (*Storage, error) {
-	s := Storage{}
+func New(ctx context.Context, host, port string, expire time.Duration) (*Storage, error) {
+	s := Storage{
+		expire: expire,
+	}
 
 	addr := host + ":" + port
 
@@ -25,13 +28,17 @@ func New(host, port string) (*Storage, error) {
 		DB:       0,  // use default DB
 	})
 
+	if err := s.c.Ping(ctx).Err(); err != nil {
+		return nil, fmt.Errorf("can't ping to redis: %w", err)
+	}
+
 	return &s, nil
 }
 
-func (s *Storage) SetSession(ctx context.Context, userID int64, refToken string, expire time.Duration) error {
-	err := s.c.Set(ctx, fmt.Sprint(userID), refToken, expire)
+func (s *Storage) SetSession(ctx context.Context, userID int64, refToken string) error {
+	err := s.c.Set(ctx, fmt.Sprint(userID), refToken, s.expire).Err()
 	if err != nil {
-		return err.Err()
+		return fmt.Errorf("can't save session, %w", err)
 	}
 
 	return nil
@@ -42,12 +49,12 @@ func (s *Storage) GetSessionToken(ctx context.Context, userID int64) (string, er
 	if err == redis.Nil {
 		return "", storage.ErrSessionNotFound
 	} else if err != nil {
-		return "", fmt.Errorf("can't get session, %v", err)
+		return "", fmt.Errorf("can't get session, %w", err)
 	} else {
 		return val, nil
 	}
 }
 
-func (r *Storage) CloseConn() error {
-	return r.c.Close()
+func (s *Storage) CloseConn() error {
+	return s.c.Close()
 }

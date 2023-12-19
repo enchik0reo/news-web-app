@@ -29,8 +29,9 @@ type Postgres struct {
 }
 
 type Redis struct {
-	Host string `yaml:"host"`
-	Port string `yaml:"port"`
+	Host   string        `yaml:"host"`
+	Port   string        `yaml:"port"`
+	Expire time.Duration `yaml:"expire"`
 }
 
 type TokenManager struct {

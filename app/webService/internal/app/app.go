@@ -9,12 +9,14 @@ import (
 	"os/signal"
 	"syscall"
 
-	"newsWebApp/app/webService/internal/clients/authgrpc"
-	"newsWebApp/app/webService/internal/clients/newsgrpc"
 	"newsWebApp/app/webService/internal/config"
 	"newsWebApp/app/webService/internal/http/handler"
 	"newsWebApp/app/webService/internal/http/server"
 	"newsWebApp/app/webService/internal/logs"
+	"newsWebApp/app/webService/internal/services/authgrpc"
+	"newsWebApp/app/webService/internal/services/fetcher"
+	"newsWebApp/app/webService/internal/services/newsgrpc"
+	"newsWebApp/app/webService/internal/storage/cache"
 )
 
 type App struct {
@@ -22,6 +24,7 @@ type App struct {
 	log        *slog.Logger
 	authClient *authgrpc.Client
 	newsClient *newsgrpc.Client
+	cache      *cache.Cache
 	srv        *server.Server
 }
 
@@ -60,7 +63,15 @@ func New() *App {
 		os.Exit(1)
 	}
 
-	handler := handler.New(a.authClient, a.log)
+	a.cache, err = cache.New(ctx, a.cfg.Cache.Host, a.cfg.Cache.Port, a.cfg.Cache.Expire, a.cfg.Manager.ArticlesLimit)
+	if err != nil {
+		a.log.Error("Failed to create new articles cache", "err", err)
+		os.Exit(1)
+	}
+
+	fetcher := fetcher.New(a.newsClient, a.cache, a.log)
+
+	handler := handler.New(a.authClient, a.newsClient, fetcher, a.log)
 
 	a.srv = server.New(handler, &a.cfg.Server, a.log)
 
@@ -92,6 +103,10 @@ func (a *App) mustStop() {
 
 	if err := a.srv.Stop(ctx); err != nil {
 		a.log.Error("Closing connection to web server", "err store", err.Error())
+	}
+
+	if err := a.cache.CloseConn(); err != nil {
+		a.log.Error("Closing connection to articles cache", "err store", err.Error())
 	}
 
 	a.log.Info("Web service stoped gracefully")

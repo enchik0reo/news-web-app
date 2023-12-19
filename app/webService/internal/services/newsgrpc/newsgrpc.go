@@ -7,8 +7,8 @@ import (
 	"log/slog"
 	"time"
 
-	"newsWebApp/app/webService/internal/clients"
 	"newsWebApp/app/webService/internal/models"
+	"newsWebApp/app/webService/internal/services"
 	newsv1 "newsWebApp/protos/gen/go/news"
 
 	grpclog "github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/logging"
@@ -70,7 +70,7 @@ func (c *Client) GetArticles(ctx context.Context) ([]models.Article, error) {
 	resp, err := c.api.GetArticles(ctx, &newsv1.GetArticlesRequest{})
 	if err != nil {
 		if errors.Is(err, status.Error(codes.NotFound, "there are no published articles")) {
-			return nil, clients.ErrNoPublishedArticles
+			return nil, services.ErrNoPublishedArticles
 		} else {
 			return nil, err
 		}
