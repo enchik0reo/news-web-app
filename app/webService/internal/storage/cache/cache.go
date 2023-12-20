@@ -17,6 +17,7 @@ type Cache struct {
 	c         *redis.Client
 	expire    time.Duration
 	limit     int
+	actual    int
 	Templates map[string]*template.Template
 }
 
@@ -48,15 +49,7 @@ func New(ctx context.Context, host, port string, expire time.Duration, limit int
 }
 
 func (c *Cache) AddArticles(ctx context.Context, articles []models.Article) error {
-	res, err := c.c.HGetAll(ctx, "article #1").Result()
-	if err != nil {
-		return err
-	}
-
-	if res["Link"] != "" {
-		return storage.ErrCacheNotEmpty
-	}
-
+	c.actual = len(articles)
 	for i, art := range articles {
 		if err := c.c.Set(ctx, fmt.Sprintf("article #%d", i+1), art, c.expire).Err(); err != nil {
 			return fmt.Errorf("can't save article, %v", err)
@@ -76,7 +69,7 @@ func (c *Cache) GetArticles(ctx context.Context) ([]models.Article, error) {
 		return nil, storage.ErrCacheEmpty
 	}
 
-	articles := make([]models.Article, c.limit)
+	articles := make([]models.Article, c.actual)
 
 	for i := range articles {
 		res, err := c.c.HGetAll(ctx, fmt.Sprintf("article #%d", i+1)).Result()

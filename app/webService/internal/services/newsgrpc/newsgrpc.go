@@ -85,7 +85,7 @@ func (c *Client) GetArticles(ctx context.Context) ([]models.Article, error) {
 			Title:      art.Title,
 			Link:       art.Link,
 			Excerpt:    art.Excerpt,
-			ImageURL:   art.ImageURL,
+			ImageURL:   art.ImageUrl,
 			PostedAt:   art.PostedAt,
 		}
 	}

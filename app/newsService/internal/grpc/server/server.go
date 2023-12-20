@@ -15,6 +15,7 @@ import (
 
 type NewsService interface {
 	SaveArticleFromUser(ctx context.Context, userID int64, link string) error
+	SelectAndSendArticle(ctx context.Context) (*models.Article, error)
 	SelectPostedArticles(ctx context.Context) ([]models.Article, error)
 }
 

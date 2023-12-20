@@ -7,6 +7,7 @@ import (
 
 	"newsWebApp/app/newsService/internal/models"
 	"newsWebApp/app/newsService/internal/services"
+
 	newsv1 "newsWebApp/protos/gen/go/news"
 
 	"google.golang.org/grpc"
@@ -16,6 +17,7 @@ import (
 
 type NewsService interface {
 	SaveArticleFromUser(ctx context.Context, userID int64, link string) error
+	SelectAndSendArticle(ctx context.Context) (*models.Article, error)
 	SelectPostedArticles(ctx context.Context) ([]models.Article, error)
 }
 
@@ -34,6 +36,29 @@ func (s *serverAPI) SaveArticle(ctx context.Context, req *newsv1.SaveArticleRequ
 	}
 
 	return &newsv1.SaveArticleResponse{}, nil
+}
+
+func (s *serverAPI) GetNewestArticle(ctx context.Context, req *newsv1.GetNewestArticleRequest) (*newsv1.GetNewestArticleResponse, error) {
+	art, err := s.newsService.SelectAndSendArticle(ctx)
+	if err != nil {
+		if errors.Is(err, services.ErrNoNewArticle) {
+			return nil, status.Error(codes.NotFound, "there is no new article")
+		} else {
+			return nil, status.Error(codes.Internal, "internal error")
+		}
+	}
+
+	grpcArticle := &newsv1.Article{
+		UserName:   art.UserName,
+		SourceName: art.SourceName,
+		Title:      art.Title,
+		Link:       art.Link,
+		Excerpt:    art.Excerpt,
+		ImageUrl:   art.ImageURL,
+		PostedAt:   art.PostedAt.Format(time.DateTime),
+	}
+
+	return &newsv1.GetNewestArticleResponse{Articl: grpcArticle}, nil
 }
 
 func (s *serverAPI) GetArticles(ctx context.Context, req *newsv1.GetArticlesRequest) (*newsv1.GetArticlesResponse, error) {
@@ -55,7 +80,7 @@ func (s *serverAPI) GetArticles(ctx context.Context, req *newsv1.GetArticlesRequ
 			Title:      art.Title,
 			Link:       art.Link,
 			Excerpt:    art.Excerpt,
-			ImageURL:   art.ImageURL,
+			ImageUrl:   art.ImageURL,
 			PostedAt:   art.PostedAt.Format(time.DateTime),
 		}
 	}

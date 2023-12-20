@@ -16,7 +16,7 @@ type ArticleStorage interface {
 	Save(ctx context.Context, article models.Article) error
 	NewestNotPosted(ctx context.Context) (*models.Article, error)
 	LatestPosted(ctx context.Context, limit int) ([]models.Article, error)
-	MarkPosted(ctx context.Context, id int64) error
+	MarkPosted(ctx context.Context, id int64) (time.Time, error)
 }
 type Saver interface {
 	SaveArticleFromUser(ctx context.Context, userID int64, link string) error
@@ -47,38 +47,6 @@ func New(
 	}
 }
 
-func (n *Notifier) Start(ctx context.Context) error {
-	const op = "services.notifier.start"
-
-	ticker := time.NewTicker(n.sendInterval)
-	defer ticker.Stop()
-
-	if err := n.selectAndSendArticle(ctx); err != nil {
-		if errors.Is(err, services.ErrNoNewArticles) {
-			n.log.Debug("Can't select and sent article", "err", err.Error())
-		} else {
-			n.log.Error("Can't select and sent article", "err", err.Error())
-			return fmt.Errorf("%s: %w", op, err)
-		}
-	}
-
-	for {
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		case <-ticker.C:
-			if err := n.selectAndSendArticle(ctx); err != nil {
-				if errors.Is(err, services.ErrNoNewArticles) {
-					n.log.Debug("Can't select and sent article", "err", err.Error())
-				} else {
-					n.log.Error("Can't select and sent article", "err", err.Error())
-					return fmt.Errorf("%s: %w", op, err)
-				}
-			}
-		}
-	}
-}
-
 func (n *Notifier) SaveArticleFromUser(ctx context.Context, userID int64, link string) error {
 	const op = "services.notifier.save_article_from_user"
 
@@ -106,23 +74,26 @@ func (n *Notifier) SelectPostedArticles(ctx context.Context) ([]models.Article, 
 	return articles, nil
 }
 
-func (n *Notifier) selectAndSendArticle(ctx context.Context) error {
+func (n *Notifier) SelectAndSendArticle(ctx context.Context) (*models.Article, error) {
 	const op = "services.notifier.select_and_send_article"
 
 	article, err := n.articles.NewestNotPosted(ctx)
 	if err != nil {
 		if errors.Is(err, storage.ErrNoNewArticles) {
 			n.log.Debug("Can't get last article", "err", err.Error())
-			return services.ErrNoNewArticles
+			return nil, services.ErrNoNewArticles
 		}
 		n.log.Error("Can't get last article", "err", err.Error())
-		return fmt.Errorf("%s: %w", op, err)
+		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
-	if err := n.articles.MarkPosted(ctx, article.ID); err != nil {
+	postedAt, err := n.articles.MarkPosted(ctx, article.ID)
+	if err != nil {
 		n.log.Error("Can't mark article as posted", "err", err.Error())
-		return fmt.Errorf("%s: %w", op, err)
+		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
-	return nil
+	article.PostedAt = postedAt
+
+	return article, nil
 }

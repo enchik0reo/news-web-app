@@ -87,15 +87,6 @@ func (a *App) MustRun() {
 		}
 	}()
 
-	go func() {
-		if err := a.notifier.Start(ctx); err != nil {
-			if !errors.Is(err, context.Canceled) {
-				a.log.Error("Failed ower working notifier", "err store", err.Error())
-				os.Exit(1)
-			}
-		}
-	}()
-
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, syscall.SIGTERM, syscall.SIGINT)
 	<-stop

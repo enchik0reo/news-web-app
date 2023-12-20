@@ -106,18 +106,20 @@ func (s *ArticleStorage) NewestNotPosted(ctx context.Context) (*models.Article, 
 	return article, nil
 }
 
-func (s *ArticleStorage) MarkPosted(ctx context.Context, id int64) error {
+func (s *ArticleStorage) MarkPosted(ctx context.Context, id int64) (time.Time, error) {
 	stmt, err := s.db.PrepareContext(ctx, "UPDATE articles SET posted_at = $1::timestamp WHERE id = $2")
 	if err != nil {
-		return fmt.Errorf("can't prepare statement: %w", err)
+		return time.Time{}, fmt.Errorf("can't prepare statement: %w", err)
 	}
 	defer stmt.Close()
 
-	if _, err := stmt.ExecContext(ctx, time.Now().UTC().Format(time.RFC3339), id); err != nil {
-		return fmt.Errorf("can't update article in db: %v", err)
+	postedAt := time.Now().UTC()
+
+	if _, err := stmt.ExecContext(ctx, postedAt.Format(time.RFC3339), id); err != nil {
+		return time.Time{}, fmt.Errorf("can't update article in db: %v", err)
 	}
 
-	return nil
+	return postedAt, nil
 }
 
 func (s *ArticleStorage) notPostedFromUsers(ctx context.Context) (*models.Article, error) {
