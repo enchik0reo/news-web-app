@@ -66,6 +66,31 @@ func (c *Client) SaveArticle(ctx context.Context, userID int64, link string) err
 	return nil
 }
 
+func (c *Client) GetNewestArticle(ctx context.Context) (*models.Article, error) {
+	resp, err := c.api.GetNewestArticle(ctx, &newsv1.GetNewestArticleRequest{})
+	if err != nil {
+		if errors.Is(err, status.Error(codes.NotFound, "there is no new article")) {
+			return nil, services.ErrNoNewArticle
+		} else {
+			return nil, err
+		}
+	}
+
+	art := resp.Articl
+
+	article := models.Article{
+		UserName:   art.UserName,
+		SourceName: art.SourceName,
+		Title:      art.Title,
+		Link:       art.Link,
+		Excerpt:    art.Excerpt,
+		ImageURL:   art.ImageUrl,
+		PostedAt:   art.PostedAt,
+	}
+
+	return &article, nil
+}
+
 func (c *Client) GetArticles(ctx context.Context) ([]models.Article, error) {
 	resp, err := c.api.GetArticles(ctx, &newsv1.GetArticlesRequest{})
 	if err != nil {

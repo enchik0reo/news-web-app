@@ -10,4 +10,5 @@ var (
 	ErrUserExists          = errors.New("user already exists")
 	ErrTokenExpired        = errors.New("token expired")
 	ErrSessionNotFound     = errors.New("session not found")
+	ErrNoNewArticle        = errors.New("there is no new article")
 )

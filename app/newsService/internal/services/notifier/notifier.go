@@ -26,7 +26,6 @@ type Notifier struct {
 	articles ArticleStorage
 	saver    Saver
 
-	sendInterval  time.Duration
 	articlesLimit int
 	log           *slog.Logger
 }
@@ -34,14 +33,12 @@ type Notifier struct {
 func New(
 	articles ArticleStorage,
 	saver Saver,
-	sendInterval time.Duration,
 	articlesLimit int,
 	log *slog.Logger,
 ) *Notifier {
 	return &Notifier{
 		articles:      articles,
 		saver:         saver,
-		sendInterval:  sendInterval,
 		articlesLimit: articlesLimit,
 		log:           log,
 	}

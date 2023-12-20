@@ -55,7 +55,6 @@ func New() *App {
 
 	a.notifier = notifier.New(articleStor,
 		a.fetcher,
-		a.cfg.Manager.NotificationInterval,
 		a.cfg.Manager.ArticlesLimit,
 		a.log,
 	)
@@ -81,7 +80,7 @@ func (a *App) MustRun() {
 	go func() {
 		if err := a.fetcher.Start(ctx); err != nil {
 			if !errors.Is(err, context.Canceled) {
-				a.log.Error("Failed ower working fetcher", "err store", err.Error())
+				a.log.Error("Failed ower working fetcher in news grpc service", "err store", err.Error())
 				os.Exit(1)
 			}
 		}

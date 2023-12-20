@@ -33,13 +33,13 @@ type GRPCConfig struct {
 }
 
 type ArticleManager struct {
-	ArticlesLimit int `yaml:"articles_limit"`
+	ArticlesLimit   int           `yaml:"articles_limit"`
+	RefreshInterval time.Duration `yaml:"refresh_interval"`
 }
 
 type Redis struct {
-	Host   string        `yaml:"host"`
-	Port   string        `yaml:"port"`
-	Expire time.Duration `yaml:"expire"`
+	Host string `yaml:"host"`
+	Port string `yaml:"port"`
 }
 
 func MustLoad() *Config {

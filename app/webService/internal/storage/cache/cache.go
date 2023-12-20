@@ -2,6 +2,7 @@ package cache
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"path/filepath"
 	"text/template"
@@ -15,20 +16,18 @@ import (
 
 type Cache struct {
 	c         *redis.Client
-	expire    time.Duration
 	limit     int
 	actual    int
 	Templates map[string]*template.Template
 }
 
-func New(ctx context.Context, host, port string, expire time.Duration, limit int, tempPath string) (*Cache, error) {
+func New(ctx context.Context, host, port string, limit int, tempPath string) (*Cache, error) {
 	tc, err := newTemplateCache(tempPath)
 	if err != nil {
 		return nil, fmt.Errorf("can't create templates cache: %w", err)
 	}
 
 	c := Cache{
-		expire:    expire,
 		limit:     limit,
 		Templates: tc,
 	}
@@ -48,10 +47,41 @@ func New(ctx context.Context, host, port string, expire time.Duration, limit int
 	return &c, nil
 }
 
+func (c *Cache) AddArticle(ctx context.Context, article *models.Article) error {
+	articles, err := c.GetArticles(ctx)
+	if err != nil {
+		if errors.Is(err, storage.ErrCacheEmpty) {
+			if err := c.c.Set(ctx, "article #0", article, 0).Err(); err != nil {
+				return fmt.Errorf("can't save article, %v", err)
+			}
+			c.actual++
+		} else {
+			return err
+		}
+	}
+
+	if c.actual < c.limit {
+		if err := c.c.Set(ctx, "article #0", article, 0).Err(); err != nil {
+			return fmt.Errorf("can't save article, %v", err)
+		}
+
+		for i := 0; i < c.actual; i++ {
+			if err := c.c.Set(ctx, fmt.Sprintf("article #%d", i+1), articles[i], 0).Err(); err != nil {
+				return fmt.Errorf("can't save article, %v", err)
+			}
+		}
+
+		c.actual++
+	}
+
+	return nil
+}
+
 func (c *Cache) AddArticles(ctx context.Context, articles []models.Article) error {
 	c.actual = len(articles)
+
 	for i, art := range articles {
-		if err := c.c.Set(ctx, fmt.Sprintf("article #%d", i+1), art, c.expire).Err(); err != nil {
+		if err := c.c.Set(ctx, fmt.Sprintf("article #%d", i), art, 0).Err(); err != nil {
 			return fmt.Errorf("can't save article, %v", err)
 		}
 	}
@@ -60,7 +90,7 @@ func (c *Cache) AddArticles(ctx context.Context, articles []models.Article) erro
 }
 
 func (c *Cache) GetArticles(ctx context.Context) ([]models.Article, error) {
-	res, err := c.c.HGetAll(ctx, "article #1").Result()
+	res, err := c.c.HGetAll(ctx, "article #0").Result()
 	if err != nil {
 		return nil, err
 	}
@@ -72,7 +102,7 @@ func (c *Cache) GetArticles(ctx context.Context) ([]models.Article, error) {
 	articles := make([]models.Article, c.actual)
 
 	for i := range articles {
-		res, err := c.c.HGetAll(ctx, fmt.Sprintf("article #%d", i+1)).Result()
+		res, err := c.c.HGetAll(ctx, fmt.Sprintf("article #%d", i)).Result()
 		if err != nil {
 			return nil, err
 		}

@@ -20,12 +20,11 @@ import (
 )
 
 type App struct {
-	cfg        *config.Config
-	log        *slog.Logger
-	authClient *authgrpc.Client
-	newsClient *newsgrpc.Client
-	cache      *cache.Cache
-	srv        *server.Server
+	cfg     *config.Config
+	log     *slog.Logger
+	cache   *cache.Cache
+	fetcher *fetcher.NewsFetcher
+	srv     *server.Server
 }
 
 func New() *App {
@@ -41,7 +40,7 @@ func New() *App {
 	ctx, cacnel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cacnel()
 
-	a.authClient, err = authgrpc.New(ctx,
+	authClient, err := authgrpc.New(ctx,
 		a.log,
 		a.cfg.AuthGRPC.Port,
 		a.cfg.AuthGRPC.Timeout,
@@ -52,7 +51,7 @@ func New() *App {
 		os.Exit(1)
 	}
 
-	a.newsClient, err = newsgrpc.New(ctx,
+	newsClient, err := newsgrpc.New(ctx,
 		a.log,
 		a.cfg.NewsGRPC.Port,
 		a.cfg.NewsGRPC.Timeout,
@@ -66,7 +65,6 @@ func New() *App {
 	a.cache, err = cache.New(ctx,
 		a.cfg.Cache.Host,
 		a.cfg.Cache.Port,
-		a.cfg.Cache.Expire,
 		a.cfg.Manager.ArticlesLimit,
 		a.cfg.Server.TemplatesPath,
 	)
@@ -75,9 +73,9 @@ func New() *App {
 		os.Exit(1)
 	}
 
-	fetcher := fetcher.New(a.newsClient, a.cache, a.log)
+	a.fetcher = fetcher.New(newsClient, a.cache, a.cfg.Manager.RefreshInterval, a.log)
 
-	handler := handler.New(a.authClient, a.newsClient, fetcher, a.log)
+	handler := handler.New(authClient, newsClient, a.fetcher, a.log)
 
 	a.srv = server.New(handler, &a.cfg.Server, a.log)
 
@@ -86,6 +84,18 @@ func New() *App {
 
 func (a *App) MustRun() {
 	a.log.Info("Starting web service", "env", a.cfg.Env, "address", a.cfg.Server.Address)
+
+	ctx, cacnel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer cacnel()
+
+	go func() {
+		if err := a.fetcher.Start(ctx); err != nil {
+			if !errors.Is(err, context.Canceled) {
+				a.log.Error("Failed ower working fetcher in web service", "err store", err.Error())
+				os.Exit(1)
+			}
+		}
+	}()
 
 	go func() {
 		if err := a.srv.Start(); err != nil {
