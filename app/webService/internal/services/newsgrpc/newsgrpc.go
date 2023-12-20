@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"log/slog"
 	"time"
 
@@ -100,6 +101,8 @@ func (c *Client) GetArticles(ctx context.Context) ([]models.Article, error) {
 			return nil, err
 		}
 	}
+
+	log.Println("Rabbit, i'm here!!!!!!!!!!!!!!")
 
 	articles := make([]models.Article, len(resp.Articles))
 

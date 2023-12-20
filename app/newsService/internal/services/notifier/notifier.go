@@ -59,13 +59,18 @@ func (n *Notifier) SelectPostedArticles(ctx context.Context) ([]models.Article, 
 	const op = "services.notifier.select_posted_articles"
 
 	articles, err := n.articles.LatestPosted(ctx, n.articlesLimit)
-	if err != nil {
-		if errors.Is(err, storage.ErrNoLatestArticles) {
-			n.log.Debug("Can't get latest articles", "err", err.Error())
+	if err != nil || len(articles) == 0 {
+		switch {
+		case len(articles) == 0:
+			n.log.Debug("There are no latest posted articles")
 			return nil, services.ErrNoPublishedArticles
+		case errors.Is(err, storage.ErrNoSources):
+			n.log.Debug("Can't get latest posted articles", "err", err.Error())
+			return nil, services.ErrNoPublishedArticles
+		default:
+			n.log.Error("Can't get latest posted articles", "err", err.Error())
+			return nil, fmt.Errorf("%s: %w", op, err)
 		}
-		n.log.Error("Can't get latest articles", "err", err.Error())
-		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
 	return articles, nil
@@ -78,7 +83,7 @@ func (n *Notifier) SelectAndSendArticle(ctx context.Context) (*models.Article, e
 	if err != nil {
 		if errors.Is(err, storage.ErrNoNewArticles) {
 			n.log.Debug("Can't get last article", "err", err.Error())
-			return nil, services.ErrNoNewArticles
+			return nil, services.ErrNoNewArticle
 		}
 		n.log.Error("Can't get last article", "err", err.Error())
 		return nil, fmt.Errorf("%s: %w", op, err)
