@@ -1,0 +1,50 @@
+{{define "base"}}
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>{{template "title" .}} - Go Newsline</title>
+    <!-- Link to the CSS stylesheet and favicon -->
+    <link rel="stylesheet" href="/static/css/main.css" />
+    <link rel="shortcut icon" href="/static/img/favicon1.png"type="image/png" />
+    <!-- Also link to some fonts hosted by Google -->
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css?family=Ubuntu+Mono:400,700"
+    />
+    <script src="/static/js/auth.js" type="text/javascript"></script>
+  </head>
+  <body>
+    <header>
+      <h1><a href="/">Newsline</a></h1>
+    </header>
+    <nav>
+      <div>
+        <a href="/">Home</a>
+        {{if .AuthenticatedUser}}
+          <a href="/article/suggest">Suggest News</a>
+        {{end}}
+      </div>
+      <div>
+        {{if .AuthenticatedUser}}
+          <form action="/logout" method="POST">
+            <button>Logout ({{.AuthenticatedUser.Name}})</button>
+          </form>
+        {{else}}
+          <a href="/signup">Signup</a>
+          <a href="/login">Login</a>
+        {{end}}
+      </div>
+    </nav>
+    <section>
+     {{with .Flash}}
+      <div class="flash">{{.}}</div>
+      {{end}}
+      {{template "body" .}}
+    </section>
+    {{template "footer" .}}
+    <!-- And include the JavaScript file -->
+    <script src="/static/js/main.js" type="text/javascript"></script>
+  </body>
+</html>
+{{end}}

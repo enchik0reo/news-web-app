@@ -48,9 +48,9 @@ func (f *NewsFetcher) Start(ctx context.Context) error {
 
 	if err := f.warmUp(ctx); err != nil {
 		if errors.Is(err, services.ErrNoPublishedArticles) {
-			f.log.Debug("Can't warm up", "err", err.Error())
+			f.log.Debug("Can't warm up web service cache", "err", err.Error())
 		} else {
-			f.log.Error("Can't warm up", "err", err.Error())
+			f.log.Error("Can't warm up web service cache", "err", err.Error())
 			return fmt.Errorf("%s: %w", op, err)
 		}
 	}
@@ -125,14 +125,7 @@ func (f *NewsFetcher) FetchArticles(ctx context.Context) ([]models.Article, erro
 func (f *NewsFetcher) warmUp(ctx context.Context) error {
 	articles, err := f.newsService.GetArticles(ctx)
 	if err != nil {
-		switch {
-		case errors.Is(err, services.ErrNoPublishedArticles):
-			f.log.Debug("Can't warm up form news service", "err", err.Error())
-			return err
-		default:
-			f.log.Error("Can't warm up form news service", "err", err.Error())
-			return err
-		}
+		return err
 	}
 
 	if err := f.newsCache.AddArticles(ctx, articles); err != nil {
@@ -145,18 +138,11 @@ func (f *NewsFetcher) warmUp(ctx context.Context) error {
 func (f *NewsFetcher) intervalFetch(ctx context.Context) error {
 	article, err := f.newsService.GetNewestArticle(ctx)
 	if err != nil {
-		if errors.Is(err, services.ErrNoNewArticle) {
-			f.log.Debug("Can't get new article form service", "err", err.Error())
-			return err
-		} else {
-			f.log.Error("Can't get new article form service", "err", err.Error())
-			return err
-		}
+		return err
 	}
 
 	if err := f.newsCache.AddArticle(ctx, article); err != nil {
 		f.log.Error("Can't save new article in cache", "err", err.Error())
-		return err
 	}
 
 	return nil

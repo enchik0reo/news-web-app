@@ -2,12 +2,15 @@ package handler
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"net/http"
+
 	"newsWebApp/app/webService/internal/models"
 
+	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
-	"github.com/go-chi/chi/v5"
+	"github.com/golangcollege/sessions"
 )
 
 type AuthService interface {
@@ -25,23 +28,58 @@ type NewsFetcher interface {
 	FetchArticles(ctx context.Context) ([]models.Article, error)
 }
 
-func New(auth AuthService, news NewsSaver, fetcher NewsFetcher, log *slog.Logger) http.Handler {
+func New(auth AuthService,
+	news NewsSaver,
+	fetcher NewsFetcher,
+	templPath string,
+	session *sessions.Session,
+	slog *slog.Logger,
+) (http.Handler, error) {
+	var ctxKeyUser = models.ContextKey("user")
+	var ctxKeyArticle = models.ContextKeyArticle("article")
+
+	templatesCache, err := newTemplateCache(templPath)
+	if err != nil {
+		return nil, fmt.Errorf("can't create new template cache: %w", err)
+	}
+
 	r := chi.NewRouter()
 
 	r.Use(middleware.RequestID)
-	r.Use(loggerMw(log))
+	r.Use(loggerMw(slog))
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.URLFormat)
+	r.Use(session.Enable)
+	r.Use(authenticate(ctxKeyUser, auth))
 
-	r.Get("/", index())
-	r.Post("/signup", signUp(auth))
-	r.Post("/login", login(auth))
+	if err := fileServer(r, "/static/", templPath); err != nil {
+		return nil, fmt.Errorf("can't load static files: %w", err)
+	}
 
-	r.Route("/profile", func(r chi.Router) {
-		r.Use(authMw(auth))
+	r.Get("/", home(fetcher, templatesCache, ctxKeyUser, session))
 
-		r.Get("/", home())
+	r.Get("/signup", signupForm(templatesCache, ctxKeyUser, session))
+	r.Post("/signup", signup(auth, templatesCache, ctxKeyUser, session))
+	r.Get("/login", loginForm(templatesCache, ctxKeyUser, session))
+	r.Post("/login", login(auth, templatesCache, ctxKeyUser, session))
+
+	r.Route("/logout", func(r chi.Router) {
+		r.Use(requireAuthenticatedUser(ctxKeyUser, auth))
+		r.Post("/", logout(ctxKeyUser, session))
 	})
 
-	return r
+	r.Route("/article", func(r chi.Router) {
+		r.Use(requireAuthenticatedUser(ctxKeyUser, auth))
+		r.Get("/suggest", suggestArticleForm(templatesCache, ctxKeyUser, session))
+		r.Post("/suggest", suggestArticle(news, templatesCache, ctxKeyUser, ctxKeyArticle, session))
+		r.Get("/suggested", showArticle(templatesCache, ctxKeyUser, ctxKeyArticle, session))
+	})
+
+	r.Route("/check", func(r chi.Router) {
+		r.Get("/", whoami(ctxKeyUser))
+	})
+
+	r.Get("/ping", ping())
+
+	return r, nil
 }

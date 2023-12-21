@@ -128,13 +128,10 @@ func (f *Fetcher) intervalFetch(ctx context.Context) error {
 	if err != nil || len(sources) == 0 {
 		switch {
 		case len(sources) == 0:
-			f.log.Debug("There are no soures")
 			return services.ErrNoSources
 		case errors.Is(err, storage.ErrNoSources):
-			f.log.Debug("Can't get soures", "err", err.Error())
 			return services.ErrNoSources
 		default:
-			f.log.Error("Can't get soures", "err", err.Error())
 			return fmt.Errorf("%s: %w", op, err)
 		}
 	}

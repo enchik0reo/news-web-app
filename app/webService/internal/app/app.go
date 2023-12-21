@@ -3,11 +3,14 @@ package app
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
+	"math/rand"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"newsWebApp/app/webService/internal/config"
 	"newsWebApp/app/webService/internal/http/handler"
@@ -17,6 +20,8 @@ import (
 	"newsWebApp/app/webService/internal/services/fetcher"
 	"newsWebApp/app/webService/internal/services/newsgrpc"
 	"newsWebApp/app/webService/internal/storage/cache"
+
+	"github.com/golangcollege/sessions"
 )
 
 type App struct {
@@ -24,6 +29,7 @@ type App struct {
 	log     *slog.Logger
 	cache   *cache.Cache
 	fetcher *fetcher.NewsFetcher
+	handler http.Handler
 	srv     *server.Server
 }
 
@@ -66,7 +72,6 @@ func New() *App {
 		a.cfg.Cache.Host,
 		a.cfg.Cache.Port,
 		a.cfg.Manager.ArticlesLimit,
-		a.cfg.Server.TemplatesPath,
 	)
 	if err != nil {
 		a.log.Error("Failed to create new articles cache", "err", err)
@@ -75,9 +80,23 @@ func New() *App {
 
 	a.fetcher = fetcher.New(newsClient, a.cache, a.cfg.Manager.RefreshInterval, a.log)
 
-	handler := handler.New(authClient, newsClient, a.fetcher, a.log)
+	sk := sessionKey()
+	if sk == "" {
+		sk = "s6Ndh+pPbnzHbS*+9Pk8qGWhTzbpa@ge"
+	}
 
-	a.srv = server.New(handler, &a.cfg.Server, a.log)
+	session := sessions.New([]byte(sk))
+	session.Lifetime = 12 * time.Hour
+	session.Secure = true
+	session.SameSite = http.SameSiteStrictMode
+
+	a.handler, err = handler.New(authClient, newsClient, a.fetcher, a.cfg.Server.TemplatesPath, session, a.log)
+	if err != nil {
+		a.log.Error("Failed to create new handler", "err", err)
+		os.Exit(1)
+	}
+
+	a.srv = server.New(a.handler, &a.cfg.Server, a.log)
 
 	return &a
 }
@@ -126,4 +145,18 @@ func (a *App) mustStop() {
 	}
 
 	a.log.Info("Web service stoped gracefully")
+}
+
+func sessionKey() string {
+	b := make([]byte, 32)
+
+	s := rand.NewSource(time.Now().Unix())
+	r := rand.New(s)
+
+	_, err := r.Read(b)
+	if err != nil {
+		return ""
+	}
+
+	return fmt.Sprintf("%x", b)
 }

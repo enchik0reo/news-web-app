@@ -1,0 +1,25 @@
+{{template "base" .}}
+
+{{define "title"}}Home{{end}}
+
+{{define "body"}}
+    <h2>Latest News</h2>
+    {{if .Articles}}
+        {{range .Articles}}
+        <div class="cards">
+            <div class="cards-body">
+                <small class="text-muted">{{.UserName}} | {{humanDate .PostedAt}}</small>
+                <h3 class="cards-title">{{.Title}}</h3>
+                <div style="overflow: hidden; width: 10px; height: 10px;"></div>
+                <p class="cards-text">{{.Excerpt}}</p>
+                <a href="{{.Link}}" class="btn btn-primary">Читать полностью</a>
+              </div>
+              <p><img src="{{.ImageURL}}" alt="Here is the article's image" width="782"></p>
+          </div>
+         
+          <div style="overflow: hidden; width: 40px; height: 40px;"></div>
+        {{end}}
+    {{else}}
+        <p>There's nothing to see here yet!</p>
+    {{end}}
+{{end}}

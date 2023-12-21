@@ -1,0 +1,14 @@
+{{template "base" .}}
+
+{{define "title"}}Article{{ end }}
+
+{{define "body"}}
+{{ with.Art }}
+<div class="snippet">
+  <div class="metadata">
+    <strong>{{.Link}}</strong>
+  </div>
+  <div class="metadata">{{.Content}}</div>
+</div>
+{{end}}
+{{end}}
