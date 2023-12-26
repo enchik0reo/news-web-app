@@ -20,11 +20,15 @@ func NewArticleStorage(db *sql.DB) *ArticleStorage {
 
 func (s *ArticleStorage) Save(ctx context.Context, article models.Article) error {
 	stmt, err := s.db.PrepareContext(ctx, `INSERT INTO articles (user_id, source_name, title, link, excerpt, image, published_at) 
-	VALUES ($1, $2, $3, $4, $5) ON CONFLICT DO NOTHING`)
+	VALUES ($1, $2, $3, $4, $5, $6, $7) ON CONFLICT DO NOTHING`)
 	if err != nil {
 		return fmt.Errorf("can't prepare statement: %w", err)
 	}
 	defer stmt.Close()
+
+	if article.UserID == 0 {
+		article.UserID = 1
+	}
 
 	if _, err := stmt.ExecContext(ctx,
 		article.UserID,
@@ -107,7 +111,7 @@ func (s *ArticleStorage) NewestNotPosted(ctx context.Context) (*models.Article, 
 }
 
 func (s *ArticleStorage) MarkPosted(ctx context.Context, id int64) (time.Time, error) {
-	stmt, err := s.db.PrepareContext(ctx, "UPDATE articles SET posted_at = $1::timestamp WHERE id = $2")
+	stmt, err := s.db.PrepareContext(ctx, "UPDATE articles SET posted_at = $1::timestamp WHERE article_id = $2")
 	if err != nil {
 		return time.Time{}, fmt.Errorf("can't prepare statement: %w", err)
 	}
@@ -123,8 +127,8 @@ func (s *ArticleStorage) MarkPosted(ctx context.Context, id int64) (time.Time, e
 }
 
 func (s *ArticleStorage) notPostedFromUsers(ctx context.Context) (*models.Article, error) {
-	stmt, err := s.db.PrepareContext(ctx, `SELECT user_id, source_name, title, link, excerpt, image, published_at, created_at FROM articles 
-	WHERE posted_at IS NULL AND user_id > 0 
+	stmt, err := s.db.PrepareContext(ctx, `SELECT article_id, user_id, source_name, title, link, excerpt, image, published_at, created_at FROM articles 
+	WHERE posted_at IS NULL AND user_id > 1 
 	ORDER BY published_at DESC LIMIT 1`)
 	if err != nil {
 		return nil, fmt.Errorf("can't prepare statement: %w", err)
@@ -142,7 +146,8 @@ func (s *ArticleStorage) notPostedFromUsers(ctx context.Context) (*models.Articl
 
 	article := models.Article{}
 
-	if err := row.Scan(&article.UserID,
+	if err := row.Scan(&article.ID,
+		&article.UserID,
 		&article.SourceName,
 		&article.Title,
 		&article.Link,
@@ -161,7 +166,7 @@ func (s *ArticleStorage) notPostedFromUsers(ctx context.Context) (*models.Articl
 }
 
 func (s *ArticleStorage) notPostedFromBot(ctx context.Context) (*models.Article, error) {
-	stmt, err := s.db.PrepareContext(ctx, `SELECT user_id, source_name, title, link, excerpt, image, published_at, created_at FROM articles 
+	stmt, err := s.db.PrepareContext(ctx, `SELECT article_id, user_id, source_name, title, link, excerpt, image, published_at, created_at FROM articles 
 	WHERE posted_at IS NULL 
 	ORDER BY published_at DESC LIMIT 1`)
 	if err != nil {
@@ -180,7 +185,8 @@ func (s *ArticleStorage) notPostedFromBot(ctx context.Context) (*models.Article,
 
 	article := models.Article{}
 
-	if err := row.Scan(&article.UserID,
+	if err := row.Scan(&article.ID,
+		&article.UserID,
 		&article.SourceName,
 		&article.Title,
 		&article.Link,

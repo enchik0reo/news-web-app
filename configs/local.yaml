@@ -1,0 +1,39 @@
+env: "local"
+
+http_server:
+  address: "localhost:8000"
+  timeout: 4s
+  idle_timeout: 60s
+  templates_path: "./app/webService/ui/"
+
+grpc_auth:
+  port: 44044
+  timeout: 3s
+  retries_count: 3
+
+grpc_news:
+  port: 55055
+  timeout: 3s
+  retries_count: 3
+
+psql_storage:
+  db_driver: "postgres"
+  host: "localhost"
+  port: "5432"
+  dbname: "go_news"
+  user: "postgres"
+  sslmode: "disable"
+
+redis_storage:
+  host: "localhost"
+  port: "6379"
+
+token_managment:
+  access_token_ttl: 20m
+  refresh_token_ttl: 43200m
+
+news_managment:
+  filter_keywords: ["golang", "go"]
+  fetch_interval: 10m
+  refresh_interval: 15m
+  articles_limit: 30

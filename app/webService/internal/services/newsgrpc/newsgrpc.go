@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"log/slog"
 	"time"
 
@@ -30,7 +29,7 @@ func New(ctx context.Context,
 	timeout time.Duration,
 	retriesCount int,
 ) (*Client, error) {
-	const op = "newsgrpc.New"
+	const op = "services.newsgrpc.New"
 
 	retryOpts := []grpcretry.CallOption{
 		grpcretry.WithCodes(codes.Aborted, codes.DeadlineExceeded),
@@ -60,24 +59,33 @@ func New(ctx context.Context,
 }
 
 func (c *Client) SaveArticle(ctx context.Context, userID int64, link string) error {
+	const op = "services.newsgrpc.SaveArticle"
+
 	if _, err := c.api.SaveArticle(ctx, &newsv1.SaveArticleRequest{UserId: userID, Link: link}); err != nil {
-		return err
+		return fmt.Errorf("%s: %w", op, err)
 	}
 
 	return nil
 }
 
 func (c *Client) GetNewestArticle(ctx context.Context) (*models.Article, error) {
+	const op = "services.newsgrpc.GetNewestArticle"
+
 	resp, err := c.api.GetNewestArticle(ctx, &newsv1.GetNewestArticleRequest{})
 	if err != nil {
 		if errors.Is(err, status.Error(codes.NotFound, "there is no new article")) {
-			return nil, services.ErrNoNewArticle
+			return nil, fmt.Errorf("%s: %w", op, services.ErrNoNewArticle)
 		} else {
-			return nil, err
+			return nil, fmt.Errorf("%s: %w", op, err)
 		}
 	}
 
 	art := resp.Articl
+
+	postedAt, err := time.Parse(time.DateTime, art.PostedAt)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
 
 	article := models.Article{
 		UserName:   art.UserName,
@@ -86,27 +94,32 @@ func (c *Client) GetNewestArticle(ctx context.Context) (*models.Article, error) 
 		Link:       art.Link,
 		Excerpt:    art.Excerpt,
 		ImageURL:   art.ImageUrl,
-		PostedAt:   art.PostedAt,
+		PostedAt:   postedAt,
 	}
 
 	return &article, nil
 }
 
 func (c *Client) GetArticles(ctx context.Context) ([]models.Article, error) {
+	const op = "services.newsgrpc.GetArticles"
+
 	resp, err := c.api.GetArticles(ctx, &newsv1.GetArticlesRequest{})
 	if err != nil {
 		if errors.Is(err, status.Error(codes.NotFound, "there are no published articles")) {
-			return nil, services.ErrNoPublishedArticles
+			return nil, fmt.Errorf("%s: %w", op, services.ErrNoPublishedArticles)
 		} else {
-			return nil, err
+			return nil, fmt.Errorf("%s: %w", op, err)
 		}
 	}
-
-	log.Println("Rabbit, i'm here!!!!!!!!!!!!!!")
 
 	articles := make([]models.Article, len(resp.Articles))
 
 	for i, art := range resp.Articles {
+		postedAt, err := time.Parse(time.DateTime, art.PostedAt)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", op, err)
+		}
+
 		articles[i] = models.Article{
 			UserName:   art.UserName,
 			SourceName: art.SourceName,
@@ -114,7 +127,7 @@ func (c *Client) GetArticles(ctx context.Context) ([]models.Article, error) {
 			Link:       art.Link,
 			Excerpt:    art.Excerpt,
 			ImageURL:   art.ImageUrl,
-			PostedAt:   art.PostedAt,
+			PostedAt:   postedAt,
 		}
 	}
 

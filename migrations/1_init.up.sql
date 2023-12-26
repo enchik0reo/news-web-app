@@ -28,3 +28,5 @@ CREATE TABLE IF NOT EXISTS articles (
 );
 
 ALTER TABLE articles ADD CONSTRAINT fk_articles_user_id FOREIGN KEY (user_id) REFERENCES users (user_id) ON DELETE CASCADE;
+INSERT INTO users (user_name, email, password_hash) VALUES ('Bot', 'ihwuqih928u398dhfdfo;iweh', '2389uefhhr4e8934we56w3378sdeuibrw3345df');
+INSERT INTO sources (name, feed_url) VALUES ('Habr', 'https://habr.com/ru/rss/hubs/go/articles/?fl=ru?with_tags=true:');

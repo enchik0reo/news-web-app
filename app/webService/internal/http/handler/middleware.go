@@ -1,86 +1,35 @@
 package handler
 
 import (
-	"context"
-	"errors"
 	"log/slog"
 	"net/http"
 	"time"
 
-	"newsWebApp/app/webService/internal/models"
-	"newsWebApp/app/webService/internal/services"
-
 	"github.com/go-chi/chi/middleware"
 )
 
-func authenticate(ctxKeyUser models.ContextKey, service AuthService) func(http.Handler) http.Handler {
+/* func authenticate(service AuthService) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 
 		fn := func(w http.ResponseWriter, r *http.Request) {
 			auth := r.Header.Get("Authorization")
 			if auth == "" {
-				cookie, err := r.Cookie("refresh_token")
-				if err != nil {
-					if errors.Is(err, http.ErrNoCookie) {
-						next.ServeHTTP(w, r)
-						return
-					}
-					http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-					return
-				}
-
-				ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-				defer cancel()
-
-				id, userName, acsToken, refToken, err := service.Refresh(ctx, cookie.Value)
-				if err != nil {
-					switch {
-					case errors.Is(err, services.ErrSessionNotFound):
-						next.ServeHTTP(w, r)
-						return
-					case errors.Is(err, services.ErrInvalidValue):
-						next.ServeHTTP(w, r)
-						return
-					default:
-						http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-						return
-					}
-				}
-
-				w.Header().Add("Authorization", "Bearer "+acsToken)
-
-				ck := http.Cookie{
-					Name:     "refresh_token",
-					Domain:   r.URL.Host,
-					Path:     "/",
-					Value:    refToken,
-					HttpOnly: true,
-					Secure:   true,
-					SameSite: http.SameSiteStrictMode,
-				}
-
-				http.SetCookie(w, &ck)
-
-				user := models.User{
-					ID:   id,
-					Name: userName,
-				}
-
-				ctx = context.WithValue(r.Context(), ctxKeyUser, user)
-				next.ServeHTTP(w, r.WithContext(ctx))
+				//http.Error(w, "no auth header", http.StatusNotFound)
+				next.ServeHTTP(w, r)
 				return
 			}
 
 			ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 			defer cancel()
 
-			id, userName, err := service.Parse(ctx, auth)
+			_, _, err := service.Parse(ctx, auth)
 			if err != nil {
 				switch {
 				case errors.Is(err, services.ErrTokenExpired):
 					cookie, err := r.Cookie("refresh_token")
 					if err != nil {
 						if errors.Is(err, http.ErrNoCookie) {
+							//http.Error(w, "no kookie", http.StatusNotFound)
 							next.ServeHTTP(w, r)
 							return
 						}
@@ -91,13 +40,15 @@ func authenticate(ctxKeyUser models.ContextKey, service AuthService) func(http.H
 					ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 					defer cancel()
 
-					id, userName, acsToken, refToken, err := service.Refresh(ctx, cookie.Value)
+					_, _, acsToken, refToken, err := service.Refresh(ctx, cookie.Value)
 					if err != nil {
 						switch {
 						case errors.Is(err, services.ErrSessionNotFound):
+							//http.Error(w, "session die", http.StatusNotFound)
 							next.ServeHTTP(w, r)
 							return
-						case errors.Is(err, services.ErrInvalidValue):
+						case errors.Is(err, services.ErrInvalidToken):
+							//http.Error(w, "invalid token", http.StatusNotFound)
 							next.ServeHTTP(w, r)
 							return
 						default:
@@ -106,7 +57,10 @@ func authenticate(ctxKeyUser models.ContextKey, service AuthService) func(http.H
 						}
 					}
 
-					w.Header().Add("Authorization", "Bearer "+acsToken)
+					w.Header().Set("Content-Type", "application/json")
+					json.NewEncoder(w).Encode(map[string]string{
+						"AccessToken": acsToken,
+					})
 
 					ck := http.Cookie{
 						Name:     "refresh_token",
@@ -120,15 +74,10 @@ func authenticate(ctxKeyUser models.ContextKey, service AuthService) func(http.H
 
 					http.SetCookie(w, &ck)
 
-					user := models.User{
-						ID:   id,
-						Name: userName,
-					}
-
-					ctx = context.WithValue(r.Context(), ctxKeyUser, user)
-					next.ServeHTTP(w, r.WithContext(ctx))
+					next.ServeHTTP(w, r)
 					return
 				case errors.Is(err, services.ErrInvalidToken):
+					//http.Error(w, "invalid token", http.StatusNotFound)
 					next.ServeHTTP(w, r)
 					return
 				default:
@@ -137,120 +86,29 @@ func authenticate(ctxKeyUser models.ContextKey, service AuthService) func(http.H
 				}
 
 			} else {
-				user := models.User{
-					ID:   id,
-					Name: userName,
-				}
-
-				ctx = context.WithValue(r.Context(), ctxKeyUser, user)
-				next.ServeHTTP(w, r.WithContext(ctx))
-				return
-			}
-		}
-		return http.HandlerFunc(fn)
-	}
-}
-
-// Пока не трогаем
-/* func authMw(service AuthService) func(http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-		fn := func(w http.ResponseWriter, r *http.Request) {
-			header := r.Header.Get("Authorization")
-			if header == "" {
-				header = r.FormValue("token")
-			}
-
-			ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-			defer cancel()
-
-			id, userName, err := service.Parse(ctx, header)
-			if err != nil {
-				switch {
-				case errors.Is(err, services.ErrTokenExpired):
-					cookie, err := r.Cookie("refresh_token")
-					if err != nil {
-						if errors.Is(err, http.ErrNoCookie) {
-							http.Error(w, "authorization error, please sign-in", http.StatusBadRequest)
-							return
-						}
-						http.Error(w, "internal error", http.StatusInternalServerError)
-						return
-					}
-
-					ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-					defer cancel()
-
-					id, userName, acsToken, refToken, err := service.Refresh(ctx, cookie.Value)
-					if err != nil {
-						switch {
-						case errors.Is(err, services.ErrSessionNotFound):
-							http.Error(w, "session expired, please sign-in", http.StatusUnauthorized)
-							return
-						case errors.Is(err, services.ErrInvalidValue):
-							http.Error(w, "incorrect session, please sign-in", http.StatusInternalServerError)
-							return
-						default:
-							http.Error(w, "internal error", http.StatusInternalServerError)
-							return
-						}
-					}
-
-					w.Header().Add("Authorization", "Bearer "+acsToken)
-
-					ck := http.Cookie{
-						Name:     "refresh_token",
-						Domain:   r.URL.Host,
-						Path:     "/",
-						Value:    refToken,
-						HttpOnly: true,
-						Secure:   true,
-						SameSite: http.SameSiteStrictMode,
-					}
-
-					http.SetCookie(w, &ck)
-
-					w.Header().Add("id", fmt.Sprint(id))
-					w.Header().Add("user_name", userName)
-
-					next.ServeHTTP(w, r)
-
-				case errors.Is(err, services.ErrInvalidToken):
-					http.Error(w, err.Error(), http.StatusBadRequest)
-					return
-				default:
-					http.Error(w, "internal error", http.StatusInternalServerError)
-					return
-				}
-
-			} else {
-				w.Header().Add("id", fmt.Sprint(id))
-				w.Header().Add("user_name", userName)
 
 				next.ServeHTTP(w, r)
+				return
 			}
 		}
 		return http.HandlerFunc(fn)
 	}
 } */
 
-func requireAuthenticatedUser(ctxKeyUser models.ContextKey, service AuthService) func(http.Handler) http.Handler {
+/* func requireAuthenticatedUser(service AuthService) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 
 		fn := func(w http.ResponseWriter, r *http.Request) {
-			// If the user is not authenticated, redirect them to the login page and
-			// return from the middleware chain so that no subsequent handlers in
-			// the chain are executed.
-			if authenticatedUser(ctxKeyUser, r) == nil {
+			if authenticatedUser(service, r) == nil {
 				http.Redirect(w, r, "/login", http.StatusFound)
 				return
 			}
 
-			// Otherwise call the next handler in the chain.
 			next.ServeHTTP(w, r)
 		}
 		return http.HandlerFunc(fn)
 	}
-}
+} */
 
 func loggerMw(log *slog.Logger) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
@@ -280,6 +138,19 @@ func loggerMw(log *slog.Logger) func(next http.Handler) http.Handler {
 			next.ServeHTTP(ww, r)
 		}
 
+		return http.HandlerFunc(fn)
+	}
+}
+
+func secureHeaders() func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+
+		fn := func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("X-XSS-Protection", "1; mode=block")
+			w.Header().Set("X-Frame-Options", "deny")
+
+			next.ServeHTTP(w, r)
+		}
 		return http.HandlerFunc(fn)
 	}
 }

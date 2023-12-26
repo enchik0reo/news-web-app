@@ -35,7 +35,6 @@ func New(auth AuthService,
 	session *sessions.Session,
 	slog *slog.Logger,
 ) (http.Handler, error) {
-	var ctxKeyUser = models.ContextKey("user")
 	var ctxKeyArticle = models.ContextKeyArticle("article")
 
 	templatesCache, err := newTemplateCache(templPath)
@@ -46,40 +45,36 @@ func New(auth AuthService,
 	r := chi.NewRouter()
 
 	r.Use(middleware.RequestID)
-	r.Use(loggerMw(slog))
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.URLFormat)
+	r.Use(loggerMw(slog))
+	r.Use(secureHeaders())
 	r.Use(session.Enable)
-	r.Use(authenticate(ctxKeyUser, auth))
 
 	if err := fileServer(r, "/static/", templPath); err != nil {
 		return nil, fmt.Errorf("can't load static files: %w", err)
 	}
 
-	r.Get("/", home(fetcher, templatesCache, ctxKeyUser, session))
+	r.Get("/", home(auth, fetcher, templatesCache, session, slog))
 
-	r.Get("/signup", signupForm(templatesCache, ctxKeyUser, session))
-	r.Post("/signup", signup(auth, templatesCache, ctxKeyUser, session))
-	r.Get("/login", loginForm(templatesCache, ctxKeyUser, session))
-	r.Post("/login", login(auth, templatesCache, ctxKeyUser, session))
+	r.Get("/signup", signupForm(auth, templatesCache, session, slog))
+	r.Post("/signup", signup(auth, templatesCache, session, slog))
+	r.Get("/login", loginForm(auth, templatesCache, session, slog))
+	r.Post("/login", login(auth, templatesCache, session, slog))
 
 	r.Route("/logout", func(r chi.Router) {
-		r.Use(requireAuthenticatedUser(ctxKeyUser, auth))
-		r.Post("/", logout(ctxKeyUser, session))
+		//r.Use(requireAuthenticatedUser(auth))
+		r.Post("/", logout(session))
 	})
 
 	r.Route("/article", func(r chi.Router) {
-		r.Use(requireAuthenticatedUser(ctxKeyUser, auth))
-		r.Get("/suggest", suggestArticleForm(templatesCache, ctxKeyUser, session))
-		r.Post("/suggest", suggestArticle(news, templatesCache, ctxKeyUser, ctxKeyArticle, session))
-		r.Get("/suggested", showArticle(templatesCache, ctxKeyUser, ctxKeyArticle, session))
+		//r.Use(requireAuthenticatedUser(auth))
+		r.Get("/suggest", suggestArticleForm(auth, templatesCache, session, slog))
+		r.Post("/suggest", suggestArticle(auth, news, templatesCache, ctxKeyArticle, session, slog))
+		r.Get("/suggested", showArticle(auth, templatesCache, ctxKeyArticle, session, slog))
 	})
 
-	r.Route("/check", func(r chi.Router) {
-		r.Get("/", whoami(ctxKeyUser))
-	})
-
-	r.Get("/ping", ping())
+	r.Get("/refresh", refresh(auth, templatesCache, session, slog))
 
 	return r, nil
 }

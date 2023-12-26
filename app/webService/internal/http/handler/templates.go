@@ -27,7 +27,7 @@ func humanDate(t time.Time) string {
 		return ""
 	}
 
-	return t.UTC().Format("02 Jan 2006 at 15:04")
+	return t.UTC().Format(time.DateTime)
 }
 
 func newTemplateCache(dir string) (map[string]*template.Template, error) {

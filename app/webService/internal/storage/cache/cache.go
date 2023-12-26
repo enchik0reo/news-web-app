@@ -2,8 +2,10 @@ package cache
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 
 	"newsWebApp/app/webService/internal/models"
 	"newsWebApp/app/webService/internal/storage"
@@ -18,6 +20,8 @@ type Cache struct {
 }
 
 func New(ctx context.Context, host, port string, limit int) (*Cache, error) {
+	const op = "storage.cache.New"
+
 	c := Cache{
 		limit: limit,
 	}
@@ -31,48 +35,94 @@ func New(ctx context.Context, host, port string, limit int) (*Cache, error) {
 	})
 
 	if err := c.c.Ping(ctx).Err(); err != nil {
-		return nil, fmt.Errorf("can't ping to redis: %w", err)
+		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
 	return &c, nil
 }
 
 func (c *Cache) AddArticle(ctx context.Context, article *models.Article) error {
+	const op = "storage.cache.AddArticle"
+
 	articles, err := c.GetArticles(ctx)
 	if err != nil {
 		if errors.Is(err, storage.ErrCacheEmpty) {
-			if err := c.c.Set(ctx, "article #0", article, 0).Err(); err != nil {
-				return fmt.Errorf("can't save article, %v", err)
+			articleJSON, err := json.Marshal(article)
+			if err != nil {
+				return fmt.Errorf("%s: %w", op, err)
 			}
+
+			if err := c.c.Set(ctx, "article #0", articleJSON, 0).Err(); err != nil {
+				return fmt.Errorf("%s: %w", op, err)
+			}
+
 			c.actual++
+			return nil
 		} else {
-			return err
+			return fmt.Errorf("%s: %w", op, err)
 		}
 	}
 
 	if c.actual < c.limit {
-		if err := c.c.Set(ctx, "article #0", article, 0).Err(); err != nil {
-			return fmt.Errorf("can't save article, %v", err)
+		articleJSON, err := json.Marshal(article)
+		if err != nil {
+			return fmt.Errorf("%s: %w", op, err)
+		}
+
+		if err := c.c.Set(ctx, "article #0", articleJSON, 0).Err(); err != nil {
+			return fmt.Errorf("%s: %w", op, err)
 		}
 
 		for i := 0; i < c.actual; i++ {
-			if err := c.c.Set(ctx, fmt.Sprintf("article #%d", i+1), articles[i], 0).Err(); err != nil {
-				return fmt.Errorf("can't save article, %v", err)
+			articleJSON, err := json.Marshal(articles[i])
+			if err != nil {
+				return fmt.Errorf("%s: %w", op, err)
+			}
+
+			if err := c.c.Set(ctx, fmt.Sprintf("article #%d", i+1), articleJSON, 0).Err(); err != nil {
+				return fmt.Errorf("%s: %w", op, err)
 			}
 		}
 
 		c.actual++
+	} else {
+		articleJSON, err := json.Marshal(article)
+		if err != nil {
+			return fmt.Errorf("%s: %w", op, err)
+		}
+
+		if err := c.c.Set(ctx, "article #0", articleJSON, 0).Err(); err != nil {
+			return fmt.Errorf("%s: %w", op, err)
+		}
+
+		for i := 0; i < c.limit; i++ {
+			articleJSON, err := json.Marshal(articles[i])
+			if err != nil {
+				return fmt.Errorf("%s: %w", op, err)
+			}
+
+			if err := c.c.Set(ctx, fmt.Sprintf("article #%d", i+1), articleJSON, 0).Err(); err != nil {
+				return fmt.Errorf("%s: %w", op, err)
+			}
+		}
 	}
 
 	return nil
 }
 
 func (c *Cache) AddArticles(ctx context.Context, articles []models.Article) error {
+	const op = "storage.cache.AddArticles"
+
 	c.actual = len(articles)
 
-	for i, art := range articles {
-		if err := c.c.Set(ctx, fmt.Sprintf("article #%d", i), art, 0).Err(); err != nil {
-			return fmt.Errorf("can't save article, %v", err)
+	for i, article := range articles {
+		articleJSON, err := json.Marshal(article)
+		if err != nil {
+			return fmt.Errorf("%s: %w", op, err)
+		}
+
+		if err := c.c.Set(ctx, fmt.Sprintf("article #%d", i), articleJSON, 0).Err(); err != nil {
+			return fmt.Errorf("%s: %w", op, err)
 		}
 	}
 
@@ -80,34 +130,30 @@ func (c *Cache) AddArticles(ctx context.Context, articles []models.Article) erro
 }
 
 func (c *Cache) GetArticles(ctx context.Context) ([]models.Article, error) {
-	res, err := c.c.HGetAll(ctx, "article #0").Result()
-	if err != nil {
-		return nil, err
-	}
+	const op = "storage.cache.GetArticles"
 
-	if res["Link"] != "" {
-		return nil, storage.ErrCacheEmpty
+	if c.actual == 0 {
+		return nil, fmt.Errorf("%s: %w", op, storage.ErrCacheEmpty)
 	}
 
 	articles := make([]models.Article, c.actual)
 
 	for i := range articles {
-		res, err := c.c.HGetAll(ctx, fmt.Sprintf("article #%d", i)).Result()
+		res, err := c.c.Get(ctx, fmt.Sprintf("article #%d", i)).Result()
 		if err != nil {
-			return nil, err
+			if strings.Contains(err.Error(), redis.Nil.Error()) {
+				return nil, fmt.Errorf("%s: %w", op, storage.ErrCacheEmpty)
+			}
+			return nil, fmt.Errorf("%s: %w", op, err)
 		}
 
-		art := models.Article{
-			UserName:   res["UserName"],
-			SourceName: res["SourceName"],
-			Title:      res["Title"],
-			Link:       res["Link"],
-			Excerpt:    res["Excerpt"],
-			ImageURL:   res["ImageURL"],
-			PostedAt:   res["PostedAt"],
+		var article models.Article
+		err = json.Unmarshal([]byte(res), &article)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", op, err)
 		}
 
-		articles[i] = art
+		articles[i] = article
 	}
 
 	return articles, nil

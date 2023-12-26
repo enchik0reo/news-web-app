@@ -2,7 +2,9 @@ package handler
 
 import (
 	"bytes"
+	"context"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"newsWebApp/app/webService/internal/models"
 	"path/filepath"
@@ -64,40 +66,71 @@ func fileServer(r chi.Router, path string, templPath string) error {
 	return nil
 }
 
-func render(w http.ResponseWriter, r *http.Request, name string, tC map[string]*template.Template, td *templateData, ctxKeyUser models.ContextKey, session *sessions.Session) {
+func render(w http.ResponseWriter,
+	r *http.Request,
+	service AuthService,
+	name string,
+	tC map[string]*template.Template,
+	td *templateData,
+	session *sessions.Session,
+	slog *slog.Logger,
+) {
 	ts, ok := tC[name]
 	if !ok {
-		http.Error(w, fmt.Sprintf("the template %s does not exists", name), http.StatusInternalServerError)
+		slog.Error("The template does not exists", "name", name)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 
 	buf := new(bytes.Buffer)
 
-	err := ts.Execute(buf, addDefaultData(ctxKeyUser, td, r, session))
+	td = addDefaultData(service, td, r, session)
+
+	err := ts.Execute(buf, td)
 	if err != nil {
+		slog.Error("Can't execute template", "err", err.Error())
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 
-	buf.WriteTo(w)
+	_, err = buf.WriteTo(w)
+	if err != nil {
+		slog.Error("Can't write to response", "err", err.Error())
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
 }
 
-func addDefaultData(ctxKeyUser models.ContextKey, td *templateData, r *http.Request, session *sessions.Session) *templateData {
+func addDefaultData(service AuthService, td *templateData, r *http.Request, session *sessions.Session) *templateData {
 	if td == nil {
 		td = &templateData{}
 	}
 
 	td.CurrentYear = time.Now().Year()
 	td.Flash = session.PopString(r, "flash")
-	td.AuthenticatedUser = authenticatedUser(ctxKeyUser, r)
+	td.AuthenticatedUser = authenticatedUser(service, r)
 
 	return td
 }
 
-func authenticatedUser(ctxKeyUser models.ContextKey, r *http.Request) *models.User {
-	user, ok := r.Context().Value(ctxKeyUser).(*models.User)
-	if !ok {
+func authenticatedUser(service AuthService, r *http.Request) *models.User {
+	auth := r.Header.Get("Authorization")
+	if auth == "" {
 		return nil
 	}
-	return user
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	id, userName, err := service.Parse(ctx, auth)
+	if err != nil {
+		return nil
+	}
+
+	user := models.User{
+		ID:   id,
+		Name: userName,
+	}
+
+	return &user
 }

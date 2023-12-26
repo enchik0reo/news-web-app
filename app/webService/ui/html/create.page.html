@@ -3,7 +3,7 @@
 {{define "title"}}Suggest Article{{end}}
 
 {{define "body"}}
-<form action="/article/suggest" method="POST">
+<form id="createForm" action="/article/suggest" method="POST">
     {{with .Form}}
         <div>
             <label>Link to article:</label>
@@ -20,18 +20,10 @@
             <textarea name="content">{{.Get "content"}}</textarea>
         </div>
         <div>
-            <label>Available in:</label>
-            {{with .Errors.Get "expires"}}
-                <label class="error">{{.}}</label>
-            {{end}}
-            {{$exp := or (.Get "expires") "365"}}
-            <input type="radio" name="expires" value="365" {{if (eq $exp "365")}}checked{{end}}> One Year
-            <input type="radio" name="expires" value="7" {{if (eq $exp "7")}}checked{{end}}> One Week
-            <input type="radio" name="expires" value="1" {{if (eq $exp "1")}}checked{{end}}> One Day
-        </div>
-        <div>
             <input type="submit" value="Suggest">
         </div>
     {{end}}
 </form>
+<script src="/static/js/check.js" type="text/javascript"></script>
+<script src="/static/js/auth.js" type="text/javascript"></script>
 {{end}}

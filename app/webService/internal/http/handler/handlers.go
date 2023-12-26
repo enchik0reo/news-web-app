@@ -2,7 +2,9 @@ package handler
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"log/slog"
 	"net/http"
 	"text/template"
 	"time"
@@ -14,16 +16,11 @@ import (
 	"github.com/golangcollege/sessions"
 )
 
-type Request struct {
-	UserName string `json:"user_name"`
-	Email    string `json:"email" validate:"required,email"`
-	Password string `json:"password" validate:"required"`
-}
-
-func home(fetcher NewsFetcher,
+func home(service AuthService,
+	fetcher NewsFetcher,
 	tC map[string]*template.Template,
-	ctxKeyUser models.ContextKey,
 	session *sessions.Session,
+	slog *slog.Logger,
 ) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
@@ -31,44 +28,46 @@ func home(fetcher NewsFetcher,
 
 		arts, err := fetcher.FetchArticles(ctx)
 		if err != nil {
-			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-			return
+			slog.Debug("Can't fetch articles", "err", err.Error())
 		}
 
-		render(w, r, "home.page.html", tC, &templateData{Articles: arts}, ctxKeyUser, session)
+		render(w, r, service, "home.page.html", tC, &templateData{Articles: arts}, session, slog)
 	}
 }
 
-func signupForm(tC map[string]*template.Template,
-	ctxKeyUser models.ContextKey,
+func signupForm(service AuthService,
+	tC map[string]*template.Template,
 	session *sessions.Session,
+	slog *slog.Logger,
 ) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		render(w, r, "signup.page.html", tC, &templateData{
+		render(w, r, service, "signup.page.html", tC, &templateData{
 			Form: forms.New(nil),
-		}, ctxKeyUser, session)
+		}, session, slog)
 	}
 }
 
 func signup(service AuthService,
 	tC map[string]*template.Template,
-	ctxKeyUser models.ContextKey,
 	session *sessions.Session,
+	slog *slog.Logger,
 ) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		err := r.ParseForm()
 		if err != nil {
+			slog.Error("Can't parse form", "err", err.Error())
 			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 			return
 		}
 
 		form := forms.New(r.PostForm)
 		form.Required("name", "email", "password")
+		form.MaxLength("name", 100)
 		form.MatchesPattern("email", forms.EmailRX)
 		form.MinLength("password", 6)
 
 		if !form.Valid() {
-			render(w, r, "signup.page.html", tC, &templateData{Form: form}, ctxKeyUser, session)
+			render(w, r, service, "signup.page.html", tC, &templateData{Form: form}, session, slog)
 			return
 		}
 
@@ -80,13 +79,14 @@ func signup(service AuthService,
 			switch {
 			case errors.Is(err, services.ErrUserExists):
 				form.Errors.Add("email", "Address is already in use")
-				render(w, r, "signup.page.html", tC, &templateData{Form: form}, ctxKeyUser, session)
+				render(w, r, service, "signup.page.html", tC, &templateData{Form: form}, session, slog)
 				return
 			case errors.Is(err, services.ErrInvalidValue):
 				form.Errors.Add("email", "Invalid address")
-				render(w, r, "signup.page.html", tC, &templateData{Form: form}, ctxKeyUser, session)
+				render(w, r, service, "signup.page.html", tC, &templateData{Form: form}, session, slog)
 				return
 			default:
+				slog.Error("Can't save user", "err", err.Error())
 				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 				return
 			}
@@ -95,56 +95,36 @@ func signup(service AuthService,
 		session.Put(r, "flash", "Your signup was successfully. Please log in.")
 
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
-
-		/* req := new(Request)
-
-		if err := json.NewDecoder(r.Body).Decode(req); err != nil {
-			http.Error(w, "failed to decode request", http.StatusBadRequest)
-			return
-		}
-
-		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-		defer cancel()
-
-		id, err := service.SaveUser(ctx, req.UserName, req.Email, req.Password)
-		if err != nil {
-			switch {
-			case errors.Is(err, services.ErrUserExists):
-				http.Error(w, err.Error(), http.StatusBadRequest)
-				return
-			case errors.Is(err, services.ErrInvalidValue):
-				http.Error(w, err.Error(), http.StatusUnprocessableEntity)
-				return
-			default:
-				http.Error(w, "internal error", http.StatusInternalServerError)
-				return
-			}
-		}
-
-		w.WriteHeader(http.StatusCreated)
-		json.NewEncoder(w).Encode(map[string]int64{"id": id}) */
 	}
 }
 
-func loginForm(tC map[string]*template.Template,
-	ctxKeyUser models.ContextKey,
+func loginForm(service AuthService,
+	tC map[string]*template.Template,
 	session *sessions.Session,
+	slog *slog.Logger,
 ) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		render(w, r, "login.page.html", tC, &templateData{
+		render(w, r, service, "login.page.html", tC, &templateData{
 			Form: forms.New(nil),
-		}, ctxKeyUser, session)
+		}, session, slog)
 	}
+}
+
+type loginRequest struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
 }
 
 func login(service AuthService,
 	tC map[string]*template.Template,
-	ctxKeyUser models.ContextKey,
 	session *sessions.Session,
+	slog *slog.Logger,
 ) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		err := r.ParseForm()
-		if err != nil {
+		req := new(loginRequest)
+
+		if err := json.NewDecoder(r.Body).Decode(req); err != nil {
+			slog.Error("Failed to decode request", "err", err.Error())
 			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 			return
 		}
@@ -154,24 +134,28 @@ func login(service AuthService,
 		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 		defer cancel()
 
-		id, userName, acsToken, refToken, err := service.LoginUser(ctx, form.Get("email"), form.Get("password"))
+		_, _, acsToken, refToken, err := service.LoginUser(ctx, req.Email, req.Password)
 		if err != nil {
 			switch {
 			case errors.Is(err, services.ErrUserDoesntExists):
 				form.Errors.Add("generic", "Email or Password is incorrect")
-				render(w, r, "login.page.html", tC, &templateData{Form: form}, ctxKeyUser, session)
+				render(w, r, service, "login.page.html", tC, &templateData{Form: form}, session, slog)
 				return
 			case errors.Is(err, services.ErrInvalidValue):
 				form.Errors.Add("generic", "Email or Password is incorrect")
-				render(w, r, "login.page.html", tC, &templateData{Form: form}, ctxKeyUser, session)
+				render(w, r, service, "login.page.html", tC, &templateData{Form: form}, session, slog)
 				return
 			default:
+				slog.Error("Can't login user", "err", err.Error())
 				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 				return
 			}
 		}
 
-		w.Header().Add("Authorization", "Bearer "+acsToken)
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]string{
+			"AccessToken": acsToken,
+		})
 
 		ck := http.Cookie{
 			Name:     "refresh_token",
@@ -183,126 +167,122 @@ func login(service AuthService,
 			SameSite: http.SameSiteStrictMode,
 		}
 
-		session.Put(r, "userID", id)
-		session.Put(r, "userName", userName)
-
 		http.SetCookie(w, &ck)
+	}
+}
 
-		user := models.User{
-			ID:   id,
-			Name: userName,
-		}
+func logout(session *sessions.Session) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		r.Header.Del("Authorization")
+		w.Header().Del("Authorization")
+	}
+}
 
-		ctx = context.WithValue(r.Context(), ctxKeyUser, user)
-
-		http.Redirect(w, r.WithContext(ctx), "/article/suggest", http.StatusSeeOther)
-
-		/* req := new(Request)
-
-		if err := json.NewDecoder(r.Body).Decode(req); err != nil {
-			http.Error(w, "failed to decode request", http.StatusBadRequest)
+func refresh(service AuthService,
+	tC map[string]*template.Template,
+	session *sessions.Session,
+	slog *slog.Logger,
+) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		auth := r.Header.Get("Authorization")
+		if auth == "" {
 			return
 		}
 
 		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 		defer cancel()
 
-		id, userName, acsToken, refToken, err := service.LoginUser(ctx, req.Email, req.Password)
+		_, _, err := service.Parse(ctx, auth)
 		if err != nil {
 			switch {
-			case errors.Is(err, services.ErrUserDoesntExists):
-				http.Error(w, err.Error(), http.StatusUnauthorized)
-				return
-			case errors.Is(err, services.ErrInvalidValue):
-				http.Error(w, err.Error(), http.StatusUnprocessableEntity)
-				return
-			default:
-				http.Error(w, "internal error", http.StatusInternalServerError)
-				return
+			case errors.Is(err, services.ErrTokenExpired):
+				cookie, err := r.Cookie("refresh_token")
+				if err != nil {
+					return
+				}
+
+				ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+				defer cancel()
+
+				_, _, acsToken, refToken, err := service.Refresh(ctx, cookie.Value)
+				if err != nil {
+					slog.Error("Can't do service's refresh", "err", err.Error())
+					return
+				}
+
+				w.Header().Set("Content-Type", "application/json")
+				json.NewEncoder(w).Encode(map[string]string{
+					"AccessToken": acsToken,
+				})
+
+				ck := http.Cookie{
+					Name:     "refresh_token",
+					Domain:   r.URL.Host,
+					Path:     "/",
+					Value:    refToken,
+					HttpOnly: true,
+					Secure:   true,
+					SameSite: http.SameSiteStrictMode,
+				}
+
+				http.SetCookie(w, &ck)
 			}
 		}
-
-		w.Header().Add("Authorization", "Bearer "+acsToken)
-
-		ck := http.Cookie{
-			Name:     "refresh_token",
-			Domain:   r.URL.Host,
-			Path:     "/",
-			Value:    refToken,
-			HttpOnly: true,
-			Secure:   true,
-			SameSite: http.SameSiteStrictMode,
-		}
-
-		http.SetCookie(w, &ck)
-
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]string{
-			"Access Token":  "Bearer " + acsToken,
-			"Refresh Token": refToken,
-		}) */
 	}
 }
 
-func logout(ctxKeyUser models.ContextKey, session *sessions.Session) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		session.Remove(r, "userID")
-		session.Remove(r, "userName")
-
-		session.Put(r, "flash", "You've been logged out successfully!")
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-	}
-}
-
-func suggestArticleForm(tC map[string]*template.Template,
-	ctxKeyUser models.ContextKey,
+func suggestArticleForm(service AuthService,
+	tC map[string]*template.Template,
 	session *sessions.Session,
+	slog *slog.Logger,
 ) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		render(w, r, "create.page.html", tC, &templateData{
+		render(w, r, service, "create.page.html", tC, &templateData{
 			Form: forms.New(nil),
-		}, ctxKeyUser, session)
+		}, session, slog)
 	}
 }
 
-func suggestArticle(news NewsSaver,
+type suggestRequest struct {
+	Link    string `json:"link"`
+	Content string `json:"content"`
+}
+
+func suggestArticle(service AuthService,
+	news NewsSaver,
 	tC map[string]*template.Template,
-	ctxKeyUser models.ContextKey,
 	ctxKeyArticle models.ContextKeyArticle,
 	session *sessions.Session,
+	slog *slog.Logger,
 ) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		r.Body = http.MaxBytesReader(w, r.Body, 4096)
+		req := new(suggestRequest)
 
-		err := r.ParseForm()
-		if err != nil {
+		if err := json.NewDecoder(r.Body).Decode(req); err != nil {
+			slog.Error("Failed to decode request", "err", err.Error())
 			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 			return
 		}
 
 		form := forms.New(r.PostForm)
-		form.Required("link", "content")
-		form.MaxLength("link", 200)
-		form.MaxLength("content", 200)
 
 		if !form.Valid() {
-			render(w, r, "create.page.html", tC, &templateData{Form: form}, ctxKeyUser, session)
+			render(w, r, service, "create.page.html", tC, &templateData{Form: form}, session, slog)
 			return
 		}
 
 		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 		defer cancel()
 
-		uid := session.Get(r, "userID")
-
-		if err := news.SaveArticle(ctx, uid.(int64), form.Get("link")); err != nil {
+		if err := news.SaveArticle(ctx, 0, req.Link); err != nil {
+			slog.Error("Can't save article", "err", err.Error())
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return
 		}
 
-		session.Put(r, "flash", "Article successfully suggested")
+		///////////////////////////////////////////////////////////////////////
 
-		art := models.Art{Link: form.Get("link"), Content: form.Get("content")}
+		art := models.Art{Link: req.Link, Content: req.Content}
 
 		ctx = context.WithValue(r.Context(), ctxKeyArticle, art)
 
@@ -310,38 +290,24 @@ func suggestArticle(news NewsSaver,
 	}
 }
 
-func showArticle(tC map[string]*template.Template,
-	ctxKeyUser models.ContextKey,
+// TODO Нужно сделать получение на подобие метода login, т.е. js скриптом отправлять насервер json и тут его парсить!
+func showArticle(service AuthService,
+	tC map[string]*template.Template,
 	ctxKeyArticle models.ContextKeyArticle,
 	session *sessions.Session,
+	slog *slog.Logger,
 ) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		art, ok := r.Context().Value(ctxKeyArticle).(*models.Art)
 
 		if !ok {
+			slog.Error("Can't get article form context", "context key", ctxKeyArticle)
 			http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 			return
 		}
 
-		render(w, r, "show.page.html", tC, &templateData{
+		render(w, r, service, "show.page.html", tC, &templateData{
 			Art: art,
-		}, ctxKeyUser, session)
-	}
-}
-
-func whoami(ctxKeyUser models.ContextKey) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		user, ok := r.Context().Value(ctxKeyUser).(*models.User)
-		if !ok {
-			w.Write([]byte("Please login"))
-		}
-		w.Write([]byte("Your name is " + user.Name))
-	}
-}
-
-func ping() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("Pong"))
+		}, session, slog)
 	}
 }
