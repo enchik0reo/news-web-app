@@ -1,32 +1,46 @@
 version: "3"
 
 tasks:
+  up:
+    desc: "Up docker-compose and migrations"
+    dir: "./backend"
+    cmds:
+      - docker-compose up -d
+      - sleep 2
+      - go run ./migrations/migrator/migrator.go --action=up
+
+  mup:
+    desc: "Run migrator action up"
+    dir: "./backend"
+    cmds:
+      - go run ./migrations/migrator/migrator.go --action=up
+
+  down:
+    desc: "Run migrator action down"
+    dir: "./backend"
+    cmds:
+      - go run ./migrations/migrator/migrator.go --action=down
+
+  run_front:
+    desc: "Run frontend"
+    dir: "./frontend"
+    cmds:
+      - PORT=3003 npm start
+
   run_auth:
     desc: "Run auth service"
+    dir: "./backend"
     cmds:
       - go run ./app/authService/cmd/auth_service/main.go
 
   run_news:
     desc: "Run news service"
+    dir: "./backend"
     cmds:
       - go run ./app/newsService/cmd/news_service/main.go
 
-  run_web:
-    desc: "Run web service"
+  run_api:
+    desc: "Run api service"
+    dir: "./backend"
     cmds:
-      - go run ./app/webService/cmd/web_service/main.go
-
-  dup:
-    desc: "Up docker-compose"
-    cmds:
-      - docker-compose up -d
-
-  mup:
-    desc: "Run migrator action up"
-    cmds:
-      - go run ./migrations/migrator/migrator.go --action=up
-
-  mdown:
-    desc: "Run migrator action down"
-    cmds:
-      - go run ./migrations/migrator/migrator.go --action=down
+      - go run ./app/apiService/cmd/api_service/main.go
