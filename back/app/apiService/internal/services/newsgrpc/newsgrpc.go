@@ -62,7 +62,14 @@ func (c *Client) SaveArticle(ctx context.Context, userID int64, link string) err
 	const op = "services.newsgrpc.SaveArticle"
 
 	if _, err := c.api.SaveArticle(ctx, &newsv1.SaveArticleRequest{UserId: userID, Link: link}); err != nil {
-		return fmt.Errorf("%s: %w", op, err)
+		switch {
+		case errors.Is(err, status.Error(codes.InvalidArgument, "invalid article")):
+			return services.ErrArticleSkipped
+		case errors.Is(err, status.Error(codes.AlreadyExists, "article already exists")):
+			return services.ErrArticleExists
+		default:
+			return fmt.Errorf("%s: %w", op, err)
+		}
 	}
 
 	return nil

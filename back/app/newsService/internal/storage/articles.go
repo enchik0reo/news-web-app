@@ -8,6 +8,8 @@ import (
 	"time"
 
 	"newsWebApp/app/newsService/internal/models"
+
+	"github.com/lib/pq"
 )
 
 type ArticleStorage struct {
@@ -20,7 +22,7 @@ func NewArticleStorage(db *sql.DB) *ArticleStorage {
 
 func (s *ArticleStorage) Save(ctx context.Context, article models.Article) error {
 	stmt, err := s.db.PrepareContext(ctx, `INSERT INTO articles (user_id, source_name, title, link, excerpt, image, published_at) 
-	VALUES ($1, $2, $3, $4, $5, $6, $7) ON CONFLICT DO NOTHING`)
+	VALUES ($1, $2, $3, $4, $5, $6, $7)`)
 	if err != nil {
 		return fmt.Errorf("can't prepare statement: %w", err)
 	}
@@ -39,7 +41,14 @@ func (s *ArticleStorage) Save(ctx context.Context, article models.Article) error
 		article.ImageURL,
 		article.PublishedAt.Format(time.RFC3339),
 	); err != nil {
-		return fmt.Errorf("can't insert article: %v", err)
+		pqErr, ok := err.(*pq.Error)
+		if ok {
+			if pqErr.Code.Name() == "unique_violation" {
+				return ErrArticleExists
+			}
+		} else {
+			return fmt.Errorf("can't save article: %v", err)
+		}
 	}
 
 	return nil

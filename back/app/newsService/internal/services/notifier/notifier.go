@@ -48,8 +48,17 @@ func (n *Notifier) SaveArticleFromUser(ctx context.Context, userID int64, link s
 	const op = "services.notifier.save_article_from_user"
 
 	if err := n.saver.SaveArticleFromUser(ctx, userID, link); err != nil {
-		n.log.Error("Can't save article from user", "err", err.Error())
-		return fmt.Errorf("%s: %w", op, err)
+		switch {
+		case errors.Is(err, services.ErrArticleSkipped):
+			n.log.Debug("Can't save article from user", "err", err.Error())
+			return services.ErrArticleSkipped
+		case errors.Is(err, services.ErrArticleExists):
+			n.log.Debug("Can't save article from user", "err", err.Error())
+			return services.ErrArticleExists
+		default:
+			n.log.Error("Can't save article from user", "err", err.Error())
+			return fmt.Errorf("%s: %w", op, err)
+		}
 	}
 
 	return nil

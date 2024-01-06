@@ -32,7 +32,14 @@ func Register(grpcSrv *grpc.Server, nS NewsService) {
 
 func (s *serverAPI) SaveArticle(ctx context.Context, req *newsv1.SaveArticleRequest) (*newsv1.SaveArticleResponse, error) {
 	if err := s.newsService.SaveArticleFromUser(ctx, req.GetUserId(), req.GetLink()); err != nil {
-		return nil, status.Error(codes.Internal, "internal error")
+		switch {
+		case errors.Is(err, services.ErrArticleSkipped):
+			return nil, status.Error(codes.InvalidArgument, "invalid article")
+		case errors.Is(err, services.ErrArticleExists):
+			return nil, status.Error(codes.AlreadyExists, "article already exists")
+		default:
+			return nil, status.Error(codes.Internal, "internal error")
+		}
 	}
 
 	return &newsv1.SaveArticleResponse{}, nil

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Navbar, Nav, Container } from 'react-bootstrap';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import logo from '../img/logo.png';
@@ -6,9 +6,27 @@ import Home from '../pages/Home';
 import Suggest from '../pages/Suggest';
 import Login from '../pages/Login';
 import Signup from '../pages/Signup';
-import SignBtn from './Sign';
+import LoginBtn from './LoginBtn';
+import LogoutBtn from './LogoutBtn';
 
 const Header = () => {
+
+    const [loginB, setLoginB] = useState(true)
+
+    const onLoginForm = (props) => {
+        if (props) {
+            setLoginB(false)
+        }
+    }
+
+    useEffect(() => {
+        if (localStorage.getItem('access_token') !== null) {
+            setLoginB(false)
+        } else {
+            setLoginB(true)
+        }
+    }, []);
+
     return (
         <div>
             <Navbar fixed="top" collapseOnSelect expand="sm" bg="dark" variant="dark" >
@@ -28,7 +46,7 @@ const Header = () => {
                             <Nav.Link className="ms-4" href="/suggest" > Suggest  News </Nav.Link>
                         </Nav>
                         <Nav className="d-flex">
-                            <SignBtn />
+                            {loginB ? <LoginBtn /> : <LogoutBtn />}
                         </Nav>
                     </Navbar.Collapse>
                 </Container>
@@ -38,7 +56,7 @@ const Header = () => {
                 <Routes>
                     <Route path="/" element={<Home />} />
                     <Route path="/suggest" element={<Suggest />} />
-                    <Route path="/login" element={<Login />} />
+                    <Route path="/login" element={<Login onLoginForm={onLoginForm} />} />
                     <Route path="/signup" element={<Signup />} />
                 </Routes>
             </Router>

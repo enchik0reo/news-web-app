@@ -33,6 +33,6 @@ token_managment:
 
 news_managment:
   filter_keywords: ["golang", "go"]
-  fetch_interval: 10m
-  refresh_interval: 15m
+  fetch_interval: 15m
+  refresh_interval: 30m
   articles_limit: 30

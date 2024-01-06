@@ -46,8 +46,11 @@ const SuggestForm = ({ submitForm }) => {
             }
 
             axios.post(baseurl, jsonData, config).then((r) => {
-                if (r.status === 204) {
-                    toast("This article already exists.")
+                if (r.status === 206) {
+                    toast("We already know about this article and will publish it soon. Thank you!")
+                    setDataIsCorrect(false)
+                } else if (r.status === 204) {
+                    toast("This article is not suitable, sorry. Please, try another one.")
                     setDataIsCorrect(false)
                 } else {
                     submitForm(r)

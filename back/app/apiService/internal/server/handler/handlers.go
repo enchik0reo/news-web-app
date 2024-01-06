@@ -158,29 +158,22 @@ func suggestArticle(service AuthService, news NewsSaver, slog *slog.Logger) http
 		}
 
 		if err := news.SaveArticle(ctx, int64(uid), req.Link); err != nil {
-			slog.Error("Can't save article", "err", err.Error())
-			w.WriteHeader(http.StatusNoContent)
-			return
+			switch {
+			case errors.Is(err, services.ErrArticleSkipped):
+				slog.Debug("Can't save article", "err", err.Error())
+				w.WriteHeader(http.StatusNoContent)
+				return
+			case errors.Is(err, services.ErrArticleExists):
+				slog.Debug("Can't save article", "err", err.Error())
+				w.WriteHeader(http.StatusPartialContent)
+				return
+			default:
+				slog.Error("Can't save article", "err", err.Error())
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
 		}
 
 		w.WriteHeader(http.StatusCreated)
 	}
 }
-
-/*
-func showArticle(service AuthService, slog *slog.Logger) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		art, ok := r.Context().Value(ctxKeyArticle).(*models.Art)
-
-		if !ok {
-			slog.Error("Can't get article form context", "context key", ctxKeyArticle)
-			http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
-			return
-		}
-
-		render(w, r, service, "show.page.html", tC, &templateData{
-			Art: art,
-		}, session, slog)
-	}
-}
-*/

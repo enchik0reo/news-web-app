@@ -171,38 +171,6 @@ func refresh(refTokTTL time.Duration, service AuthService, slog *slog.Logger) fu
 	}
 }
 
-/*
-	r.Header.Get("Cookie")
-
-	OR
-
-	cookie, err := r.Cookie("refresh_token")
-	if err != nil {
-		if errors.Is(err, http.ErrNoCookie) {
-			slog.Debug("No cookie")
-		} else {
-			slog.Error("Can't get cookie", "err", err.Error())
-		}
-	} else {
-		slog.Debug(cookie.Value)
-	}
-*/
-
-/*
-func secureHeaders() func(http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-
-		fn := func(w http.ResponseWriter, r *http.Request) {
-			w.Header().Set("X-XSS-Protection", "1; mode=block")
-			w.Header().Set("X-Frame-Options", "deny")
-
-			next.ServeHTTP(w, r)
-		}
-		return http.HandlerFunc(fn)
-	}
-}
-*/
-
 func corsSettings() func(next http.Handler) http.Handler {
 	h := cors.Handler(cors.Options{
 		AllowedOrigins:   []string{"http://localhost:3003"},

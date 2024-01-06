@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import LoginForm from './LoginForm';
 import LoginFormSuccess from './LoginFormSuccess';
 
-const Forml = () => {
+const Forml = ({ onLoginForm }) => {
   
   const [formIsSubmitted, setFormIsSubmitted] = useState(false)
   const [answer, setAnswer] = useState('')
@@ -12,6 +12,7 @@ const Forml = () => {
       setAnswer('You have successfully logged in!')
       localStorage.setItem('access_token', 'Bearer ' + props.headers.access_token)
       setFormIsSubmitted(true)
+      onLoginForm(true)
     } else {
       console.log(props.status)
     }

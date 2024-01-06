@@ -42,7 +42,6 @@ func New(auth AuthService,
 	r.Use(loggerMw(slog))
 	r.Use(corsSettings())
 	r.Use(refresh(refTokTTL, auth, slog))
-	//r.Use(secureHeaders())
 
 	r.Get("/home", home(auth, fetcher, slog))
 	r.Post("/signup", signup(auth, slog))
@@ -52,8 +51,6 @@ func New(auth AuthService,
 		r.Use(authenticate(refTokTTL, auth, slog))
 		r.Post("/", suggestArticle(auth, news, slog))
 	})
-
-	//r.Get("/refresh", refresh(auth, slog))
 
 	return r, nil
 }

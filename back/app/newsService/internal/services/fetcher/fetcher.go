@@ -102,7 +102,7 @@ func (f *Fetcher) SaveArticleFromUser(ctx context.Context, userID int64, link st
 	}
 
 	if f.itemShouldBeSkipped(item) {
-		return nil
+		return services.ErrArticleSkipped
 	}
 
 	if err := f.articleStor.Save(ctx, models.Article{
@@ -114,7 +114,11 @@ func (f *Fetcher) SaveArticleFromUser(ctx context.Context, userID int64, link st
 		ImageURL:    item.ImageURL,
 		PublishedAt: item.Date,
 	}); err != nil {
-		f.log.Error("Can't save item", "err", err.Error())
+		if errors.Is(err, storage.ErrArticleExists) {
+			f.log.Debug("Can't save article from user", "err", err.Error())
+			return services.ErrArticleExists
+		}
+		f.log.Error("Can't save article from user", "err", err.Error())
 		return fmt.Errorf("%s: %w", op, err)
 	}
 
@@ -187,8 +191,10 @@ func (f *Fetcher) saveItems(ctx context.Context, items []models.Item) error {
 				ImageURL:    item.ImageURL,
 				PublishedAt: item.Date,
 			}); err != nil {
-				f.log.Error("Can't save item", "err", err.Error())
-				return fmt.Errorf("%s: %w", op, err)
+				if !errors.Is(err, storage.ErrArticleExists) {
+					f.log.Error("Can't save item", "err", err.Error())
+					return fmt.Errorf("%s: %w", op, err)
+				}
 			}
 
 			return nil
