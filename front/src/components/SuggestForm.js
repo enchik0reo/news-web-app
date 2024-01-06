@@ -95,7 +95,7 @@ const SuggestForm = ({ submitForm }) => {
                 </div>
 
                 <div className="tologin">
-                    <Nav.Link href="/login" >
+                    <Nav.Link>
                         <button className="submit" onClick={handleFormSubmit}>Send</button>
                     </Nav.Link>
                 </div>
