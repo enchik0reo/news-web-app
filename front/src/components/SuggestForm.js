@@ -67,7 +67,7 @@ const SuggestForm = ({ submitForm }) => {
     }, [errors, dataIsCorrect, submitForm, values])
 
     return (
-        <div className="app-wrapperl">
+        <div className="suggest-appp">
             <div>
                 <h2 className="titlel">Suggest Article</h2>
             </div>

@@ -10,9 +10,9 @@ const LogoutBtn = () => {
 
     return (
         <Nav.Item>
-                <Nav.Link className="btn btn-outline-info" href="/" onClick={logoutDo} > Logout </Nav.Link>
+            <Nav.Link className="btn btn-outline-info" href="/" onClick={logoutDo} > Logout </Nav.Link>
         </Nav.Item>
     )
-  }
-  
+}
+
 export default LogoutBtn

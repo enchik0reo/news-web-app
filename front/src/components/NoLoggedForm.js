@@ -3,7 +3,7 @@ import { Nav } from 'react-bootstrap';
 import '../css/suggest.css'
 
 const NoLoggedForm = () => {
-    
+
     return (
         <div className="suggest-app">
             <h2>Please login to offer news!</h2>

@@ -18,22 +18,22 @@ const Suggest = () => {
 
     const [formIsSubmitted, setFormIsSubmitted] = useState(false)
     const [answer, setAnswer] = useState('')
-  
+
     const submitForm = (props) => {
-      if (props.status === 201) {
-        setAnswer('You have successfully submitted an article!')
-        if (props.headers.access_token) {
-            localStorage.setItem('access_token', 'Bearer ' + props.headers.access_token)
+        if (props.status === 201) {
+            setAnswer('You have successfully submitted an article!')
+            if (props.headers.access_token) {
+                localStorage.setItem('access_token', 'Bearer ' + props.headers.access_token)
+            }
+            setFormIsSubmitted(true)
+        } else {
+            console.log(props.status)
         }
-        setFormIsSubmitted(true)
-      } else {
-        console.log(props.status)
-      }
     }
 
     return (
         <>
-            { !formIsLogged ? <NoLoggedForm /> :   !formIsSubmitted ? <SuggestForm submitForm={submitForm}/> : <SuggestFormSuccess answer={answer}/> }
+            {!formIsLogged ? <NoLoggedForm /> : !formIsSubmitted ? <SuggestForm submitForm={submitForm} /> : <SuggestFormSuccess answer={answer} />}
         </>
     )
 }

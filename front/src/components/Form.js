@@ -3,7 +3,7 @@ import SignupForm from './SignupForm';
 import SignupFormSuccess from './SignupFormSuccess';
 
 const Form = () => {
-  
+
   const [formIsSubmitted, setFormIsSubmitted] = useState(false)
   const [answer, setAnswer] = useState('')
 
@@ -21,7 +21,7 @@ const Form = () => {
 
   return (
     <div>
-      { !formIsSubmitted ? <SignupForm submitForm={submitForm}/> : <SignupFormSuccess answer={answer}/>}
+      {!formIsSubmitted ? <SignupForm submitForm={submitForm} /> : <SignupFormSuccess answer={answer} />}
     </div>
   )
 }

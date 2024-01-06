@@ -63,19 +63,6 @@
     margin-bottom: 10px;
 }
 
-.input-text {
-    height: 96px;
-    font-size: 20px;
-    outline: none;
-    width: 100%;
-    border-top-style: none;
-    border-left-style: none;
-    border-right-style: none;
-    border-bottom-width: 2px; 
-    border-bottom-color: rgba(0, 0, 0, 0.63); 
-    border-bottom-style: solid;
-}
-
 .error {
     color: red;
 }

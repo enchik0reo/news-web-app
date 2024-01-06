@@ -13,7 +13,7 @@ export default class Article extends React.Component {
                 <h4>{this.props.art.title}</h4>
                 <p>{this.props.art.excerpt}</p>
                 <Nav.Link className="read-all" href={this.props.art.link}> Read full... </Nav.Link>
-                <img src={this.props.art.image_url} alt="" /> 
+                <img src={this.props.art.image_url} alt="" />
             </div>
         )
     }

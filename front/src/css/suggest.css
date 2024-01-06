@@ -2,7 +2,19 @@
     width: 35%;
     background-color: #fff;
     min-width: 350px;
-    min-height: 350px;
+    min-height: 450px;
+    padding: 30px;
+    box-sizing: border-box;
+    border-radius: 5px;
+    border: 1px solid #c8cace;
+    margin: 25px auto;
+}
+
+.suggest-appp {
+    width: 35%;
+    background-color: #fff;
+    min-width: 350px;
+    min-height: 450px;
     padding: 30px;
     box-sizing: border-box;
     border-radius: 5px;
@@ -13,5 +25,18 @@
 .suggest-app h2 {
     color: #3d50ff;
     text-align: center;
-    margin: 40px 0px 100px 0px;
+    margin: 40px 0px 120px 0px;
+}
+
+.input-text {
+    height: 128px;
+    font-size: 20px;
+    outline: none;
+    width: 100%;
+    border-top-style: none;
+    border-left-style: none;
+    border-right-style: none;
+    border-bottom-width: 2px; 
+    border-bottom-color: rgba(0, 0, 0, 0.63); 
+    border-bottom-style: solid;
 }

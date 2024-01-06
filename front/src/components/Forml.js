@@ -3,7 +3,7 @@ import LoginForm from './LoginForm';
 import LoginFormSuccess from './LoginFormSuccess';
 
 const Forml = ({ onLoginForm }) => {
-  
+
   const [formIsSubmitted, setFormIsSubmitted] = useState(false)
   const [answer, setAnswer] = useState('')
 
@@ -20,7 +20,7 @@ const Forml = ({ onLoginForm }) => {
 
   return (
     <div>
-      { !formIsSubmitted ? <LoginForm submitForm={submitForm}/> : <LoginFormSuccess answer={answer}/>}
+      {!formIsSubmitted ? <LoginForm submitForm={submitForm} /> : <LoginFormSuccess answer={answer} />}
     </div>
   )
 }

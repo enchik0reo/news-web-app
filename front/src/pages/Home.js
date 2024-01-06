@@ -14,23 +14,23 @@ export default class Home extends React.Component {
                 "Authorization": localStorage.getItem('access_token'),
             }
         }
-    
+
         axios.get(baseurl, config).then((res) => {
             if (res.headers.access_token) {
                 localStorage.setItem('access_token', 'Bearer ' + res.headers.access_token)
             }
-          this.setState({ articles: res.data })
+            this.setState({ articles: res.data })
         })
-    
+
         this.state = {
             articles: []
         }
-      }
+    }
 
     render() {
         return (
             <>
-                <h3 className="special-h3">Latest News</h3>
+                <h3 className="special-h3">Latest Articles</h3>
                 <Articles articles={this.state.articles} />
             </>
         )
