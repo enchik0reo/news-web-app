@@ -6,10 +6,11 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
-	"newsWebApp/app/apiService/internal/services"
 	"strconv"
 	"strings"
 	"time"
+
+	"newsWebApp/app/apiService/internal/services"
 )
 
 func home(service AuthService, fetcher NewsFetcher, slog *slog.Logger) http.HandlerFunc {

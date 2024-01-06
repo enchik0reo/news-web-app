@@ -56,6 +56,7 @@ func (s *serverAPI) GetNewestArticle(ctx context.Context, req *newsv1.GetNewestA
 	}
 
 	grpcArticle := &newsv1.Article{
+		ArticleId:  art.ID,
 		UserName:   art.UserName,
 		SourceName: art.SourceName,
 		Title:      art.Title,
@@ -82,6 +83,7 @@ func (s *serverAPI) GetArticles(ctx context.Context, req *newsv1.GetArticlesRequ
 
 	for i, art := range articles {
 		grpcArticles[i] = &newsv1.Article{
+			ArticleId:  art.ID,
 			UserName:   art.UserName,
 			SourceName: art.SourceName,
 			Title:      art.Title,

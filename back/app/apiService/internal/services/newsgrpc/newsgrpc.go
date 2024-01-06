@@ -95,6 +95,7 @@ func (c *Client) GetNewestArticle(ctx context.Context) (*models.Article, error) 
 	}
 
 	article := models.Article{
+		ArticleID:  art.ArticleId,
 		UserName:   art.UserName,
 		SourceName: art.SourceName,
 		Title:      art.Title,
@@ -128,6 +129,7 @@ func (c *Client) GetArticles(ctx context.Context) ([]models.Article, error) {
 		}
 
 		articles[i] = models.Article{
+			ArticleID:  art.ArticleId,
 			UserName:   art.UserName,
 			SourceName: art.SourceName,
 			Title:      art.Title,

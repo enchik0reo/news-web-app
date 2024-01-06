@@ -6,8 +6,9 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-	"newsWebApp/app/apiService/internal/services"
 	"time"
+
+	"newsWebApp/app/apiService/internal/services"
 
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/cors"
