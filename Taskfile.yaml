@@ -6,7 +6,6 @@ tasks:
     dir: "./back"
     cmds:
       - docker-compose up -d
-      - sleep 2
       - go run ./migrations/migrator/migrator.go --action=up
 
   mup:

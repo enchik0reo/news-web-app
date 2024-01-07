@@ -3,6 +3,10 @@
 It's a full-stack web application called Go Newsline that lets people get articles about Go in one place.
 Backend powered by Go. Frontend powered by React.
 
+## Scheme
+
+![Scheme](./scheme.png)
+
 ## Features
 
 - Application backend contains three separate services (Auth, News, Api)
@@ -13,8 +17,8 @@ Backend powered by Go. Frontend powered by React.
 - News service uses rss feed and website parsing to save and view articles
 - Web api server on net/http (use chi router)
 - RESTful routing
-- Data persistence using PostgreSQL database
-- Cache using Redis database
+- Data persistence using PostgreSQL
+- Cache using Redis
 - Using migrations
 - Frontend using React
 
@@ -22,7 +26,7 @@ Backend powered by Go. Frontend powered by React.
 
 Software requirements:
 
-- This project supports Go modules.
+- Go
 - Docker
 - React
 - task
@@ -37,9 +41,6 @@ $ cd newsWebApp
 # Or use 'task down' if you need to rollback the migration
 $ task up
 
-# Run frontend react app on port 3003
-$ task run_front
-
 # Run auth service on port 44044
 $ task run_auth
 
@@ -48,6 +49,9 @@ $ task run_news
 
 # Run api service on port 8008
 $ task run_api
+
+# Run frontend react app on port 3003
+$ task run_front
 ```
 Go to http://localhost:3003/ and try it.
 

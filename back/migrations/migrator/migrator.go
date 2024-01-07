@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
@@ -54,9 +55,20 @@ func main() {
 		db.SSLMode,
 	)
 
-	m, err := migrate.New(sourceURL, databaseURL)
+	var err error
+	var m *migrate.Migrate
+
+	for i := 1; i <= 3; i++ {
+		m, err = migrate.New(sourceURL, databaseURL)
+		if err != nil {
+			time.Sleep(time.Duration(i) * time.Second)
+		} else {
+			break
+		}
+	}
+
 	if err != nil {
-		panic(fmt.Sprintf("can't get new migrations: %v", err))
+		panic(fmt.Sprintf("can't init new new migrate instance: %v", err))
 	}
 
 	switch action {

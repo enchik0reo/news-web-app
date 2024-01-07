@@ -91,11 +91,11 @@ func (a *Auth) LoginUser(ctx context.Context, email, pass string) (int64, string
 	user, err := a.userStorage.GetUserByEmail(ctx, email)
 	if err != nil {
 		if errors.Is(err, storage.ErrUserNotFound) {
-			a.log.Warn("Failed get user", "err", err.Error())
+			a.log.Warn("Failed to get user", "err", err.Error(), "e-mail", email)
 
 			return 0, "", "", "", services.ErrUserDoesntExists
 		}
-		a.log.Error("Failed get user", "err", err.Error())
+		a.log.Error("Failed to get user", "err", err.Error())
 
 		return 0, "", "", "", errCantLoginUser
 	}

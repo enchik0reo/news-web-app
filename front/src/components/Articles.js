@@ -11,7 +11,7 @@ export default class Articles extends React.Component {
             </div>)
         else
             return (<div>
-                <h2>There's nothing to see here yet!</h2>
+                <h2 className="no-articles">There's nothing to see here yet!</h2>
             </div>)
     }
 }

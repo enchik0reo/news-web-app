@@ -95,6 +95,9 @@ func (s *SourceStorage) Add(ctx context.Context, source models.Source) (int64, e
 	var id int64
 
 	if err := row.Scan(&id); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return 0, ErrSourceExists
+		}
 		return 0, fmt.Errorf("can't get last insert id: %w", err)
 	}
 

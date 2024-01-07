@@ -58,6 +58,11 @@ const SuggestForm = ({ submitForm }) => {
             })
                 .catch((error) => {
                     if (error) {
+                        if (error.response.statusText) {
+                            if (error.response.statusText === "Unauthorized") {
+                                toast("Sorry, your session is expired. Please, relogin.")
+                            }
+                        }
                         console.error('Ошибка при выполнении запроса:', error)
                         setDataIsCorrect(false)
                     }

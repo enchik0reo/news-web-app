@@ -32,7 +32,7 @@ token_managment:
   refresh_token_ttl: 43200m
 
 news_managment:
-  filter_keywords: ["golang", "go"]
+  filter_keywords: ["golang", "go", "go*"]
   fetch_interval: 15m
   refresh_interval: 30m
   articles_limit: 30
