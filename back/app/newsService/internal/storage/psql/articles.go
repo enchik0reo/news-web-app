@@ -1,4 +1,4 @@
-package storage
+package psql
 
 import (
 	"context"
@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"newsWebApp/app/newsService/internal/models"
+	"newsWebApp/app/newsService/internal/storage"
 
 	"github.com/lib/pq"
 )
@@ -44,7 +45,7 @@ func (s *ArticleStorage) Save(ctx context.Context, article models.Article) error
 		pqErr, ok := err.(*pq.Error)
 		if ok {
 			if pqErr.Code.Name() == "unique_violation" {
-				return ErrArticleExists
+				return storage.ErrArticleExists
 			}
 		} else {
 			return fmt.Errorf("can't save article: %v", err)
@@ -69,7 +70,7 @@ func (s *ArticleStorage) LatestPosted(ctx context.Context, limit int) ([]models.
 	rows, err := stmt.QueryContext(ctx, limit)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, ErrNoLatestArticles
+			return nil, storage.ErrNoLatestArticles
 		}
 		return nil, fmt.Errorf("can't get articles from db: %v", err)
 	}
@@ -105,7 +106,7 @@ func (s *ArticleStorage) NewestNotPosted(ctx context.Context) (*models.Article, 
 			article, err = s.notPostedFromBot(ctx)
 			if err != nil {
 				if errors.Is(err, sql.ErrNoRows) {
-					return nil, ErrNoNewArticles
+					return nil, storage.ErrNoNewArticles
 				} else {
 					return nil, fmt.Errorf("can't get article: %v", err)
 				}

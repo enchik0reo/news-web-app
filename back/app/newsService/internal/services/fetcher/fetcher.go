@@ -23,6 +23,10 @@ type SourceStorage interface {
 	GetList(ctx context.Context) ([]models.Source, error)
 }
 
+type LinkCacher interface {
+	CacheLink(context.Context, string) error
+}
+
 type RSSSource interface {
 	ID() int64
 	Name() string
@@ -36,6 +40,7 @@ type UserSource interface {
 type Fetcher struct {
 	articleStor ArticleStorage
 	sourceStor  SourceStorage
+	cacher      LinkCacher
 
 	fetchInterval  time.Duration
 	filterKeywords []string
@@ -45,6 +50,7 @@ type Fetcher struct {
 func New(
 	articleStorage ArticleStorage,
 	soureStorage SourceStorage,
+	cacher LinkCacher,
 	fetchInterval time.Duration,
 	filterKeywords []string,
 	log *slog.Logger,
@@ -52,6 +58,7 @@ func New(
 	return &Fetcher{
 		articleStor:    articleStorage,
 		sourceStor:     soureStorage,
+		cacher:         cacher,
 		fetchInterval:  fetchInterval,
 		filterKeywords: filterKeywords,
 		log:            log,
@@ -93,10 +100,14 @@ func (f *Fetcher) Start(ctx context.Context) error {
 func (f *Fetcher) SaveArticleFromUser(ctx context.Context, userID int64, link string) error {
 	const op = "services.fetcher.save_item-from_user"
 
-	userSource := source.NewUserSource(userID, link)
+	userSource := source.NewUserSource(f.cacher, userID, link)
 
 	item, err := userSource.LoadFromUser(ctx)
 	if err != nil {
+		if errors.Is(err, services.ErrArticleExists) {
+			f.log.Debug("Can't save article from user", "err", err.Error())
+			return services.ErrArticleExists
+		}
 		f.log.Error("Can't fetch items from link", "link", link, "err", err.Error())
 		return fmt.Errorf("%s: %w", op, err)
 	}
@@ -145,7 +156,7 @@ func (f *Fetcher) intervalFetch(ctx context.Context) error {
 	for _, src := range sources {
 		wg.Add(1)
 
-		rssSource := source.NewRRSSourceFromModel(src)
+		rssSource := source.NewRRSSourceFromModel(f.cacher, src)
 
 		go func(rssSource RSSSource) {
 			defer wg.Done()

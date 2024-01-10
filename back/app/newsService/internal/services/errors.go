@@ -9,4 +9,5 @@ var (
 	ErrNoSources           = errors.New("there are no sources")
 	ErrArticleExists       = errors.New("article already exists")
 	ErrArticleSkipped      = errors.New("invalid article")
+	ErrLinkExists          = errors.New("link already exists")
 )

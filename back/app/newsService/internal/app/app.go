@@ -12,16 +12,18 @@ import (
 	"newsWebApp/app/newsService/internal/config"
 	grpcServer "newsWebApp/app/newsService/internal/grpc/server"
 	"newsWebApp/app/newsService/internal/logs"
+	"newsWebApp/app/newsService/internal/services/cacher"
 	"newsWebApp/app/newsService/internal/services/fetcher"
 	"newsWebApp/app/newsService/internal/services/notifier"
-	"newsWebApp/app/newsService/internal/storage"
 	"newsWebApp/app/newsService/internal/storage/psql"
+	"newsWebApp/app/newsService/internal/storage/redis"
 )
 
 type App struct {
 	cfg        *config.Config
 	log        *slog.Logger
 	db         *sql.DB
+	linkCache  *redis.Storage
 	fetcher    *fetcher.Fetcher
 	notifier   *notifier.Notifier
 	gRPCServer *grpcServer.Server
@@ -43,11 +45,23 @@ func New() *App {
 		os.Exit(1)
 	}
 
-	sourceStor := storage.NewSourceStorage(a.db)
-	articleStor := storage.NewArticleStorage(a.db)
+	sourceStor := psql.NewSourceStorage(a.db)
+	articleStor := psql.NewArticleStorage(a.db)
+
+	ctx, cacnel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer cacnel()
+
+	a.linkCache, err = redis.New(ctx, a.cfg.LinkStorage.Host, a.cfg.LinkStorage.Port)
+	if err != nil {
+		a.log.Error("Failed to create new link storage", "err", err)
+		os.Exit(1)
+	}
+
+	linkCacher := cacher.New(a.linkCache)
 
 	a.fetcher = fetcher.New(articleStor,
 		sourceStor,
+		linkCacher,
 		a.cfg.Manager.FetchInterval,
 		a.cfg.Manager.FilterKeywords,
 		a.log,
@@ -96,6 +110,10 @@ func (a *App) MustRun() {
 func (a *App) mustStop() {
 	if err := a.db.Close(); err != nil {
 		a.log.Error("Closing connection to news storage", "err store", err.Error())
+	}
+
+	if err := a.linkCache.CloseConn(); err != nil {
+		a.log.Error("Closing connection to session storage", "err store", err.Error())
 	}
 
 	a.gRPCServer.Stop()

@@ -1,4 +1,4 @@
-package storage
+package psql
 
 import (
 	"context"
@@ -7,6 +7,7 @@ import (
 	"fmt"
 
 	"newsWebApp/app/newsService/internal/models"
+	"newsWebApp/app/newsService/internal/storage"
 )
 
 type SourceStorage struct {
@@ -29,7 +30,7 @@ func (s *SourceStorage) GetList(ctx context.Context) ([]models.Source, error) {
 	rows, err := stmt.QueryContext(ctx)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, ErrNoSources
+			return nil, storage.ErrNoSources
 		}
 		return nil, fmt.Errorf("can't get sources: %w", err)
 	}
@@ -59,7 +60,7 @@ func (s *SourceStorage) GetByID(ctx context.Context, id int64) (*models.Source, 
 
 	if err := row.Err(); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, ErrSourceNotFound
+			return nil, storage.ErrSourceNotFound
 		}
 		return nil, fmt.Errorf("can't get source: %w", err)
 	}
@@ -68,7 +69,7 @@ func (s *SourceStorage) GetByID(ctx context.Context, id int64) (*models.Source, 
 
 	if err := row.Scan(&source.ID, &source.Name, &source.FeedURL); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, ErrSourceNotFound
+			return nil, storage.ErrSourceNotFound
 		}
 		return nil, fmt.Errorf("can't scan source: %w", err)
 	}
@@ -87,7 +88,7 @@ func (s *SourceStorage) Add(ctx context.Context, source models.Source) (int64, e
 
 	if err := row.Err(); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return 0, ErrSourceExists
+			return 0, storage.ErrSourceExists
 		}
 		return 0, fmt.Errorf("can't insert source: %w", err)
 	}
@@ -96,7 +97,7 @@ func (s *SourceStorage) Add(ctx context.Context, source models.Source) (int64, e
 
 	if err := row.Scan(&id); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return 0, ErrSourceExists
+			return 0, storage.ErrSourceExists
 		}
 		return 0, fmt.Errorf("can't get last insert id: %w", err)
 	}

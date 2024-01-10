@@ -2,44 +2,53 @@ package source
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
 
 	"newsWebApp/app/newsService/internal/models"
+	"newsWebApp/app/newsService/internal/services"
 
 	"github.com/SlyMarbo/rss"
 	"github.com/go-shiori/go-readability"
 )
 
+type Cacher interface {
+	CacheLink(context.Context, string) error
+}
+
 type RSSSource struct {
+	cacher Cacher
+
 	sourceURL  string
 	sourceID   int64
 	sourceName string
 }
 
-func NewRRSSourceFromModel(m models.Source) RSSSource {
-	return RSSSource{
+func NewRRSSourceFromModel(cacher Cacher, m models.Source) *RSSSource {
+	return &RSSSource{
+		cacher:     cacher,
 		sourceURL:  m.FeedURL,
 		sourceID:   m.ID,
 		sourceName: m.Name,
 	}
 }
 
-func (s RSSSource) ID() int64 {
+func (s *RSSSource) ID() int64 {
 	return s.sourceID
 }
 
-func (s RSSSource) Name() string {
+func (s *RSSSource) Name() string {
 	return s.sourceName
 }
 
-func (s RSSSource) URL() string {
+func (s *RSSSource) URL() string {
 	return s.sourceURL
 }
 
-func (s RSSSource) IntervalLoad(ctx context.Context) ([]models.Item, error) {
-	const op = "services.source.interval_fetch"
+func (s *RSSSource) IntervalLoad(ctx context.Context) ([]models.Item, error) {
+	const op = "services.source.rss.interval_load"
 
 	feed, err := s.loadFeed(ctx, s.sourceURL)
 	if err != nil {
@@ -48,7 +57,16 @@ func (s RSSSource) IntervalLoad(ctx context.Context) ([]models.Item, error) {
 
 	items := make([]models.Item, 0, len(feed.Items))
 
+Loop:
 	for _, rssItem := range feed.Items {
+		if err := s.cacher.CacheLink(ctx, rssItem.Link); err != nil {
+			if errors.Is(err, services.ErrLinkExists) {
+				continue Loop
+			} else {
+				return nil, fmt.Errorf("%s: %w", op, err)
+			}
+		}
+
 		itm := models.Item{
 			Title:      rssItem.Title,
 			Categories: rssItem.Categories,
@@ -88,8 +106,8 @@ func (s RSSSource) IntervalLoad(ctx context.Context) ([]models.Item, error) {
 	return items, nil
 }
 
-func (s RSSSource) loadFeed(ctx context.Context, url string) (*rss.Feed, error) {
-	const op = "services.source.loaded_feed"
+func (s *RSSSource) loadFeed(ctx context.Context, url string) (*rss.Feed, error) {
+	const op = "services.source.rss.load_feed"
 
 	var feedCh = make(chan *rss.Feed)
 	var errCh = make(chan error)

@@ -2,37 +2,53 @@ package source
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
-	"newsWebApp/app/newsService/internal/models"
 	"time"
+
+	"newsWebApp/app/newsService/internal/models"
+	"newsWebApp/app/newsService/internal/services"
 
 	"github.com/go-shiori/go-readability"
 )
 
 type UserSource struct {
-	userID  int64
-	userURL string
+	cacher Cacher
+
+	userID   int64
+	userLink string
 }
 
-func NewUserSource(userID int64, link string) UserSource {
-	return UserSource{
-		userID:  userID,
-		userURL: link,
+func NewUserSource(cacher Cacher, userID int64, link string) *UserSource {
+	return &UserSource{
+		cacher:   cacher,
+		userID:   userID,
+		userLink: link,
 	}
 }
 
-func (s UserSource) ID() int64 {
+func (s *UserSource) ID() int64 {
 	return s.userID
 }
 
-func (s UserSource) URL() string {
-	return s.userURL
+func (s *UserSource) URL() string {
+	return s.userLink
 }
 
-func (s UserSource) LoadFromUser(ctx context.Context) (models.Item, error) {
+func (s *UserSource) LoadFromUser(ctx context.Context) (models.Item, error) {
+	const op = "services.source.user.interval_load"
+
 	itm := models.Item{}
+
+	if err := s.cacher.CacheLink(ctx, s.userLink); err != nil {
+		if errors.Is(err, services.ErrLinkExists) {
+			return itm, services.ErrArticleExists
+		} else {
+			return itm, fmt.Errorf("%s: %w", op, err)
+		}
+	}
 
 	resp, err := http.Get(s.URL())
 	if err != nil {

@@ -9,4 +9,5 @@ var (
 	ErrNoNewArticles    = errors.New("there are no new articles")
 	ErrNoLatestArticles = errors.New("there are no latest articles")
 	ErrArticleExists    = errors.New("article already exists")
+	ErrLinkExists       = errors.New("link already exists")
 )

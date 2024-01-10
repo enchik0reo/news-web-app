@@ -11,10 +11,11 @@ import (
 )
 
 type Config struct {
-	Env     string      `yaml:"env" env-required:"true"`
-	Storage Postgres    `yaml:"psql_storage"`
-	GRPC    GRPCConfig  `yaml:"grpc_news"`
-	Manager NewsManager `yaml:"news_managment"`
+	Env         string      `yaml:"env" env-required:"true"`
+	Storage     Postgres    `yaml:"psql_storage"`
+	LinkStorage Redis       `yaml:"redis_storage"`
+	GRPC        GRPCConfig  `yaml:"grpc_news"`
+	Manager     NewsManager `yaml:"news_managment"`
 }
 
 type Postgres struct {
@@ -25,6 +26,11 @@ type Postgres struct {
 	Password string `env:"POSTGRES_PASSWORD"`
 	DBName   string `yaml:"dbname"`
 	SSLMode  string `yaml:"sslmode"`
+}
+
+type Redis struct {
+	Host string `yaml:"host"`
+	Port string `yaml:"port"`
 }
 
 type GRPCConfig struct {
