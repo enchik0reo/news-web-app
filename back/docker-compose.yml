@@ -10,12 +10,20 @@ services:
      - POSTGRES_PASSWORD=qwerty
      - POSTGRES_DB=go_news
     ports:
-     - 5432:5432
+     - "5432:5432"
   
   redis:
     image: redis:7.2.3-bookworm 
     restart: always
     ports:
-      - 6379:6379
+      - "6379:6379"
     environment:
       - ALLOW_EMPTY_PASSWORD=yes
+
+  prometheus:
+    image: prom/prometheus:v2.48.1
+    network_mode: host
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"

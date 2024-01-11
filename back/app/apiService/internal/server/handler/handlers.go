@@ -10,11 +10,18 @@ import (
 	"strings"
 	"time"
 
+	"newsWebApp/app/apiService/internal/metrics"
 	"newsWebApp/app/apiService/internal/services"
 )
 
 func home(service AuthService, fetcher NewsFetcher, slog *slog.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+		statusCode := 0
+		defer func() {
+			metrics.ObserveRequest(time.Since(start), statusCode)
+		}()
+
 		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 		defer cancel()
 
@@ -23,9 +30,18 @@ func home(service AuthService, fetcher NewsFetcher, slog *slog.Logger) http.Hand
 			slog.Debug("Can't fetch articles", "err", err.Error())
 		}
 
+		if len(arts) == 0 {
+			statusCode = http.StatusNoContent
+			w.WriteHeader(statusCode)
+			return
+		}
+
 		if err := json.NewEncoder(w).Encode(arts); err != nil {
 			slog.Error("Can't encode articles", "err", err.Error())
 		}
+
+		statusCode = http.StatusOK
+		w.WriteHeader(statusCode)
 	}
 }
 

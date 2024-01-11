@@ -8,8 +8,10 @@ import (
 
 	"newsWebApp/app/apiService/internal/models"
 
+	chiprometheus "github.com/766b/chi-prometheus"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 type AuthService interface {
@@ -39,6 +41,7 @@ func New(auth AuthService,
 	r.Use(middleware.RequestID)
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.URLFormat)
+	r.Use(chiprometheus.NewMiddleware("apisrv"))
 	r.Use(loggerMw(slog))
 	r.Use(corsSettings())
 	r.Use(refresh(refTokTTL, auth, slog))
@@ -51,6 +54,8 @@ func New(auth AuthService,
 		r.Use(authenticate(refTokTTL, auth, slog))
 		r.Post("/", suggestArticle(auth, news, slog))
 	})
+
+	r.Handle("/metrics", promhttp.Handler())
 
 	return r, nil
 }
