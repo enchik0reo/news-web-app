@@ -5,7 +5,7 @@ Backend powered by Go. Frontend powered by React.
 
 ## Scheme
 
-![Scheme](./s1.png)
+![Scheme](./scheme.png)
 
 ## Features
 

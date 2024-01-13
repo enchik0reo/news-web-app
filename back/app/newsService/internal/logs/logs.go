@@ -14,9 +14,10 @@ import (
 )
 
 const (
-	envLocal = "local"
-	envDev   = "dev"
-	envProd  = "prod"
+	envLocal     = "local"
+	envLocalInfo = "local_info"
+	envDev       = "dev"
+	envProd      = "prod"
 )
 
 // For experemental func
@@ -28,6 +29,8 @@ func Setup(env string) *slog.Logger {
 	switch env {
 	case envLocal:
 		log = setupPrettySlog()
+	case envLocalInfo:
+		log = setupPrettySlogInfo()
 	case envDev:
 		log = slog.New(
 			slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}),
@@ -61,6 +64,18 @@ type PrettyHandler struct {
 	slog.Handler
 	l     *stdLog.Logger
 	attrs []slog.Attr
+}
+
+func setupPrettySlogInfo() *slog.Logger {
+	opts := PrettyHandlerOptions{
+		SlogOpts: &slog.HandlerOptions{
+			Level: slog.LevelInfo,
+		},
+	}
+
+	handler := opts.NewPrettyHandler(os.Stdout)
+
+	return slog.New(handler)
 }
 
 func (opts PrettyHandlerOptions) NewPrettyHandler(out io.Writer) *PrettyHandler {

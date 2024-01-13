@@ -1,7 +1,7 @@
-env: "local"
+env: "local" # "local_info" | "dev" | "prod"
 
 api_server:
-  address: "localhost:8008"
+  address: "0.0.0.0:8008"
   timeout: 4s
   idle_timeout: 60s
 
@@ -33,6 +33,6 @@ token_managment:
 
 news_managment:
   filter_keywords: ["golang", "go", "go*"]
-  fetch_interval: 15m
+  fetch_interval: 720m
   refresh_interval: 30m
   articles_limit: 30

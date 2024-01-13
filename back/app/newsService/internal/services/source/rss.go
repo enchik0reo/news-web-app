@@ -91,12 +91,7 @@ Loop:
 
 		itm.SourceName = article.SiteName
 		itm.Excerpt = article.Excerpt
-
-		if article.Image == "" {
-			itm.ImageURL = "../frontend/src/img/empty.png"
-		} else {
-			itm.ImageURL = article.Image
-		}
+		itm.ImageURL = article.Image
 
 		resp.Body.Close()
 

@@ -58,7 +58,7 @@ func main() {
 	var err error
 	var m *migrate.Migrate
 
-	for i := 1; i <= 3; i++ {
+	for i := 1; i <= 5; i++ {
 		m, err = migrate.New(sourceURL, databaseURL)
 		if err != nil {
 			time.Sleep(time.Duration(i) * time.Second)
