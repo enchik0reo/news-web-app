@@ -5,12 +5,12 @@ Backend powered by Go. Frontend powered by React.
 
 ## Scheme
 
-![Scheme](./scheme.png)
+![Scheme](./sch.png)
 
 ## Features
 
 - Application backend contains three separate services (Auth, News, Api)
-- Backend communicate with each other using gRPC
+- Backend services communicate with each other using gRPC
 - Auth service for user authentication
 - User can signup and login. Using JWT Access and Refresh tokens
 - Logging users can suggest news
@@ -21,6 +21,7 @@ Backend powered by Go. Frontend powered by React.
 - Cache using Redis
 - Using migrations
 - Frontend using React
+- App uses Prometheus to collect metrics and Grafana to show them
 
 ## Development
 
@@ -29,30 +30,30 @@ Software requirements:
 - Go
 - Docker
 - React
-- task
+- Task (https://github.com/go-task/task)
 
-To start the application:
+To start the application use three commands:
 
 ```sh
 $ git clone https://github.com/enchik0reo/newsWebApp
+
 $ cd newsWebApp
 
-# Run docker-compose and migrator with action up
-# Or use 'task down' if you need to rollback the migration
-$ task up
-
-# Run auth service on port 44044
-$ task run_auth
-
-# Run news service on port 55055
-$ task run_news
-
-# Run api service on port 8008
-$ task run_api
-
-# Run frontend react app on port 3003
-$ task run_front
+$ task app_run
+# This command does:
+# Run docker-compose file with four containers:
+# - postgres on port 5432
+# - redis on port 6379
+# - prometheus on port 9090
+# - grafana on port 3000
+# Run Migrator for database with action up
+# Run Auth service on port 44044
+# Run News service on port 55055
+# Run Api service on port 8008
+# Run Frontend on port 3003
 ```
-Go to http://localhost:3003/ and try it.
+- Go to http://localhost:3003/ and try app.
+- Go to http://localhost:9090/ to see Prometheus.
+- Go to http://localhost:3000/ to see Grafana.
 
 To terminate services, the application uses `SIGTERM` signal (you can use Ctrl+C).

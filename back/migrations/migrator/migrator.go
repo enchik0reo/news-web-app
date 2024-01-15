@@ -55,18 +55,7 @@ func main() {
 		db.SSLMode,
 	)
 
-	var err error
-	var m *migrate.Migrate
-
-	for i := 1; i <= 5; i++ {
-		m, err = migrate.New(sourceURL, databaseURL)
-		if err != nil {
-			time.Sleep(time.Duration(i) * time.Second)
-		} else {
-			break
-		}
-	}
-
+	m, err := connectToDB(sourceURL, databaseURL)
 	if err != nil {
 		panic(fmt.Sprintf("can't init new new migrate instance: %v", err))
 	}
@@ -88,6 +77,26 @@ func main() {
 	}
 
 	log.Print("migrations applied successfully")
+}
+
+func connectToDB(sourceURL string, databaseURL string) (*migrate.Migrate, error) {
+	var err error
+	var m *migrate.Migrate
+
+	for i := 1; i <= 5; i++ {
+		m, err = migrate.New(sourceURL, databaseURL)
+		if err != nil {
+			time.Sleep(time.Duration(i) * time.Second)
+		} else {
+			break
+		}
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	return m, nil
 }
 
 func mustLoadEnv() (string, string) {

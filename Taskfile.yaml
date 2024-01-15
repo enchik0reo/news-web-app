@@ -43,3 +43,12 @@ tasks:
     dir: "./back"
     cmds:
       - go run ./app/apiService/cmd/api_service/main.go
+
+  app_run:
+    desc: "Run app"
+    deps:
+      - up
+      - run_auth
+      - run_news
+      - run_api
+      - run_front

@@ -232,7 +232,7 @@ func (f *Fetcher) itemShouldBeSkipped(item models.Item) bool {
 		categoriesSet := make(map[string]struct{}, l)
 
 		for _, category := range item.Categories {
-			categoriesSet[category] = struct{}{}
+			categoriesSet[strings.ToLower(category)] = struct{}{}
 		}
 
 		for _, keyword := range f.filterKeywords {

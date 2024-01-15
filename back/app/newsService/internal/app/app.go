@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"newsWebApp/app/newsService/internal/config"
 	grpcServer "newsWebApp/app/newsService/internal/grpc/server"
@@ -39,7 +40,7 @@ func New() *App {
 
 	a.log.With("service", "News")
 
-	a.db, err = psql.New(a.cfg.Storage)
+	a.db, err = connectToDB(a.cfg.Storage)
 	if err != nil {
 		a.log.Error("Failed to create new news storage", "err", err)
 		os.Exit(1)
@@ -119,4 +120,24 @@ func (a *App) mustStop() {
 	a.gRPCServer.Stop()
 
 	a.log.Info("News grpc service stoped gracefully")
+}
+
+func connectToDB(storage config.Postgres) (*sql.DB, error) {
+	var err error
+	var db *sql.DB
+
+	for i := 1; i <= 5; i++ {
+		db, err = psql.New(storage)
+		if err != nil {
+			time.Sleep(time.Duration(i) * time.Second)
+		} else {
+			break
+		}
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	return db, nil
 }

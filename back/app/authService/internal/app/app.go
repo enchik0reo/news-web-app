@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"newsWebApp/app/authService/internal/config"
 	grpcServer "newsWebApp/app/authService/internal/grpc/server"
@@ -34,7 +35,7 @@ func New() *App {
 
 	a.log.With("service", "Auth")
 
-	a.userStor, err = psql.New(a.cfg.UserStorage)
+	a.userStor, err = connectToDB(a.cfg.UserStorage)
 	if err != nil {
 		a.log.Error("Failed to create new user storage", "err", err)
 		os.Exit(1)
@@ -85,4 +86,24 @@ func (a *App) mustStop() {
 	a.gRPCServer.Stop()
 
 	a.log.Info("Auth grpc service stoped gracefully")
+}
+
+func connectToDB(userStorage config.Postgres) (*psql.Storage, error) {
+	var err error
+	var db *psql.Storage
+
+	for i := 1; i <= 5; i++ {
+		db, err = psql.New(userStorage)
+		if err != nil {
+			time.Sleep(time.Duration(i) * time.Second)
+		} else {
+			break
+		}
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	return db, nil
 }

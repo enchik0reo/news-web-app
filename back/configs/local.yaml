@@ -7,13 +7,13 @@ api_server:
 
 grpc_auth:
   port: 44044
-  timeout: 3s
-  retries_count: 3
+  timeout: 2s
+  retries_count: 5
 
 grpc_news:
   port: 55055
-  timeout: 3s
-  retries_count: 3
+  timeout: 2s
+  retries_count: 5
 
 psql_storage:
   db_driver: "postgres"
@@ -32,7 +32,7 @@ token_managment:
   refresh_token_ttl: 43200m
 
 news_managment:
-  filter_keywords: ["golang", "go", "go*"]
+  filter_keywords: ["golang", "go "," go","go*"]
   fetch_interval: 720m
   refresh_interval: 30m
   articles_limit: 30
