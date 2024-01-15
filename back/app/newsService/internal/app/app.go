@@ -42,7 +42,7 @@ func New() *App {
 
 	a.db, err = connectToDB(a.cfg.Storage)
 	if err != nil {
-		a.log.Error("Failed to create new news storage", "err", err)
+		a.log.Error("Failed to create new news storage", "err", err.Error())
 		os.Exit(1)
 	}
 
@@ -52,9 +52,9 @@ func New() *App {
 	ctx, cacnel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cacnel()
 
-	a.linkCache, err = redis.New(ctx, a.cfg.LinkStorage.Host, a.cfg.LinkStorage.Port)
+	a.linkCache, err = connectToLinkCache(ctx, a.cfg.LinkStorage.Host, a.cfg.LinkStorage.Port)
 	if err != nil {
-		a.log.Error("Failed to create new link storage", "err", err)
+		a.log.Error("Failed to create new link storage", "err", err.Error())
 		os.Exit(1)
 	}
 
@@ -140,4 +140,24 @@ func connectToDB(storage config.Postgres) (*sql.DB, error) {
 	}
 
 	return db, nil
+}
+
+func connectToLinkCache(ctx context.Context, host string, port string) (*redis.Storage, error) {
+	var err error
+	var c *redis.Storage
+
+	for i := 1; i <= 5; i++ {
+		c, err = redis.New(ctx, host, port)
+		if err != nil {
+			time.Sleep(time.Duration(i) * time.Second)
+		} else {
+			break
+		}
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	return c, nil
 }

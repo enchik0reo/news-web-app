@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"newsWebApp/app/apiService/internal/config"
 	"newsWebApp/app/apiService/internal/logs"
@@ -48,7 +49,7 @@ func New() *App {
 		a.cfg.AuthGRPC.RetriesCount,
 	)
 	if err != nil {
-		a.log.Error("Failed to create new auth client", "err", err)
+		a.log.Error("Failed to create new auth client", "err", err.Error())
 		os.Exit(1)
 	}
 
@@ -59,17 +60,17 @@ func New() *App {
 		a.cfg.NewsGRPC.RetriesCount,
 	)
 	if err != nil {
-		a.log.Error("Failed to create new news client", "err", err)
+		a.log.Error("Failed to create new news client", "err", err.Error())
 		os.Exit(1)
 	}
 
-	a.cache, err = cache.New(ctx,
+	a.cache, err = connectToCache(ctx,
 		a.cfg.Cache.Host,
 		a.cfg.Cache.Port,
 		a.cfg.Manager.ArticlesLimit,
 	)
 	if err != nil {
-		a.log.Error("Failed to create new articles cache", "err", err)
+		a.log.Error("Failed to create new articles cache", "err", err.Error())
 		os.Exit(1)
 	}
 
@@ -77,7 +78,7 @@ func New() *App {
 
 	a.handler, err = handler.New(authClient, newsClient, a.fetcher, a.cfg.TokenManager.RefreshTokenTTL, a.log)
 	if err != nil {
-		a.log.Error("Failed to create new handler", "err", err)
+		a.log.Error("Failed to create new handler", "err", err.Error())
 		os.Exit(1)
 	}
 
@@ -129,4 +130,24 @@ func (a *App) mustStop() {
 	}
 
 	a.log.Info("Api service stoped gracefully")
+}
+
+func connectToCache(ctx context.Context, host string, port string, limit int) (*cache.Cache, error) {
+	var err error
+	var c *cache.Cache
+
+	for i := 1; i <= 5; i++ {
+		c, err = cache.New(ctx, host, port, limit)
+		if err != nil {
+			time.Sleep(time.Duration(i) * time.Second)
+		} else {
+			break
+		}
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	return c, nil
 }

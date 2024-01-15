@@ -35,18 +35,22 @@ func New() *App {
 
 	a.log.With("service", "Auth")
 
-	a.userStor, err = connectToDB(a.cfg.UserStorage)
+	a.userStor, err = connectToUserStorage(a.cfg.UserStorage)
 	if err != nil {
-		a.log.Error("Failed to create new user storage", "err", err)
+		a.log.Error("Failed to create new user storage", "err", err.Error())
 		os.Exit(1)
 	}
 
 	ctx, cacnel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cacnel()
 
-	a.sessionStor, err = redis.New(ctx, a.cfg.SessionStorage.Host, a.cfg.SessionStorage.Port, a.cfg.Manager.RefreshTokenTTL)
+	a.sessionStor, err = connectToSessionStorage(ctx,
+		a.cfg.SessionStorage.Host,
+		a.cfg.SessionStorage.Port,
+		a.cfg.Manager.RefreshTokenTTL,
+	)
 	if err != nil {
-		a.log.Error("Failed to create new session storage", "err", err)
+		a.log.Error("Failed to create new session storage", "err", err.Error())
 		os.Exit(1)
 	}
 
@@ -88,7 +92,7 @@ func (a *App) mustStop() {
 	a.log.Info("Auth grpc service stoped gracefully")
 }
 
-func connectToDB(userStorage config.Postgres) (*psql.Storage, error) {
+func connectToUserStorage(userStorage config.Postgres) (*psql.Storage, error) {
 	var err error
 	var db *psql.Storage
 
@@ -106,4 +110,24 @@ func connectToDB(userStorage config.Postgres) (*psql.Storage, error) {
 	}
 
 	return db, nil
+}
+
+func connectToSessionStorage(ctx context.Context, host string, port string, expire time.Duration) (*redis.Storage, error) {
+	var err error
+	var c *redis.Storage
+
+	for i := 1; i <= 5; i++ {
+		c, err = redis.New(ctx, host, port, expire)
+		if err != nil {
+			time.Sleep(time.Duration(i) * time.Second)
+		} else {
+			break
+		}
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	return c, nil
 }
