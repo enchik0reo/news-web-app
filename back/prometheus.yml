@@ -23,4 +23,4 @@ scrape_configs:
     # scheme defaults to http
 
     static_configs:
-      - targets: ['host.docker.internal:8008']
+      - targets: ['host.docker.internal:8008'] # 'back:8008'

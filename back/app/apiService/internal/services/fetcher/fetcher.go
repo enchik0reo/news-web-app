@@ -123,7 +123,23 @@ func (f *NewsFetcher) FetchArticles(ctx context.Context) ([]models.Article, erro
 }
 
 func (f *NewsFetcher) warmUp(ctx context.Context) error {
-	articles, err := f.newsService.GetArticles(ctx)
+	var err error
+	var articles []models.Article
+
+Loop:
+	for i := 1; i <= 5; i++ {
+		articles, err = f.newsService.GetArticles(ctx)
+		if err != nil {
+			if errors.Is(err, services.ErrNoPublishedArticles) {
+				return err
+			} else {
+				time.Sleep(time.Duration(i) * time.Second)
+			}
+		} else {
+			break Loop
+		}
+	}
+
 	if err != nil {
 		return err
 	}

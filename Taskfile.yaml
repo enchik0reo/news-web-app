@@ -1,12 +1,10 @@
 version: "3"
 
 tasks:
-  up:
-    desc: "Up docker-compose and migrations"
-    dir: "./back"
+  dup:
+    desc: "Up docker-compose"
     cmds:
-      - docker-compose up -d
-      - go run ./migrations/migrator/migrator.go --action=up
+      - docker-compose up --build front
 
   mup:
     desc: "Run migrator action up"
@@ -47,8 +45,8 @@ tasks:
   app_run:
     desc: "Run app"
     deps:
-      - up
+      - dup
+      - mup
       - run_auth
       - run_news
       - run_api
-      - run_front

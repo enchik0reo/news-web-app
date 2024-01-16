@@ -46,11 +46,11 @@ $ task app_run
 # - redis on port 6379
 # - prometheus on port 9090
 # - grafana on port 3000
+# - front on port 3003
 # Run Migrator for database with action up
 # Run Auth service on port 44044
 # Run News service on port 55055
 # Run Api service on port 8008
-# Run Frontend on port 3003
 ```
 - Go to http://localhost:3003/ and try app.
 - Go to http://localhost:9090/ to see Prometheus.

@@ -1,6 +1,22 @@
 version: '3.8'
 
 services:
+  front:
+    build: ./front
+    container_name: client_frontend
+    depends_on:
+      - postgres
+      - redis
+      - prometheus
+      - grafana
+    environment:
+      - PORT=3003
+    ports:
+      - '3003:3003'
+    volumes:
+      - ./front:/app
+      - ./app/node_modules
+
   postgres:
     image: postgres:16.1-bullseye
     restart: always
@@ -25,7 +41,7 @@ services:
     ports:
       - "9090:9090"
     volumes:
-      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./back/prometheus.yml:/etc/prometheus/prometheus.yml
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
