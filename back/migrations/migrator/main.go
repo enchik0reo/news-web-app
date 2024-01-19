@@ -2,7 +2,6 @@ package main
 
 import (
 	"errors"
-	"flag"
 	"fmt"
 	"log"
 	"os"
@@ -31,15 +30,6 @@ type DB struct {
 }
 
 func main() {
-	var action string
-
-	flag.StringVar(&action, "action", "", "up or down")
-	flag.Parse()
-
-	if !(action == "up" || action == "down") {
-		panic("invalid action: " + action)
-	}
-
 	migrationsPath, configPath := mustLoadEnv()
 
 	db := mustLoadConfig(configPath)
@@ -60,20 +50,13 @@ func main() {
 		panic(fmt.Sprintf("can't init new new migrate instance: %v", err))
 	}
 
-	switch action {
-	case "up":
-		if err := m.Up(); err != nil {
-			if errors.Is(err, migrate.ErrNoChange) {
-				log.Print("no migrations to apply")
-				return
-			}
+	if err := m.Up(); err != nil {
+		if errors.Is(err, migrate.ErrNoChange) {
+			log.Print("no migrations to apply")
+			return
+		}
 
-			panic(fmt.Sprintf("can't up new migrations: %v", err))
-		}
-	case "down":
-		if err := m.Down(); err != nil {
-			panic(fmt.Sprintf("can't down migrations: %v", err))
-		}
+		panic(fmt.Sprintf("can't up new migrations: %v", err))
 	}
 
 	log.Print("migrations applied successfully")
@@ -120,15 +103,11 @@ func mustLoadEnv() (string, string) {
 }
 
 func mustLoadConfig(path string) *DB {
-	if _, err := os.Stat(path); os.IsNotExist(err) {
-		panic("config file does not exist")
-	}
-
 	cfg := Config{}
 
 	err := cleanenv.ReadConfig(path, &cfg)
 	if err != nil {
-		panic("failed to read config")
+		log.Panic("failed to read config ", err.Error())
 	}
 
 	cfg.DB.Password = os.Getenv("POSTGRES_PASSWORD")

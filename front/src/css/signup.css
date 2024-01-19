@@ -48,7 +48,7 @@
     border-top-style: none;
     border-left-style: none;
     border-right-style: none;
-    border-bottom-style: 2px solid black;
+    border-bottom: 2px solid rgba(0, 0, 0, 0.63);
     margin-bottom: 10px;
 }
   

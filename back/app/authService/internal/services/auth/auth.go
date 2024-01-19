@@ -133,11 +133,11 @@ func (a *Auth) Parse(ctx context.Context, header string) (int64, string, error) 
 	id, userName, err := a.tokenManager.Parse(token)
 	if err != nil {
 		if errors.Is(err, tokenmanager.ErrTokenExpired) {
-			a.log.Warn("Token expired")
+			a.log.Debug("Token expired")
 
 			return 0, "", services.ErrTokenExpired
 		}
-		a.log.Warn("Invalid token", "token", token)
+		a.log.Debug("Invalid token", "token", token)
 
 		return 0, "", services.ErrInvalidToken
 	}
@@ -161,7 +161,7 @@ func (a *Auth) Refresh(ctx context.Context, refrToken string) (int64, string, st
 	oldRefreshToken, err := a.sessionStorage.GetSessionToken(ctx, id)
 	if err != nil {
 		if errors.Is(err, storage.ErrSessionNotFound) {
-			a.log.Warn("Session not found", "user id", id)
+			a.log.Debug("Session not found", "user id", id)
 
 			return 0, "", "", "", services.ErrSessionNotFound
 		}

@@ -50,7 +50,7 @@ func authenticate(refTokTTL time.Duration, service AuthService, slog *slog.Logge
 
 					id, _, acsToken, refToken, err := service.Refresh(ctx, cookie.Value)
 					if err != nil {
-						slog.Error("Can't do refresh tokens", "err", err.Error())
+						slog.Debug("Can't do refresh tokens", "err", err.Error())
 						w.WriteHeader(http.StatusUnauthorized)
 						return
 					}
@@ -131,7 +131,7 @@ func refresh(refTokTTL time.Duration, service AuthService, slog *slog.Logger) fu
 
 					id, _, acsToken, refToken, err := service.Refresh(ctx, cookie.Value)
 					if err != nil {
-						slog.Error("Can't do refresh tokens", "err", err.Error())
+						slog.Debug("Can't do refresh tokens", "err", err.Error())
 						next.ServeHTTP(w, r)
 						return
 					}

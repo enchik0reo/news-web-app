@@ -38,7 +38,7 @@ func (s *UserSource) URL() string {
 }
 
 func (s *UserSource) LoadFromUser(ctx context.Context) (models.Item, error) {
-	const op = "services.source.user.interval_load"
+	const op = "services.source.user.load_from_user"
 
 	itm := models.Item{}
 
@@ -52,17 +52,18 @@ func (s *UserSource) LoadFromUser(ctx context.Context) (models.Item, error) {
 
 	resp, err := http.Get(s.URL())
 	if err != nil {
-		return itm, fmt.Errorf("failed to download %s: %v", s.URL(), err)
+		return itm, fmt.Errorf("%s: failed to download %s: %v", op, s.URL(), err)
 	}
+	defer resp.Body.Close()
 
 	parsedURL, err := url.Parse(s.URL())
 	if err != nil {
-		return itm, fmt.Errorf("error parsing url %s: %v", s.URL(), err)
+		return itm, fmt.Errorf("%s: error parsing url %s: %v", op, s.URL(), err)
 	}
 
 	article, err := readability.FromReader(resp.Body, parsedURL)
 	if err != nil {
-		return itm, fmt.Errorf("failed to parse %s: %v", s.URL(), err)
+		return itm, fmt.Errorf("%s: failed to parse %s: %v", op, s.URL(), err)
 	}
 
 	itm.Title = article.Title

@@ -44,6 +44,7 @@ func New() *App {
 
 	authClient, err := authgrpc.New(ctx,
 		a.log,
+		a.cfg.AuthGRPC.Host,
 		a.cfg.AuthGRPC.Port,
 		a.cfg.AuthGRPC.Timeout,
 		a.cfg.AuthGRPC.RetriesCount,
@@ -55,6 +56,7 @@ func New() *App {
 
 	newsClient, err := newsgrpc.New(ctx,
 		a.log,
+		a.cfg.NewsGRPC.Host,
 		a.cfg.NewsGRPC.Port,
 		a.cfg.NewsGRPC.Timeout,
 		a.cfg.NewsGRPC.RetriesCount,

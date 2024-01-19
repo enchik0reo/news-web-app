@@ -25,7 +25,8 @@ type Client struct {
 
 func New(ctx context.Context,
 	log *slog.Logger,
-	addr int,
+	host string,
+	port int,
 	timeout time.Duration,
 	retriesCount int,
 ) (*Client, error) {
@@ -42,7 +43,7 @@ func New(ctx context.Context,
 	}
 
 	cc, err := grpc.DialContext(ctx,
-		fmt.Sprintf(":%d", addr),
+		fmt.Sprintf("%s:%d", host, port),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithChainUnaryInterceptor(
 			grpclog.UnaryClientInterceptor(interceptorLogger(log), logOpts...),

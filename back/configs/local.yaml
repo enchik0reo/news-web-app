@@ -1,4 +1,10 @@
-env: "local" # "local_info" | "dev" | "prod"
+env: "local_info" # "local" | "dev" | "prod"
+
+news_managment:
+  filter_keywords: ["golang", "go "," go","go*"]
+  fetch_interval: 30m
+  refresh_interval: 15m
+  articles_limit: 30
 
 api_server:
   address: "0.0.0.0:8008"
@@ -6,33 +12,29 @@ api_server:
   idle_timeout: 60s
 
 grpc_auth:
+  host : "authsrv"
   port: 44044
   timeout: 2s
   retries_count: 5
 
 grpc_news:
+  host : "newssrv"
   port: 55055
   timeout: 2s
   retries_count: 5
 
 psql_storage:
   db_driver: "postgres"
-  host: "localhost" # "postgres"
+  host: "postgres"
   port: "5432"
   dbname: "go_news"
   user: "postgres"
   sslmode: "disable"
 
 redis_storage:
-  host: "localhost" # "redis"
+  host: "redis"
   port: "6379"
 
 token_managment:
   access_token_ttl: 20m
   refresh_token_ttl: 43200m
-
-news_managment:
-  filter_keywords: ["golang", "go "," go","go*"]
-  fetch_interval: 720m
-  refresh_interval: 30m
-  articles_limit: 30

@@ -1,7 +1,6 @@
 package config
 
 import (
-	"flag"
 	"fmt"
 	"os"
 	"time"
@@ -65,24 +64,14 @@ func MustLoad() *Config {
 }
 
 func fetchConfigPath() (string, error) {
-	var path string
-
-	flag.StringVar(&path, "config", "", "path to config file")
-	flag.Parse()
-
-	if path == "" {
-		if err := godotenv.Load(); err != nil {
-			return "", fmt.Errorf("can't load config: %v", err)
-		}
-		path = os.Getenv("CONFIG_PATH")
+	if err := godotenv.Load(); err != nil {
+		return "", fmt.Errorf("can't load config: %v", err)
 	}
+
+	path := os.Getenv("CONFIG_PATH")
 
 	if path == "" {
 		return "", fmt.Errorf("config path is empty")
-	}
-
-	if _, err := os.Stat(path); os.IsNotExist(err) {
-		panic("config file does not exist")
 	}
 
 	return path, nil

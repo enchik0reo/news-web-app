@@ -108,7 +108,7 @@ func (f *Fetcher) SaveArticleFromUser(ctx context.Context, userID int64, link st
 			f.log.Debug("Can't save article from user", "err", err.Error())
 			return services.ErrArticleExists
 		}
-		f.log.Error("Can't fetch items from link", "link", link, "err", err.Error())
+		f.log.Error("Can't fetch item from link", "link", link, "err", err.Error())
 		return fmt.Errorf("%s: %w", op, err)
 	}
 

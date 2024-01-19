@@ -76,8 +76,9 @@ Loop:
 
 		resp, err := http.Get(itm.Link)
 		if err != nil {
-			return nil, fmt.Errorf("%s: %w", op, err)
+			return nil, fmt.Errorf("%s: failed to download %s: %v", op, itm.Link, err)
 		}
+		defer resp.Body.Close()
 
 		parsedURL, err := url.Parse(itm.Link)
 		if err != nil {
