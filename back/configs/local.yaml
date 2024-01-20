@@ -1,7 +1,7 @@
 env: "local_info" # "local" | "dev" | "prod"
 
 news_managment:
-  filter_keywords: ["golang", "go "," go","go*"]
+  filter_keywords: ["golang", "go", "go*"]
   fetch_interval: 30m
   refresh_interval: 15m
   articles_limit: 30

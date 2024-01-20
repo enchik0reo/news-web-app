@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -218,33 +219,44 @@ func (f *Fetcher) saveItems(ctx context.Context, items []models.Item) error {
 }
 
 func (f *Fetcher) itemShouldBeSkipped(item models.Item) bool {
-	l := len(item.Categories)
+	if categoriesContainKeyword(f.filterKeywords, item.Categories) || titleContainsKeyword(f.filterKeywords, item.Title) {
+		return false
+	}
+	return true
+}
+
+func categoriesContainKeyword(filterKeywords []string, categories []string) bool {
+	l := len(categories)
 
 	if l == 0 {
-		for _, keyword := range f.filterKeywords {
-			titleContainsKeyword := strings.Contains(strings.ToLower(item.Title), keyword)
+		return false
+	}
 
-			if titleContainsKeyword {
-				return false
-			}
-		}
-	} else {
-		categoriesSet := make(map[string]struct{}, l)
+	categorySet := make(map[string]struct{}, l)
 
-		for _, category := range item.Categories {
-			categoriesSet[strings.ToLower(category)] = struct{}{}
-		}
+	for _, category := range categories {
+		categorySet[strings.ToLower(category)] = struct{}{}
+	}
 
-		for _, keyword := range f.filterKeywords {
-			titleContainsKeyword := strings.Contains(strings.ToLower(item.Title), keyword)
-
-			_, categoryContainsKeyword := categoriesSet[keyword]
-
-			if categoryContainsKeyword || titleContainsKeyword {
-				return false
-			}
+	for _, keyword := range filterKeywords {
+		if _, categoryContainsKeyword := categorySet[keyword]; categoryContainsKeyword {
+			return true
 		}
 	}
 
-	return true
+	return false
+}
+
+func titleContainsKeyword(filterKeywords []string, title string) bool {
+	validTitle := strings.ToLower(title)
+
+	for _, keyword := range filterKeywords {
+		r := regexp.MustCompile(fmt.Sprintf("\\b%s\\b", keyword))
+
+		if r.MatchString(validTitle) {
+			return true
+		}
+	}
+
+	return false
 }

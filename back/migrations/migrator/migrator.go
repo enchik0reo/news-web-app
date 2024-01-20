@@ -1,9 +1,8 @@
-package main
+package migrator
 
 import (
 	"errors"
 	"fmt"
-	"log"
 	"os"
 	"time"
 
@@ -29,10 +28,18 @@ type DB struct {
 	SSLMode  string `yaml:"sslmode"`
 }
 
-func main() {
-	migrationsPath, configPath := mustLoadEnv()
+func Up() error {
+	const op = "migrator.Up"
 
-	db := mustLoadConfig(configPath)
+	migrationsPath, configPath, err := loadEnv()
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	db, err := loadConfig(configPath)
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
 
 	sourceURL := fmt.Sprintf("file://%s", migrationsPath)
 	databaseURL := fmt.Sprintf("%s://%s:%s@%s:%s/%s?sslmode=%s",
@@ -45,24 +52,21 @@ func main() {
 		db.SSLMode,
 	)
 
-	m, err := connectToDB(sourceURL, databaseURL)
+	m, err := newMigraor(sourceURL, databaseURL)
 	if err != nil {
-		panic(fmt.Sprintf("can't init new new migrate instance: %v", err))
+		return fmt.Errorf("%s: %w", op, err)
 	}
 
 	if err := m.Up(); err != nil {
-		if errors.Is(err, migrate.ErrNoChange) {
-			log.Print("no migrations to apply")
-			return
+		if !errors.Is(err, migrate.ErrNoChange) {
+			return fmt.Errorf("%s: %w", op, err)
 		}
-
-		panic(fmt.Sprintf("can't up new migrations: %v", err))
 	}
 
-	log.Print("migrations applied successfully")
+	return nil
 }
 
-func connectToDB(sourceURL string, databaseURL string) (*migrate.Migrate, error) {
+func newMigraor(sourceURL string, databaseURL string) (*migrate.Migrate, error) {
 	var err error
 	var m *migrate.Migrate
 
@@ -82,7 +86,7 @@ func connectToDB(sourceURL string, databaseURL string) (*migrate.Migrate, error)
 	return m, nil
 }
 
-func mustLoadEnv() (string, string) {
+func loadEnv() (string, string, error) {
 	if err := godotenv.Load(); err != nil {
 		panic(err)
 	}
@@ -90,27 +94,27 @@ func mustLoadEnv() (string, string) {
 	migrationsPath := os.Getenv("MIGRATION_PATH")
 
 	if migrationsPath == "" {
-		panic("migration path is empty")
+		return "", "", fmt.Errorf("migration path is empty")
 	}
 
 	configPath := os.Getenv("CONFIG_PATH")
 
 	if configPath == "" {
-		panic("config path is empty")
+		return "", "", fmt.Errorf("config path is empty")
 	}
 
-	return migrationsPath, configPath
+	return migrationsPath, configPath, nil
 }
 
-func mustLoadConfig(path string) *DB {
+func loadConfig(path string) (*DB, error) {
 	cfg := Config{}
 
 	err := cleanenv.ReadConfig(path, &cfg)
 	if err != nil {
-		log.Panic("failed to read config ", err.Error())
+		return nil, fmt.Errorf("failed to read config: %w ", err)
 	}
 
 	cfg.DB.Password = os.Getenv("POSTGRES_PASSWORD")
 
-	return &cfg.DB
+	return &cfg.DB, nil
 }

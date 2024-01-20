@@ -18,6 +18,7 @@ import (
 	"newsWebApp/app/apiService/internal/services/fetcher"
 	"newsWebApp/app/apiService/internal/services/newsgrpc"
 	"newsWebApp/app/apiService/internal/storage/cache"
+	"newsWebApp/migrations/migrator"
 )
 
 type App struct {
@@ -38,6 +39,12 @@ func New() *App {
 	a.log = logs.Setup(a.cfg.Env)
 
 	a.log.With("service", "Api")
+
+	err = migrator.Up()
+	if err != nil {
+		a.log.Error("Failed to apply migrations", "err", err.Error())
+		os.Exit(1)
+	}
 
 	ctx, cacnel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cacnel()

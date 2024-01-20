@@ -14,6 +14,7 @@ import (
 	"newsWebApp/app/authService/internal/services/auth"
 	"newsWebApp/app/authService/internal/storage/psql"
 	"newsWebApp/app/authService/internal/storage/redis"
+	"newsWebApp/migrations/migrator"
 )
 
 type App struct {
@@ -34,6 +35,12 @@ func New() *App {
 	a.log = logs.Setup(a.cfg.Env)
 
 	a.log.With("service", "Auth")
+
+	err = migrator.Up()
+	if err != nil {
+		a.log.Error("Failed to apply migrations", "err", err.Error())
+		os.Exit(1)
+	}
 
 	a.userStor, err = connectToUserStorage(a.cfg.UserStorage)
 	if err != nil {

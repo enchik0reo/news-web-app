@@ -18,6 +18,7 @@ import (
 	"newsWebApp/app/newsService/internal/services/notifier"
 	"newsWebApp/app/newsService/internal/storage/psql"
 	"newsWebApp/app/newsService/internal/storage/redis"
+	"newsWebApp/migrations/migrator"
 )
 
 type App struct {
@@ -39,6 +40,12 @@ func New() *App {
 	a.log = logs.Setup(a.cfg.Env)
 
 	a.log.With("service", "News")
+
+	err = migrator.Up()
+	if err != nil {
+		a.log.Error("Failed to apply migrations", "err", err.Error())
+		os.Exit(1)
+	}
 
 	a.db, err = connectToDB(a.cfg.Storage)
 	if err != nil {
