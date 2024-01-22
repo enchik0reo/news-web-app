@@ -5,7 +5,7 @@ Backend powered by Go. Frontend powered by React.
 
 ## Scheme
 
-![Scheme](./scheme.png)
+![Scheme](./sch.png)
 
 ## Features
 
@@ -27,6 +27,7 @@ Backend powered by Go. Frontend powered by React.
 
 Software requirements:
 
+- Git
 - Docker
 
 To start the application use three commands:

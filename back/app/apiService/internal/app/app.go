@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
@@ -155,7 +156,7 @@ func connectToCache(ctx context.Context, host string, port string, limit int) (*
 	}
 
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("after retries: %w", err)
 	}
 
 	return c, nil

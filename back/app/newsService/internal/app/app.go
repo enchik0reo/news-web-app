@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"log/slog"
 	"os"
 	"os/signal"
@@ -143,7 +144,7 @@ func connectToDB(storage config.Postgres) (*sql.DB, error) {
 	}
 
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("after retries: %w", err)
 	}
 
 	return db, nil
@@ -163,7 +164,7 @@ func connectToLinkCache(ctx context.Context, host string, port string) (*redis.S
 	}
 
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("after retries: %w", err)
 	}
 
 	return c, nil

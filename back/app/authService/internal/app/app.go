@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"os"
 	"os/signal"
@@ -113,7 +114,7 @@ func connectToUserStorage(userStorage config.Postgres) (*psql.Storage, error) {
 	}
 
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("after retries: %w", err)
 	}
 
 	return db, nil
@@ -133,7 +134,7 @@ func connectToSessionStorage(ctx context.Context, host string, port string, expi
 	}
 
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("after retries: %w", err)
 	}
 
 	return c, nil

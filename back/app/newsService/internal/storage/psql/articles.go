@@ -22,7 +22,7 @@ func NewArticleStorage(db *sql.DB) *ArticleStorage {
 }
 
 func (s *ArticleStorage) Save(ctx context.Context, article models.Article) error {
-	stmt, err := s.db.PrepareContext(ctx, `INSERT INTO articles (user_id, source_name, title, link, excerpt, image, published_at) 
+	stmt, err := s.prepareStmt(ctx, `INSERT INTO articles (user_id, source_name, title, link, excerpt, image, published_at) 
 	VALUES ($1, $2, $3, $4, $5, $6, $7)`)
 	if err != nil {
 		return fmt.Errorf("can't prepare statement: %w", err)
@@ -43,10 +43,8 @@ func (s *ArticleStorage) Save(ctx context.Context, article models.Article) error
 		article.PublishedAt.Format(time.RFC3339),
 	); err != nil {
 		pqErr, ok := err.(*pq.Error)
-		if ok {
-			if pqErr.Code.Name() == "unique_violation" {
-				return storage.ErrArticleExists
-			}
+		if ok && pqErr.Code.Name() == "unique_violation" {
+			return storage.ErrArticleExists
 		} else {
 			return fmt.Errorf("can't save article: %v", err)
 		}
@@ -74,6 +72,7 @@ func (s *ArticleStorage) LatestPosted(ctx context.Context, limit int) ([]models.
 		}
 		return nil, fmt.Errorf("can't get articles from db: %v", err)
 	}
+	defer rows.Close()
 
 	for rows.Next() {
 		articl := models.Article{}
@@ -215,4 +214,29 @@ func (s *ArticleStorage) notPostedFromBot(ctx context.Context) (*models.Article,
 	}
 
 	return &article, nil
+}
+
+func (s *ArticleStorage) prepareStmt(ctx context.Context, query string) (*sql.Stmt, error) {
+	var err error
+	var stmt *sql.Stmt
+
+	for i := 1; i <= 5; i++ {
+		stmt, err = s.db.PrepareContext(ctx, query)
+		if err != nil {
+			pgErr, ok := err.(*pq.Error)
+			if ok && pgErr.Code.Name() == "too_many_connections" {
+				time.Sleep(time.Duration(i) * time.Second)
+			} else {
+				return nil, err
+			}
+		} else {
+			break
+		}
+	}
+
+	if err != nil {
+		return nil, fmt.Errorf("after retries: %w", err)
+	}
+
+	return stmt, nil
 }

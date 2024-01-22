@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/http"
 	"net/url"
 	"time"
 
@@ -50,7 +49,7 @@ func (s *UserSource) LoadFromUser(ctx context.Context) (models.Item, error) {
 		}
 	}
 
-	resp, err := http.Get(s.URL())
+	resp, err := getResp(s.URL())
 	if err != nil {
 		return itm, fmt.Errorf("%s: failed to download %s: %v", op, s.URL(), err)
 	}
@@ -71,12 +70,7 @@ func (s *UserSource) LoadFromUser(ctx context.Context) (models.Item, error) {
 	itm.Date = time.Now().UTC()
 	itm.Excerpt = article.Excerpt
 	itm.SourceName = article.SiteName
-
-	if article.Image == "" {
-		itm.ImageURL = "../img/empty.png"
-	} else {
-		itm.ImageURL = article.Image
-	}
+	itm.ImageURL = article.Image
 
 	resp.Body.Close()
 

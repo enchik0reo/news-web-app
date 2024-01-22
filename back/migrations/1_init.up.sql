@@ -29,6 +29,18 @@ CREATE TABLE IF NOT EXISTS articles (
 
 ALTER TABLE articles ADD CONSTRAINT fk_articles_user_id FOREIGN KEY (user_id) REFERENCES users (user_id) ON DELETE CASCADE;
 INSERT INTO users (user_name, email, password_hash) VALUES ('Bot', 'ihwuqih928u398dhfdfo;iweh', '2389uefhhr4e8934we56w3378sdeuibrw3345df');
-INSERT INTO sources (name, feed_url) VALUES ('Habr.com', 'https://habr.com/ru/rss/hubs/go/articles/?fl=ru?with_tags=true:');
-INSERT INTO sources (name, feed_url) VALUES ('Dev.to', 'https://dev.to/feed/tag/golang');
-INSERT INTO sources (name, feed_url) VALUES ('Hashnode.com', 'https://hashnode.com/n/golang/rss');
+INSERT INTO sources (name, feed_url) VALUES 
+('habr.com', 'https://habr.com/ru/rss/hubs/go/articles/?fl=ru?with_tags=true:'),
+('dev.to', 'https://dev.to/feed/tag/golang'),
+('hashnode.com', 'https://hashnode.com/n/golang/rss'),
+('dave.cheney.net', 'https://dave.cheney.net/category/golang/feed'),
+('golang.ch', 'https://golang.ch/feed/'),
+('jajaldoang.com', 'https://www.jajaldoang.com/index.xml'),
+('golang.withcodeexample.com', 'https://golang.withcodeexample.com/index.xml'),
+('golangbyexample.com', 'https://golangbyexample.com/feed/'),
+('ardanlabs.com', 'https://www.ardanlabs.com/categories/go-programing/index.xml'),
+('changelog.com', 'https://changelog.com/gotime/feed'),
+('go.dev', 'https://go.dev/blog/feed.atom?format=xml'),
+('golangbridge.org', 'https://forum.golangbridge.org/latest.rss'),
+('appliedgo.net', 'https://appliedgo.net/index.xml'),
+('blog.jetbrains.com', 'https://blog.jetbrains.com/go/feed/');

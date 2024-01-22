@@ -4,8 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"net/url"
+	"time"
 
 	"newsWebApp/app/newsService/internal/models"
 	"newsWebApp/app/newsService/internal/services"
@@ -74,7 +76,7 @@ Loop:
 			Date:       rssItem.Date.UTC(),
 		}
 
-		resp, err := http.Get(itm.Link)
+		resp, err := getResp(itm.Link)
 		if err != nil {
 			return nil, fmt.Errorf("%s: failed to download %s: %v", op, itm.Link, err)
 		}
@@ -126,4 +128,29 @@ func (s *RSSSource) loadFeed(ctx context.Context, url string) (*rss.Feed, error)
 	case feed := <-feedCh:
 		return feed, nil
 	}
+}
+
+func getResp(link string) (*http.Response, error) {
+	var err error
+	var resp *http.Response
+
+	for i := 1; i <= 3; i++ {
+		resp, err = http.Get(link)
+		if err != nil {
+			e, ok := err.(net.Error)
+			if ok && e.Timeout() {
+				time.Sleep(time.Duration(i) * time.Second)
+			} else {
+				return nil, err
+			}
+		} else {
+			break
+		}
+	}
+
+	if err != nil {
+		return nil, fmt.Errorf("after retries: %w", err)
+	}
+
+	return resp, nil
 }
