@@ -16,7 +16,7 @@ export default class Article extends React.Component {
 
         return (
             <div className="article">
-                <small>Suggested by {this.props.art.user_name} | {postedTime} | from {this.props.art.source_name}</small>
+                <small>Suggested by {this.props.art.user_name} | {postedTime} | {this.props.art.source_name}</small>
                 <h4>{this.props.art.title}</h4>
                 <p>{this.props.art.excerpt}</p>
                 <Nav.Link className="read-all" href={this.props.art.link}> Read full... </Nav.Link>

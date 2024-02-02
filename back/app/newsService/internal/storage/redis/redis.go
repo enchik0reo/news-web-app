@@ -46,6 +46,15 @@ func (s *Storage) SetLink(ctx context.Context, linkHash string) error {
 	return nil
 }
 
+func (s *Storage) DeleteLink(ctx context.Context, linkHash string) error {
+	res := s.c.Del(ctx, linkHash)
+	if res.Err() != nil {
+		return res.Err()
+	}
+
+	return nil
+}
+
 func (s *Storage) CloseConn() error {
 	return s.c.Close()
 }

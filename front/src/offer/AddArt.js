@@ -1,14 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
-import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import '../css/suggest.css'
-import valid from './Valid';
+import valid from '../components/Valid';
 import { Nav } from 'react-bootstrap';
 
-const baseurl = "/suggest"
-
-const SuggestForm = ({ submitForm }) => {
+const AddArt = ({ onAdd }) => {
 
     const [values, setValues] = useState({
         link: "",
@@ -33,48 +29,15 @@ const SuggestForm = ({ submitForm }) => {
 
     useEffect(() => {
         if (Object.keys(errors).length === 0 && dataIsCorrect) {
-
-            const jsonData = {
-                link: values.link,
-                content: values.content
-            };
-
-            const config = {
-                headers: {
-                    "Authorization": localStorage.getItem('access_token'),
-                }
-            }
-
-            axios.post(baseurl, jsonData, config).then((r) => {
-                if (r.status === 206) {
-                    toast("We already know about this article and will publish it soon. Thank you!")
-                    setDataIsCorrect(false)
-                } else if (r.status === 204) {
-                    toast("This article is not suitable, sorry. Please, try another one.")
-                    setDataIsCorrect(false)
-                } else {
-                    submitForm(r)
-                }
-            })
-                .catch((error) => {
-                    if (error) {
-                        if (error.response.statusText) {
-                            if (error.response.statusText === "Unauthorized") {
-                                toast("Sorry, your session is expired. Please, relogin.")
-                            }
-                        }
-                        console.error('Ошибка при выполнении запроса:', error)
-                        setDataIsCorrect(false)
-                    }
-                })
-
+            onAdd(values)
+            setDataIsCorrect(false)
         }
-    }, [errors, dataIsCorrect, submitForm, values])
+    }, [errors, dataIsCorrect, onAdd, values])
 
     return (
-        <div className="suggest-appp">
+        <div className="offer-app">
             <div>
-                <h2 className="titlel">Suggest Article</h2>
+                <h3 className="offer-title">Suggest Article</h3>
             </div>
             <form className="form-wrapper">
                 <div className="email">
@@ -91,7 +54,7 @@ const SuggestForm = ({ submitForm }) => {
 
                 <div className="password">
                     <label className="label">Short description (optional)</label>
-                    <textarea className="input-text"
+                    <textarea className="offer-input-text"
                         type="content"
                         name="content"
                         value={values.content}
@@ -101,7 +64,7 @@ const SuggestForm = ({ submitForm }) => {
 
                 <div className="tologin">
                     <Nav.Link>
-                        <button className="submit" onClick={handleFormSubmit}>Send</button>
+                        <button className="offer-submit" onClick={handleFormSubmit}>Send</button>
                     </Nav.Link>
                 </div>
             </form>
@@ -109,4 +72,4 @@ const SuggestForm = ({ submitForm }) => {
     )
 }
 
-export default SuggestForm
+export default AddArt

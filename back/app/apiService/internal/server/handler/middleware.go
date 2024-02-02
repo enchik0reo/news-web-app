@@ -30,62 +30,9 @@ func authenticate(refTokTTL time.Duration, service AuthService, slog *slog.Logge
 
 			_, _, err := service.Parse(ctx, auth)
 			if err != nil {
-				switch {
-				case errors.Is(err, services.ErrTokenExpired):
-					cookie, err := r.Cookie("refresh_token")
-					if err != nil {
-						if errors.Is(err, http.ErrNoCookie) {
-							slog.Debug("No cookie")
-							w.WriteHeader(http.StatusUnauthorized)
-							return
-						} else {
-							slog.Error("Can't get cookie", "err", err.Error())
-							w.WriteHeader(http.StatusUnauthorized)
-							return
-						}
-					}
-
-					ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-					defer cancel()
-
-					id, _, acsToken, refToken, err := service.Refresh(ctx, cookie.Value)
-					if err != nil {
-						slog.Debug("Can't do refresh tokens", "err", err.Error())
-						w.WriteHeader(http.StatusUnauthorized)
-						return
-					}
-
-					w.Header().Set("Content-Type", "application/json")
-					w.Header().Set("id", fmt.Sprint(id))
-					w.Header().Set("access_token", acsToken)
-
-					ck := http.Cookie{
-						Name:     "refresh_token",
-						Domain:   r.URL.Host,
-						Path:     "/",
-						Value:    refToken,
-						HttpOnly: true,
-						Secure:   true,
-						SameSite: http.SameSiteStrictMode,
-						Expires:  time.Now().Add(refTokTTL),
-					}
-
-					http.SetCookie(w, &ck)
-
-					w.WriteHeader(http.StatusAccepted)
-
-					next.ServeHTTP(w, r)
-					return
-				case errors.Is(err, services.ErrInvalidToken):
-					slog.Debug("Can't authenticate user, access token is invalid")
-					w.WriteHeader(http.StatusUnauthorized)
-					return
-				default:
-					slog.Error("Can't authenticate user", "err", err.Error())
-					w.WriteHeader(http.StatusInternalServerError)
-					return
-				}
-
+				slog.Debug("Can't authenticate user", "error", err.Error())
+				w.WriteHeader(http.StatusUnauthorized)
+				return
 			} else {
 				next.ServeHTTP(w, r)
 				return
@@ -139,6 +86,7 @@ func refresh(refTokTTL time.Duration, service AuthService, slog *slog.Logger) fu
 					w.Header().Set("Content-Type", "application/json")
 					w.Header().Set("id", fmt.Sprint(id))
 					w.Header().Set("access_token", acsToken)
+					r.Header.Set("Authorization", "Bearer "+acsToken)
 
 					ck := http.Cookie{
 						Name:     "refresh_token",
@@ -152,8 +100,6 @@ func refresh(refTokTTL time.Duration, service AuthService, slog *slog.Logger) fu
 					}
 
 					http.SetCookie(w, &ck)
-
-					w.WriteHeader(http.StatusAccepted)
 
 					next.ServeHTTP(w, r)
 					return
@@ -175,9 +121,9 @@ func refresh(refTokTTL time.Duration, service AuthService, slog *slog.Logger) fu
 func corsSettings() func(next http.Handler) http.Handler {
 	h := cors.Handler(cors.Options{
 		AllowedOrigins:   []string{"http://localhost:3003"},
-		AllowedMethods:   []string{http.MethodGet, http.MethodPost},
-		AllowedHeaders:   []string{"Content-Type", "Set-Cookie", "Authorization", "id", "access_token"},
-		ExposedHeaders:   []string{"Content-Type", "Set-Cookie", "Authorization", "id", "access_token"},
+		AllowedMethods:   []string{http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete},
+		AllowedHeaders:   []string{"Content-Type", "Set-Cookie", "Authorization", "id", "article_id", "access_token"},
+		ExposedHeaders:   []string{"Content-Type", "Set-Cookie", "Authorization", "id", "article_id", "access_token"},
 		AllowCredentials: true,
 	})
 

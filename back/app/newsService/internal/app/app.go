@@ -16,7 +16,7 @@ import (
 	"newsWebApp/app/newsService/internal/logs"
 	"newsWebApp/app/newsService/internal/services/cacher"
 	"newsWebApp/app/newsService/internal/services/fetcher"
-	"newsWebApp/app/newsService/internal/services/notifier"
+	"newsWebApp/app/newsService/internal/services/processor"
 	"newsWebApp/app/newsService/internal/storage/psql"
 	"newsWebApp/app/newsService/internal/storage/redis"
 	"newsWebApp/migrations/migrator"
@@ -28,7 +28,7 @@ type App struct {
 	db         *sql.DB
 	linkCache  *redis.Storage
 	fetcher    *fetcher.Fetcher
-	notifier   *notifier.Notifier
+	processor  *processor.Processor
 	gRPCServer *grpcServer.Server
 }
 
@@ -76,13 +76,13 @@ func New() *App {
 		a.log,
 	)
 
-	a.notifier = notifier.New(articleStor,
+	a.processor = processor.New(articleStor,
 		a.fetcher,
 		a.cfg.Manager.ArticlesLimit,
 		a.log,
 	)
 
-	a.gRPCServer = grpcServer.New(a.cfg.GRPC.Port, a.log, a.notifier)
+	a.gRPCServer = grpcServer.New(a.cfg.GRPC.Port, a.log, a.processor)
 
 	return &a
 }

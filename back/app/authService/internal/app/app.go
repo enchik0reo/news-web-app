@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"log/slog"
 	"os"
@@ -21,7 +22,7 @@ import (
 type App struct {
 	cfg         *config.Config
 	log         *slog.Logger
-	userStor    *psql.Storage
+	db          *sql.DB
 	sessionStor *redis.Storage
 	auth        *auth.Auth
 	gRPCServer  *grpcServer.Server
@@ -43,11 +44,13 @@ func New() *App {
 		os.Exit(1)
 	}
 
-	a.userStor, err = connectToUserStorage(a.cfg.UserStorage)
+	a.db, err = connectToDB(a.cfg.Storage)
 	if err != nil {
 		a.log.Error("Failed to create new user storage", "err", err.Error())
 		os.Exit(1)
 	}
+
+	userStor := psql.NewUserStorage(a.db)
 
 	ctx, cacnel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cacnel()
@@ -62,7 +65,7 @@ func New() *App {
 		os.Exit(1)
 	}
 
-	a.auth = auth.New(a.userStor, a.sessionStor, a.log, &a.cfg.Manager)
+	a.auth = auth.New(userStor, a.sessionStor, a.log, &a.cfg.Manager)
 
 	a.gRPCServer = grpcServer.New(a.cfg.GRPC.Port, a.log, a.auth)
 
@@ -87,7 +90,7 @@ func (a *App) MustRun() {
 }
 
 func (a *App) mustStop() {
-	if err := a.userStor.CloseConn(); err != nil {
+	if err := a.db.Close(); err != nil {
 		a.log.Error("Closing connection to user storage", "err store", err.Error())
 	}
 
@@ -100,12 +103,12 @@ func (a *App) mustStop() {
 	a.log.Info("Auth grpc service stoped gracefully")
 }
 
-func connectToUserStorage(userStorage config.Postgres) (*psql.Storage, error) {
+func connectToDB(storage config.Postgres) (*sql.DB, error) {
 	var err error
-	var db *psql.Storage
+	var db *sql.DB
 
 	for i := 1; i <= 5; i++ {
-		db, err = psql.New(userStorage)
+		db, err = psql.New(storage)
 		if err != nil {
 			time.Sleep(time.Duration(i) * time.Second)
 		} else {

@@ -59,21 +59,132 @@ func New(ctx context.Context,
 	}, nil
 }
 
-func (c *Client) SaveArticle(ctx context.Context, userID int64, link string) error {
-	const op = "services.newsgrpc.SaveArticle"
+func (c *Client) GetArticlesByUid(ctx context.Context, userID int64) ([]models.Article, error) {
+	const op = "services.newsgrpc.GetArticlesById"
 
-	if _, err := c.api.SaveArticle(ctx, &newsv1.SaveArticleRequest{UserId: userID, Link: link}); err != nil {
+	resp, err := c.api.GetArticlesByUid(ctx, &newsv1.GetArticlesByUidRequest{UserId: userID})
+	if err != nil {
 		switch {
-		case errors.Is(err, status.Error(codes.InvalidArgument, "invalid article")):
-			return services.ErrArticleSkipped
-		case errors.Is(err, status.Error(codes.AlreadyExists, "article already exists")):
-			return services.ErrArticleExists
+		case errors.Is(err, status.Error(codes.NotFound, "there are no offered articles")):
+			return nil, services.ErrNoOfferedArticles
 		default:
-			return fmt.Errorf("%s: %w", op, err)
+			return nil, fmt.Errorf("%s: %w", op, err)
 		}
 	}
 
-	return nil
+	articles := make([]models.Article, len(resp.Articles))
+
+	for i, art := range resp.Articles {
+		articles[i] = models.Article{
+			ArticleID:  art.ArticleId,
+			UserName:   art.UserName,
+			SourceName: art.SourceName,
+			Title:      art.Title,
+			Link:       art.Link,
+			Excerpt:    art.Excerpt,
+			ImageURL:   art.ImageUrl,
+		}
+	}
+
+	return articles, nil
+}
+
+func (c *Client) SaveArticle(ctx context.Context, userID int64, link string) ([]models.Article, error) {
+	const op = "services.newsgrpc.SaveArticle"
+
+	resp, err := c.api.SaveArticle(ctx, &newsv1.SaveArticleRequest{UserId: userID, Link: link})
+	if err != nil {
+		switch {
+		case errors.Is(err, status.Error(codes.InvalidArgument, "invalid article")):
+			return nil, services.ErrArticleSkipped
+		case errors.Is(err, status.Error(codes.AlreadyExists, "article already exists")):
+			return nil, services.ErrArticleExists
+		case errors.Is(err, status.Error(codes.NotFound, "there are no offered articles")):
+			return nil, services.ErrNoOfferedArticles
+		default:
+			return nil, fmt.Errorf("%s: %w", op, err)
+		}
+	}
+
+	articles := make([]models.Article, len(resp.Articles))
+
+	for i, art := range resp.Articles {
+		articles[i] = models.Article{
+			ArticleID:  art.ArticleId,
+			UserName:   art.UserName,
+			SourceName: art.SourceName,
+			Title:      art.Title,
+			Link:       art.Link,
+			Excerpt:    art.Excerpt,
+			ImageURL:   art.ImageUrl,
+		}
+	}
+
+	return articles, nil
+}
+
+func (c *Client) UpdateArticle(ctx context.Context, userID int64, artID int64, link string) ([]models.Article, error) {
+	const op = "services.newsgrpc.UpdateArticle"
+
+	resp, err := c.api.UpdateArticle(ctx, &newsv1.UpdateArticleRequest{UserId: userID, ArticleId: artID, Link: link})
+	if err != nil {
+		switch {
+		case errors.Is(err, status.Error(codes.InvalidArgument, "invalid article")):
+			return nil, services.ErrArticleSkipped
+		case errors.Is(err, status.Error(codes.AlreadyExists, "article already exists")):
+			return nil, services.ErrArticleExists
+		case errors.Is(err, status.Error(codes.NotFound, "there are no offered articles")):
+			return nil, services.ErrNoOfferedArticles
+		default:
+			return nil, fmt.Errorf("%s: %w", op, err)
+		}
+	}
+
+	articles := make([]models.Article, len(resp.Articles))
+
+	for i, art := range resp.Articles {
+		articles[i] = models.Article{
+			ArticleID:  art.ArticleId,
+			UserName:   art.UserName,
+			SourceName: art.SourceName,
+			Title:      art.Title,
+			Link:       art.Link,
+			Excerpt:    art.Excerpt,
+			ImageURL:   art.ImageUrl,
+		}
+	}
+
+	return articles, nil
+}
+
+func (c *Client) DeleteArticle(ctx context.Context, userID int64, artID int64) ([]models.Article, error) {
+	const op = "services.newsgrpc.DeleteArticle"
+
+	resp, err := c.api.DeleteArticle(ctx, &newsv1.DeleteArticleRequest{UserId: userID, ArticleId: artID})
+	if err != nil {
+		switch {
+		case errors.Is(err, status.Error(codes.NotFound, "there are no offered articles")):
+			return nil, services.ErrNoOfferedArticles
+		default:
+			return nil, fmt.Errorf("%s: %w", op, err)
+		}
+	}
+
+	articles := make([]models.Article, len(resp.Articles))
+
+	for i, art := range resp.Articles {
+		articles[i] = models.Article{
+			ArticleID:  art.ArticleId,
+			UserName:   art.UserName,
+			SourceName: art.SourceName,
+			Title:      art.Title,
+			Link:       art.Link,
+			Excerpt:    art.Excerpt,
+			ImageURL:   art.ImageUrl,
+		}
+	}
+
+	return articles, nil
 }
 
 func (c *Client) GetNewestArticle(ctx context.Context) (*models.Article, error) {

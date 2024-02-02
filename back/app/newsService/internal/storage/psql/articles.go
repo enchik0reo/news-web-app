@@ -21,9 +21,9 @@ func NewArticleStorage(db *sql.DB) *ArticleStorage {
 	return &ArticleStorage{db: db}
 }
 
-func (s *ArticleStorage) Save(ctx context.Context, article models.Article) error {
+func (s *ArticleStorage) SaveArticle(ctx context.Context, article models.Article) error {
 	stmt, err := s.prepareStmt(ctx, `INSERT INTO articles (user_id, source_name, title, link, excerpt, image, published_at) 
-	VALUES ($1, $2, $3, $4, $5, $6, $7)`)
+	VALUES ($1, $2, $3, $4, $5, $6, $7::timestamp)`)
 	if err != nil {
 		return fmt.Errorf("can't prepare statement: %w", err)
 	}
@@ -33,17 +33,8 @@ func (s *ArticleStorage) Save(ctx context.Context, article models.Article) error
 		article.UserID = 1
 	}
 
-	if _, err := stmt.ExecContext(ctx,
-		article.UserID,
-		article.SourceName,
-		article.Title,
-		article.Link,
-		article.Excerpt,
-		article.ImageURL,
-		article.PublishedAt.Format(time.RFC3339),
-	); err != nil {
-		pqErr, ok := err.(*pq.Error)
-		if ok && pqErr.Code.Name() == "unique_violation" {
+	if err := s.retrySave(ctx, stmt, article); err != nil {
+		if errors.Is(err, storage.ErrArticleExists) {
 			return storage.ErrArticleExists
 		} else {
 			return fmt.Errorf("can't save article: %v", err)
@@ -51,6 +42,123 @@ func (s *ArticleStorage) Save(ctx context.Context, article models.Article) error
 	}
 
 	return nil
+}
+
+func (s *ArticleStorage) UpdateArticle(ctx context.Context, artID int64, article models.Article) error {
+	stmt, err := s.prepareStmt(ctx, `UPDATE articles 
+	SET source_name = $1, title = $2, link = $3, excerpt = $4, image = $5, created_at = $6::timestamp, published_at = $7::timestamp 
+	WHERE article_id = $8`)
+	if err != nil {
+		return fmt.Errorf("can't prepare statement: %w", err)
+	}
+	defer stmt.Close()
+
+	now := time.Now().UTC().Format(time.RFC3339)
+
+	if _, err := stmt.ExecContext(ctx,
+		article.SourceName,
+		article.Title,
+		article.Link,
+		article.Excerpt,
+		article.ImageURL,
+		now,
+		article.PublishedAt,
+		artID,
+	); err != nil {
+		pqErr, ok := err.(*pq.Error)
+		if ok && pqErr.Code.Name() == "unique_violation" {
+			return storage.ErrArticleExists
+		} else {
+			return fmt.Errorf("can't update article: %v", err)
+		}
+	}
+
+	return nil
+}
+
+func (s *ArticleStorage) DeleteArticle(ctx context.Context, userID int64, artID int64) error {
+	stmt, err := s.prepareStmt(ctx, `DELETE FROM articles WHERE article_id = $1 AND user_id = $2`)
+	if err != nil {
+		return fmt.Errorf("can't prepare statement: %w", err)
+	}
+	defer stmt.Close()
+
+	if _, err := stmt.ExecContext(ctx,
+		artID,
+		userID,
+	); err != nil {
+		return fmt.Errorf("can't delete article: %v", err)
+	}
+
+	return nil
+}
+
+func (s *ArticleStorage) LinkById(ctx context.Context, artID int64) (string, error) {
+	stmt, err := s.db.PrepareContext(ctx, `SELECT link FROM articles WHERE article_id = $1`)
+	if err != nil {
+		return "", fmt.Errorf("can't prepare statement: %w", err)
+	}
+	defer stmt.Close()
+
+	row := stmt.QueryRowContext(ctx, artID)
+	if row.Err() != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return "", storage.ErrNoLink
+		}
+		return "", fmt.Errorf("can't get article from db: %v", err)
+	}
+
+	var link string
+
+	if err := row.Scan(&link); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return "", storage.ErrNoLink
+		}
+		return "", fmt.Errorf("can't get article from db: %v", err)
+	}
+
+	return link, nil
+}
+
+func (s *ArticleStorage) ArticlesByUid(ctx context.Context, userID int64) ([]models.Article, error) {
+	stmt, err := s.db.PrepareContext(ctx, `SELECT article_id, u.user_name AS user_name, source_name, title, link, excerpt, image FROM articles a 
+	LEFT JOIN users u ON u.user_id = a.user_id 
+	WHERE a.posted_at IS NULL AND a.user_id = $1 
+	ORDER BY a.created_at DESC`)
+	if err != nil {
+		return nil, fmt.Errorf("can't prepare statement: %w", err)
+	}
+	defer stmt.Close()
+
+	var articles []models.Article
+
+	rows, err := stmt.QueryContext(ctx, userID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, storage.ErrNoLatestArticles
+		}
+		return nil, fmt.Errorf("can't get articles from db: %v", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		articl := models.Article{}
+		err = rows.Scan(&articl.ID,
+			&articl.UserName,
+			&articl.SourceName,
+			&articl.Title,
+			&articl.Link,
+			&articl.Excerpt,
+			&articl.ImageURL,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("can't scan model article: %w", err)
+		}
+
+		articles = append(articles, articl)
+	}
+
+	return articles, nil
 }
 
 func (s *ArticleStorage) LatestPosted(ctx context.Context, limit int) ([]models.Article, error) {
@@ -220,7 +328,7 @@ func (s *ArticleStorage) prepareStmt(ctx context.Context, query string) (*sql.St
 	var err error
 	var stmt *sql.Stmt
 
-	for i := 1; i <= 5; i++ {
+	for i := 1; i <= 10; i++ {
 		stmt, err = s.db.PrepareContext(ctx, query)
 		if err != nil {
 			pgErr, ok := err.(*pq.Error)
@@ -239,4 +347,35 @@ func (s *ArticleStorage) prepareStmt(ctx context.Context, query string) (*sql.St
 	}
 
 	return stmt, nil
+}
+
+func (s *ArticleStorage) retrySave(ctx context.Context, stmt *sql.Stmt, article models.Article) error {
+	var err error
+
+	for i := 1; i <= 5; i++ {
+		if _, err := stmt.ExecContext(ctx,
+			article.UserID,
+			article.SourceName,
+			article.Title,
+			article.Link,
+			article.Excerpt,
+			article.ImageURL,
+			article.PublishedAt.Format(time.RFC3339),
+		); err != nil {
+			pqErr, ok := err.(*pq.Error)
+			if ok && pqErr.Code.Name() == "unique_violation" {
+				return storage.ErrArticleExists
+			} else {
+				time.Sleep(time.Duration(i) * time.Second)
+			}
+		} else {
+			break
+		}
+	}
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

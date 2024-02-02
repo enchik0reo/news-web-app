@@ -3,11 +3,11 @@ import { Navbar, Nav, Container } from 'react-bootstrap';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import logo from '../img/logo.png';
 import Home from '../pages/Home';
-import Suggest from '../pages/Suggest';
 import Login from '../pages/Login';
 import Signup from '../pages/Signup';
 import LoginBtn from './LoginBtn';
 import LogoutBtn from './LogoutBtn';
+import Offer from '../pages/Offer';
 
 const Header = () => {
 
@@ -43,7 +43,7 @@ const Header = () => {
                     <Navbar.Toggle aria-controls="responsive-navbar-nav" />
                     <Navbar.Collapse id="responsive-navbar-nav" >
                         <Nav className="me-auto">
-                            <Nav.Link className="ms-4" href="/suggest" > Suggest  News </Nav.Link>
+                            <Nav.Link className="ms-4" href="/user_news" > User  News </Nav.Link>
                         </Nav>
                         <Nav className="d-flex">
                             {loginB ? <LoginBtn /> : <LogoutBtn />}
@@ -55,7 +55,7 @@ const Header = () => {
             <Router>
                 <Routes>
                     <Route path="/" element={<Home />} />
-                    <Route path="/suggest" element={<Suggest />} />
+                    <Route path="/user_news" element={<Offer />} />
                     <Route path="/login" element={<Login onLoginForm={onLoginForm} />} />
                     <Route path="/signup" element={<Signup />} />
                 </Routes>

@@ -14,7 +14,7 @@ import (
 	"newsWebApp/app/apiService/internal/services"
 )
 
-func home(service AuthService, fetcher NewsFetcher, slog *slog.Logger) http.HandlerFunc {
+func home(fetcher NewsFetcher, slog *slog.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		statusCode := 0
@@ -36,12 +36,12 @@ func home(service AuthService, fetcher NewsFetcher, slog *slog.Logger) http.Hand
 			return
 		}
 
+		statusCode = http.StatusOK
+		w.WriteHeader(statusCode)
+
 		if err := json.NewEncoder(w).Encode(arts); err != nil {
 			slog.Error("Can't encode articles", "err", err.Error())
 		}
-
-		statusCode = http.StatusOK
-		w.WriteHeader(statusCode)
 	}
 }
 
@@ -140,25 +140,55 @@ func login(refTokTTL time.Duration, service AuthService, slog *slog.Logger) http
 	}
 }
 
-type suggestRequest struct {
-	Link    string `json:"link"`
-	Content string `json:"content"`
-}
-
-func suggestArticle(service AuthService, news NewsSaver, slog *slog.Logger) http.HandlerFunc {
+func userArticles(news UserNewsService, slog *slog.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		req := new(suggestRequest)
+		id := w.Header().Get("id")
+		if id == "" {
+			slog.Error("Can't get header id is empty")
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
 
-		if err := json.NewDecoder(r.Body).Decode(req); err != nil {
-			if !strings.Contains(err.Error(), "EOF") {
-				slog.Debug("Can't decode body from suggest-article request", "err", err.Error())
-				w.WriteHeader(http.StatusBadRequest)
-				return
-			}
+		uid, err := strconv.Atoi(id)
+		if err != nil {
+			slog.Debug("Can't Atoi", "err", err.Error())
+			w.WriteHeader(http.StatusInternalServerError)
+			return
 		}
 
 		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 		defer cancel()
+
+		arts, err := news.GetArticlesByUid(ctx, int64(uid))
+		if err != nil {
+			if errors.Is(err, services.ErrNoOfferedArticles) {
+				w.WriteHeader(http.StatusNoContent)
+				return
+			}
+			slog.Debug("Can't fetch articles", "err", err.Error())
+		}
+
+		if len(arts) == 0 {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+
+		if err := json.NewEncoder(w).Encode(arts); err != nil {
+			slog.Error("Can't encode articles", "err", err.Error())
+		}
+	}
+}
+
+type addRequest struct {
+	Link    string `json:"link"`
+	Content string `json:"content"`
+}
+
+func addArticle(news UserNewsService, slog *slog.Logger) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		req := new(addRequest)
 
 		id := w.Header().Get("id")
 		if id == "" {
@@ -174,7 +204,19 @@ func suggestArticle(service AuthService, news NewsSaver, slog *slog.Logger) http
 			return
 		}
 
-		if err := news.SaveArticle(ctx, int64(uid), req.Link); err != nil {
+		if err := json.NewDecoder(r.Body).Decode(req); err != nil {
+			if !strings.Contains(err.Error(), "EOF") {
+				slog.Debug("Can't decode body from suggest-article request", "err", err.Error())
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+		}
+
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		defer cancel()
+
+		arts, err := news.SaveArticle(ctx, int64(uid), req.Link)
+		if err != nil {
 			switch {
 			case errors.Is(err, services.ErrArticleSkipped):
 				slog.Debug("Can't save article", "err", err.Error())
@@ -184,6 +226,9 @@ func suggestArticle(service AuthService, news NewsSaver, slog *slog.Logger) http
 				slog.Debug("Can't save article", "err", err.Error())
 				w.WriteHeader(http.StatusPartialContent)
 				return
+			case errors.Is(err, services.ErrNoOfferedArticles):
+				w.WriteHeader(http.StatusResetContent)
+				return
 			default:
 				slog.Error("Can't save article", "err", err.Error())
 				w.WriteHeader(http.StatusInternalServerError)
@@ -191,6 +236,137 @@ func suggestArticle(service AuthService, news NewsSaver, slog *slog.Logger) http
 			}
 		}
 
+		if len(arts) == 0 {
+			w.WriteHeader(http.StatusResetContent)
+			return
+		}
+
 		w.WriteHeader(http.StatusCreated)
+
+		if err := json.NewEncoder(w).Encode(arts); err != nil {
+			slog.Error("Can't encode articles", "err", err.Error())
+		}
+	}
+}
+
+type updateRequest struct {
+	ArticleID int    `json:"article_id"`
+	Link      string `json:"link"`
+}
+
+func updateArticle(news UserNewsService, slog *slog.Logger) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		req := new(updateRequest)
+
+		id := w.Header().Get("id")
+		if id == "" {
+			slog.Error("Can't get header id is empty")
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		uid, err := strconv.Atoi(id)
+		if err != nil {
+			slog.Debug("Can't Atoi", "err", err.Error())
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		if err := json.NewDecoder(r.Body).Decode(req); err != nil {
+			if !strings.Contains(err.Error(), "EOF") {
+				slog.Debug("Can't decode body from suggest-article request", "err", err.Error())
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+		}
+
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		defer cancel()
+
+		arts, err := news.UpdateArticle(ctx, int64(uid), int64(req.ArticleID), req.Link)
+		if err != nil {
+			switch {
+			case errors.Is(err, services.ErrArticleSkipped):
+				slog.Debug("Can't update article", "err", err.Error())
+				w.WriteHeader(http.StatusNoContent)
+				return
+			case errors.Is(err, services.ErrArticleExists):
+				slog.Debug("Can't update article", "err", err.Error())
+				w.WriteHeader(http.StatusPartialContent)
+				return
+			case errors.Is(err, services.ErrNoOfferedArticles):
+				w.WriteHeader(http.StatusResetContent)
+				return
+			default:
+				slog.Error("Can't update article", "err", err.Error())
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+		}
+
+		if len(arts) == 0 {
+			w.WriteHeader(http.StatusResetContent)
+			return
+		}
+
+		w.WriteHeader(http.StatusAccepted)
+
+		if err := json.NewEncoder(w).Encode(arts); err != nil {
+			slog.Error("Can't encode articles", "err", err.Error())
+		}
+	}
+}
+
+func deleteArticle(news UserNewsService, slog *slog.Logger) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		id := w.Header().Get("id")
+		if id == "" {
+			slog.Error("Can't get header id is empty")
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		uid, err := strconv.Atoi(id)
+		if err != nil {
+			slog.Error("Can't Atoi", "err", err.Error())
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		articleIdHeader := r.Header.Get("article_id")
+
+		articleId, err := strconv.Atoi(articleIdHeader)
+		if err != nil {
+			slog.Error("Can't Atoi", "err", err.Error())
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		defer cancel()
+
+		arts, err := news.DeleteArticle(ctx, int64(uid), int64(articleId))
+		if err != nil {
+			switch {
+			case errors.Is(err, services.ErrNoOfferedArticles):
+				w.WriteHeader(http.StatusNoContent)
+				return
+			default:
+				slog.Error("Can't delete article", "err", err.Error())
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+		}
+
+		if len(arts) == 0 {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+
+		if err := json.NewEncoder(w).Encode(arts); err != nil {
+			slog.Error("Can't encode articles", "err", err.Error())
+		}
 	}
 }

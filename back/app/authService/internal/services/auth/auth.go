@@ -54,7 +54,7 @@ func New(usrS UserStorage, sesS SessionStorage, l *slog.Logger, cfg *config.Toke
 
 func (a *Auth) SaveUser(ctx context.Context, userName string, email string, pass string) (int64, error) {
 	if err := validateUserForSave(userName, email, pass); err != nil {
-		a.log.Warn("Failed get validate user", "err", err.Error())
+		a.log.Debug("Failed get validate user", "err", err.Error())
 
 		return 0, services.ErrInvalidValue
 	}
@@ -69,7 +69,7 @@ func (a *Auth) SaveUser(ctx context.Context, userName string, email string, pass
 	id, err := a.userStorage.SaveUser(ctx, userName, email, passHash)
 	if err != nil {
 		if errors.Is(err, storage.ErrUserExists) {
-			a.log.Warn("Failed save user", "err", err.Error())
+			a.log.Debug("Failed save user", "err", err.Error())
 
 			return 0, services.ErrUserExists
 		}
@@ -83,7 +83,7 @@ func (a *Auth) SaveUser(ctx context.Context, userName string, email string, pass
 
 func (a *Auth) LoginUser(ctx context.Context, email, pass string) (int64, string, string, string, error) {
 	if err := validateUserForLogin(email, pass); err != nil {
-		a.log.Warn("Failed get validate user", "err", err.Error())
+		a.log.Debug("Failed get validate user", "err", err.Error())
 
 		return 0, "", "", "", services.ErrInvalidValue
 	}
@@ -101,7 +101,7 @@ func (a *Auth) LoginUser(ctx context.Context, email, pass string) (int64, string
 	}
 
 	if err := bcrypt.CompareHashAndPassword(user.PassHash, []byte(pass)); err != nil {
-		a.log.Warn("Failed compare hash and password", "err", err.Error())
+		a.log.Debug("Failed compare hash and password", "err", err.Error())
 
 		return 0, "", "", "", services.ErrUserDoesntExists
 	}
@@ -125,7 +125,7 @@ func (a *Auth) LoginUser(ctx context.Context, email, pass string) (int64, string
 func (a *Auth) Parse(ctx context.Context, header string) (int64, string, error) {
 	token, err := getTokenFromHeader(header)
 	if err != nil {
-		a.log.Warn(err.Error())
+		a.log.Debug(err.Error())
 
 		return 0, "", services.ErrInvalidToken
 	}
@@ -149,16 +149,16 @@ func (a *Auth) Refresh(ctx context.Context, refrToken string) (int64, string, st
 	id, userName, err := a.tokenManager.Parse(refrToken)
 	if err != nil {
 		if errors.Is(err, tokenmanager.ErrTokenExpired) {
-			a.log.Warn("Token expired")
+			a.log.Debug("Token expired")
 
 			return 0, "", "", "", services.ErrSessionNotFound
 		}
-		a.log.Warn("Invalid token", "token", refrToken)
+		a.log.Debug("Invalid token", "token", refrToken)
 
 		return 0, "", "", "", services.ErrInvalidToken
 	}
 
-	oldRefreshToken, err := a.sessionStorage.GetSessionToken(ctx, id)
+	currentRefreshToken, err := a.sessionStorage.GetSessionToken(ctx, id)
 	if err != nil {
 		if errors.Is(err, storage.ErrSessionNotFound) {
 			a.log.Debug("Session not found", "user id", id)
@@ -170,7 +170,7 @@ func (a *Auth) Refresh(ctx context.Context, refrToken string) (int64, string, st
 		return 0, "", "", "", errCantLoginUser
 	}
 
-	if refrToken == oldRefreshToken {
+	if refrToken == currentRefreshToken {
 		newAccToken, newRefToken, err := a.tokenManager.CreateTokens(id, userName)
 		if err != nil {
 			a.log.Error("Failed to create new access token", "err", err.Error())
@@ -186,7 +186,7 @@ func (a *Auth) Refresh(ctx context.Context, refrToken string) (int64, string, st
 
 		return id, userName, newAccToken, newRefToken, nil
 	} else {
-		a.log.Error("Old refresh token != refresh token from user", "old", oldRefreshToken, "now", refrToken)
+		a.log.Debug("Refresh token in session is not equal to refresh token from user", "session_token", currentRefreshToken, "user_token", refrToken)
 
 		return 0, "", "", "", services.ErrInvalidToken
 	}

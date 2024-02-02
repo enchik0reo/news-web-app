@@ -10,7 +10,15 @@ import (
 	"newsWebApp/app/authService/internal/storage"
 )
 
-func (s *Storage) SaveUser(ctx context.Context, userName string, email string, hashPass []byte) (int64, error) {
+type UserStorage struct {
+	db *sql.DB
+}
+
+func NewUserStorage(db *sql.DB) *UserStorage {
+	return &UserStorage{db: db}
+}
+
+func (s *UserStorage) SaveUser(ctx context.Context, userName string, email string, hashPass []byte) (int64, error) {
 	stmt, err := s.db.PrepareContext(ctx, "INSERT INTO users (user_name, email, password_hash) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING RETURNING user_id")
 	if err != nil {
 		return 0, fmt.Errorf("can't prepare statement: %w", err)
@@ -38,7 +46,7 @@ func (s *Storage) SaveUser(ctx context.Context, userName string, email string, h
 	return id, nil
 }
 
-func (s *Storage) GetUserByEmail(ctx context.Context, email string) (*models.User, error) {
+func (s *UserStorage) GetUserByEmail(ctx context.Context, email string) (*models.User, error) {
 	stmt, err := s.db.PrepareContext(ctx, "SELECT user_id, user_name, email, password_hash FROM users WHERE email = $1")
 	if err != nil {
 		return nil, fmt.Errorf("can't prepare statement: %w", err)

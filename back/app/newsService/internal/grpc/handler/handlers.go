@@ -16,7 +16,10 @@ import (
 )
 
 type NewsService interface {
-	SaveArticleFromUser(ctx context.Context, userID int64, link string) error
+	GetArticlesByUid(ctx context.Context, userID int64) ([]models.Article, error)
+	SaveArticleFromUser(ctx context.Context, userID int64, link string) ([]models.Article, error)
+	UpdateArticleByID(ctx context.Context, userID int64, artID int64, link string) ([]models.Article, error)
+	DeleteArticleByID(ctx context.Context, userID int64, artID int64) ([]models.Article, error)
 	SelectAndSendArticle(ctx context.Context) (*models.Article, error)
 	SelectPostedArticles(ctx context.Context) ([]models.Article, error)
 }
@@ -30,19 +33,132 @@ func Register(grpcSrv *grpc.Server, nS NewsService) {
 	newsv1.RegisterNewsServer(grpcSrv, &serverAPI{newsService: nS})
 }
 
-func (s *serverAPI) SaveArticle(ctx context.Context, req *newsv1.SaveArticleRequest) (*newsv1.SaveArticleResponse, error) {
-	if err := s.newsService.SaveArticleFromUser(ctx, req.GetUserId(), req.GetLink()); err != nil {
+func (s *serverAPI) GetArticlesByUid(ctx context.Context, req *newsv1.GetArticlesByUidRequest) (*newsv1.GetArticlesByUidResponse, error) {
+	articles, err := s.newsService.GetArticlesByUid(ctx, req.GetUserId())
+	if err != nil {
 		switch {
-		case errors.Is(err, services.ErrArticleSkipped):
-			return nil, status.Error(codes.InvalidArgument, "invalid article")
-		case errors.Is(err, services.ErrArticleExists):
-			return nil, status.Error(codes.AlreadyExists, "article already exists")
+		case errors.Is(err, services.ErrNoOfferedArticles):
+			return nil, status.Error(codes.NotFound, "there are no offered articles")
 		default:
 			return nil, status.Error(codes.Internal, "internal error")
 		}
 	}
 
-	return &newsv1.SaveArticleResponse{}, nil
+	grpcArticles := make([]*newsv1.Article, len(articles))
+
+	for i, art := range articles {
+		grpcArticles[i] = &newsv1.Article{
+			ArticleId:  art.ID,
+			UserName:   art.UserName,
+			SourceName: art.SourceName,
+			Title:      art.Title,
+			Link:       art.Link,
+			Excerpt:    art.Excerpt,
+			ImageUrl:   art.ImageURL,
+		}
+	}
+
+	return &newsv1.GetArticlesByUidResponse{
+		Articles: grpcArticles,
+	}, nil
+}
+
+func (s *serverAPI) SaveArticle(ctx context.Context, req *newsv1.SaveArticleRequest) (*newsv1.SaveArticleResponse, error) {
+	articles, err := s.newsService.SaveArticleFromUser(ctx, req.GetUserId(), req.GetLink())
+	if err != nil {
+		switch {
+		case errors.Is(err, services.ErrArticleSkipped):
+			return nil, status.Error(codes.InvalidArgument, "invalid article")
+		case errors.Is(err, services.ErrArticleExists):
+			return nil, status.Error(codes.AlreadyExists, "article already exists")
+		case errors.Is(err, services.ErrNoOfferedArticles):
+			return nil, status.Error(codes.NotFound, "there are no offered articles")
+		default:
+			return nil, status.Error(codes.Internal, "internal error")
+		}
+	}
+
+	grpcArticles := make([]*newsv1.Article, len(articles))
+
+	for i, art := range articles {
+		grpcArticles[i] = &newsv1.Article{
+			ArticleId:  art.ID,
+			UserName:   art.UserName,
+			SourceName: art.SourceName,
+			Title:      art.Title,
+			Link:       art.Link,
+			Excerpt:    art.Excerpt,
+			ImageUrl:   art.ImageURL,
+		}
+	}
+
+	return &newsv1.SaveArticleResponse{
+		Articles: grpcArticles,
+	}, nil
+}
+
+func (s *serverAPI) UpdateArticle(ctx context.Context, req *newsv1.UpdateArticleRequest) (*newsv1.UpdateArticleResponse, error) {
+	articles, err := s.newsService.UpdateArticleByID(ctx, req.GetUserId(), req.GetArticleId(), req.GetLink())
+	if err != nil {
+		switch {
+		case errors.Is(err, services.ErrArticleSkipped):
+			return nil, status.Error(codes.InvalidArgument, "invalid article")
+		case errors.Is(err, services.ErrArticleExists):
+			return nil, status.Error(codes.AlreadyExists, "article already exists")
+		case errors.Is(err, services.ErrNoOfferedArticles):
+			return nil, status.Error(codes.NotFound, "there are no offered articles")
+		default:
+			return nil, status.Error(codes.Internal, "internal error")
+		}
+	}
+
+	grpcArticles := make([]*newsv1.Article, len(articles))
+
+	for i, art := range articles {
+		grpcArticles[i] = &newsv1.Article{
+			ArticleId:  art.ID,
+			UserName:   art.UserName,
+			SourceName: art.SourceName,
+			Title:      art.Title,
+			Link:       art.Link,
+			Excerpt:    art.Excerpt,
+			ImageUrl:   art.ImageURL,
+		}
+	}
+
+	return &newsv1.UpdateArticleResponse{
+		Articles: grpcArticles,
+	}, nil
+}
+
+func (s *serverAPI) DeleteArticle(ctx context.Context, req *newsv1.DeleteArticleRequest) (*newsv1.DeleteArticleResponse, error) {
+	articles, err := s.newsService.DeleteArticleByID(ctx, req.GetUserId(), req.GetArticleId())
+	if err != nil {
+		switch {
+		case errors.Is(err, services.ErrNoOfferedArticles):
+			return nil, status.Error(codes.NotFound, "there are no offered articles")
+		default:
+			return nil, status.Error(codes.Internal, "internal error")
+		}
+	}
+
+	grpcArticles := make([]*newsv1.Article, len(articles))
+
+	for i, art := range articles {
+		grpcArticles[i] = &newsv1.Article{
+			ArticleId:  art.ID,
+			UserName:   art.UserName,
+			SourceName: art.SourceName,
+			Title:      art.Title,
+			Link:       art.Link,
+			Excerpt:    art.Excerpt,
+			ImageUrl:   art.ImageURL,
+		}
+	}
+
+	return &newsv1.DeleteArticleResponse{
+		Articles: grpcArticles,
+	}, nil
 }
 
 func (s *serverAPI) GetNewestArticle(ctx context.Context, req *newsv1.GetNewestArticleRequest) (*newsv1.GetNewestArticleResponse, error) {

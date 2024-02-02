@@ -12,12 +12,15 @@ import (
 
 	"newsWebApp/app/newsService/internal/models"
 	"newsWebApp/app/newsService/internal/services"
-	"newsWebApp/app/newsService/internal/services/source"
+	"newsWebApp/app/newsService/internal/services/itemHandler"
 	"newsWebApp/app/newsService/internal/storage"
 )
 
 type ArticleStorage interface {
-	Save(ctx context.Context, article models.Article) error
+	SaveArticle(ctx context.Context, article models.Article) error
+	UpdateArticle(ctx context.Context, artID int64, newArt models.Article) error
+	DeleteArticle(ctx context.Context, userID int64, artID int64) error
+	LinkById(ctx context.Context, artID int64) (string, error)
 }
 
 type SourceStorage interface {
@@ -25,17 +28,9 @@ type SourceStorage interface {
 }
 
 type LinkCacher interface {
-	CacheLink(context.Context, string) error
-}
-
-type RSSSource interface {
-	ID() int64
-	Name() string
-	IntervalLoad(ctx context.Context) ([]models.Item, error)
-}
-
-type UserSource interface {
-	LoadFromUser(ctx context.Context) (models.Item, error)
+	CacheLink(ctx context.Context, link string) error
+	UpdateLink(ctx context.Context, newLink string, oldLink string) error
+	DeleteLink(ctx context.Context, link string) error
 }
 
 type Fetcher struct {
@@ -43,9 +38,10 @@ type Fetcher struct {
 	sourceStor  SourceStorage
 	cacher      LinkCacher
 
-	fetchInterval  time.Duration
-	filterKeywords []string
-	log            *slog.Logger
+	fetchInterval time.Duration
+	keywordsSet   *sync.Map
+	regularExprs  []*regexp.Regexp
+	log           *slog.Logger
 }
 
 func New(
@@ -56,13 +52,25 @@ func New(
 	filterKeywords []string,
 	log *slog.Logger,
 ) *Fetcher {
+	l := len(filterKeywords)
+	regExpr := make([]*regexp.Regexp, l)
+	keySet := sync.Map{}
+
+	for i, keyword := range filterKeywords {
+		keySet.Store(keyword, struct{}{})
+
+		r := regexp.MustCompile(fmt.Sprintf("\\b%s\\b", keyword))
+		regExpr[i] = r
+	}
+
 	return &Fetcher{
-		articleStor:    articleStorage,
-		sourceStor:     soureStorage,
-		cacher:         cacher,
-		fetchInterval:  fetchInterval,
-		filterKeywords: filterKeywords,
-		log:            log,
+		articleStor:   articleStorage,
+		sourceStor:    soureStorage,
+		cacher:        cacher,
+		fetchInterval: fetchInterval,
+		keywordsSet:   &keySet,
+		regularExprs:  regExpr,
+		log:           log,
 	}
 }
 
@@ -99,25 +107,26 @@ func (f *Fetcher) Start(ctx context.Context) error {
 }
 
 func (f *Fetcher) SaveArticleFromUser(ctx context.Context, userID int64, link string) error {
-	const op = "services.fetcher.save_item-from_user"
+	const op = "services.fetcher.save_article_from_user"
 
-	userSource := source.NewUserSource(f.cacher, userID, link)
+	userHandler := itemHandler.NewFromUser(f.cacher, userID, link)
 
-	item, err := userSource.LoadFromUser(ctx)
+	item, err := userHandler.LoadItem(ctx)
 	if err != nil {
 		if errors.Is(err, services.ErrArticleExists) {
 			f.log.Debug("Can't save article from user", "err", err.Error())
 			return services.ErrArticleExists
 		}
-		f.log.Error("Can't fetch item from link", "link", link, "err", err.Error())
+		f.log.Error("Can't load article", "link", link, "err", err.Error())
 		return fmt.Errorf("%s: %w", op, err)
 	}
 
 	if f.itemShouldBeSkipped(item) {
+		f.cacher.DeleteLink(ctx, link)
 		return services.ErrArticleSkipped
 	}
 
-	if err := f.articleStor.Save(ctx, models.Article{
+	if err := f.articleStor.SaveArticle(ctx, models.Article{
 		UserID:      userID,
 		SourceName:  item.SourceName,
 		Title:       item.Title,
@@ -131,6 +140,76 @@ func (f *Fetcher) SaveArticleFromUser(ctx context.Context, userID int64, link st
 			return services.ErrArticleExists
 		}
 		f.log.Error("Can't save article from user", "err", err.Error())
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	return nil
+}
+
+func (f *Fetcher) UpdateArticleByID(ctx context.Context, userID int64, artID int64, link string) error {
+	const op = "services.fetcher.update_article_by_id"
+
+	userHandler := itemHandler.NewFromUser(f.cacher, userID, link)
+
+	oldLink, err := f.articleStor.LinkById(ctx, artID)
+	if err != nil {
+		f.log.Error("Can't get old link", "Article ID", artID, "err", err.Error())
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	item, err := userHandler.UpdateItem(ctx, oldLink)
+	if err != nil {
+		if errors.Is(err, services.ErrArticleExists) {
+			f.log.Debug("Can't update article from user", "err", err.Error())
+			return services.ErrArticleExists
+		}
+		f.log.Error("Can't load article", "link", link, "err", err.Error())
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	if f.itemShouldBeSkipped(item) {
+		f.cacher.DeleteLink(ctx, link)
+		return services.ErrArticleSkipped
+	}
+
+	if err := f.articleStor.UpdateArticle(ctx, artID, models.Article{
+		UserID:      userID,
+		SourceName:  item.SourceName,
+		Title:       item.Title,
+		Link:        item.Link,
+		Excerpt:     item.Excerpt,
+		ImageURL:    item.ImageURL,
+		PublishedAt: item.Date,
+	}); err != nil {
+		if errors.Is(err, storage.ErrArticleExists) {
+			f.log.Debug("Can't update article from user", "err", err.Error())
+			return services.ErrArticleExists
+		}
+		f.log.Error("Can't update article from user", "err", err.Error())
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	return nil
+}
+
+func (f *Fetcher) DeleteArticleByID(ctx context.Context, userID int64, artID int64) error {
+	const op = "services.fetcher.delete_article_by_id"
+
+	userHandler := itemHandler.NewFromUser(f.cacher, userID, "")
+
+	oldLink, err := f.articleStor.LinkById(ctx, artID)
+	if err != nil {
+		f.log.Error("Can't get old link", "Article ID", artID, "err", err.Error())
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	if err := userHandler.DeleteItem(ctx, oldLink); err != nil {
+		f.log.Error("Can't delete article from cache", "err", err.Error())
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	if err := f.articleStor.DeleteArticle(ctx, userID, artID); err != nil {
+		f.log.Error("Can't delete article", "err", err.Error())
 		return fmt.Errorf("%s: %w", op, err)
 	}
 
@@ -157,19 +236,19 @@ func (f *Fetcher) intervalFetch(ctx context.Context) error {
 	for _, src := range sources {
 		wg.Add(1)
 
-		rssSource := source.NewRRSSourceFromModel(f.cacher, src)
+		rssSource := itemHandler.NewFromRSS(f.cacher, src)
 
-		go func(rssSource RSSSource) {
+		go func(rssSource *itemHandler.RSS) {
 			defer wg.Done()
 
 			items, err := rssSource.IntervalLoad(ctx)
 			if err != nil {
-				f.log.Warn("Can't fetch items from source", "source name", rssSource.Name(), "err", err.Error())
+				f.log.Warn("Can't fetch items from source", "source name", rssSource.SourceName(), "err", err.Error())
 				return
 			}
 
 			if err := f.saveItems(ctx, items); err != nil {
-				f.log.Warn("Can't save items in articles", "source name", rssSource.Name(), "err", err.Error())
+				f.log.Warn("Can't save items in articles", "source name", rssSource.SourceName(), "err", err.Error())
 				return
 			}
 		}(rssSource)
@@ -192,10 +271,11 @@ func (f *Fetcher) saveItems(ctx context.Context, items []models.Item) error {
 			defer wg.Done()
 
 			if f.itemShouldBeSkipped(item) {
+				f.cacher.DeleteLink(ctx, item.Link)
 				return nil
 			}
 
-			if err := f.articleStor.Save(ctx, models.Article{
+			if err := f.articleStor.SaveArticle(ctx, models.Article{
 				SourceName:  item.SourceName,
 				Title:       item.Title,
 				Link:        item.Link,
@@ -219,27 +299,21 @@ func (f *Fetcher) saveItems(ctx context.Context, items []models.Item) error {
 }
 
 func (f *Fetcher) itemShouldBeSkipped(item models.Item) bool {
-	if categoriesContainKeyword(f.filterKeywords, item.Categories) || titleContainsKeyword(f.filterKeywords, item.Title) {
+	if f.categoriesContainKeyword(item.Categories) || f.titleContainsKeyword(item.Title) {
 		return false
 	}
 	return true
 }
 
-func categoriesContainKeyword(filterKeywords []string, categories []string) bool {
+func (f *Fetcher) categoriesContainKeyword(categories []string) bool {
 	l := len(categories)
 
 	if l == 0 {
 		return false
 	}
 
-	categorySet := make(map[string]struct{}, l)
-
 	for _, category := range categories {
-		categorySet[strings.ToLower(category)] = struct{}{}
-	}
-
-	for _, keyword := range filterKeywords {
-		if _, categoryContainsKeyword := categorySet[keyword]; categoryContainsKeyword {
+		if _, categoryEqualKeyword := f.keywordsSet.Load(category); categoryEqualKeyword {
 			return true
 		}
 	}
@@ -247,13 +321,11 @@ func categoriesContainKeyword(filterKeywords []string, categories []string) bool
 	return false
 }
 
-func titleContainsKeyword(filterKeywords []string, title string) bool {
+func (f *Fetcher) titleContainsKeyword(title string) bool {
 	validTitle := strings.ToLower(title)
 
-	for _, keyword := range filterKeywords {
-		r := regexp.MustCompile(fmt.Sprintf("\\b%s\\b", keyword))
-
-		if r.MatchString(validTitle) {
+	for _, regular := range f.regularExprs {
+		if regular.MatchString(validTitle) {
 			return true
 		}
 	}

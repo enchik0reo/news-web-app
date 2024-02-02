@@ -10,4 +10,5 @@ var (
 	ErrArticleExists       = errors.New("article already exists")
 	ErrArticleSkipped      = errors.New("invalid article")
 	ErrLinkExists          = errors.New("link already exists")
+	ErrNoOfferedArticles   = errors.New("there are no offered articles")
 )

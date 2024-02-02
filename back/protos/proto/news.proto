@@ -5,20 +5,12 @@ package news;
 option go_package = "news.v1;newsv1";
 
 service News{
+	rpc GetArticlesByUid (GetArticlesByUidRequest) returns (GetArticlesByUidResponse);
     rpc SaveArticle (SaveArticleRequest) returns (SaveArticleResponse);
+	rpc UpdateArticle (UpdateArticleRequest) returns (UpdateArticleResponse);
+	rpc DeleteArticle (DeleteArticleRequest) returns (DeleteArticleResponse);
     rpc GetArticles (GetArticlesRequest) returns (GetArticlesResponse);
 	rpc GetNewestArticle (GetNewestArticleRequest) returns (GetNewestArticleResponse);
-}
-
-message SaveArticleRequest {
-    int64 user_id = 1;
-    string link = 2;
-}
-
-message SaveArticleResponse {
-}
-
-message GetArticlesRequest {
 }
 
 message Article {    
@@ -30,6 +22,45 @@ message Article {
 	string excerpt = 6;
 	string image_url = 7;
 	string posted_at = 8;
+}
+
+message GetArticlesByUidRequest {
+	int64 user_id = 1;
+}
+
+message GetArticlesByUidResponse {
+	repeated Article Articles = 1;
+}
+
+message SaveArticleRequest {
+    int64 user_id = 1;
+    string link = 2;
+}
+
+message SaveArticleResponse {
+	repeated Article Articles = 1;
+}
+
+message UpdateArticleRequest {
+	int64 user_id = 1;
+	int64 article_id = 2;
+	string link = 3;
+}
+
+message UpdateArticleResponse {
+	repeated Article Articles = 1;
+}
+
+message DeleteArticleRequest {
+	int64 user_id = 1;
+	int64 article_id = 2;
+}
+
+message DeleteArticleResponse {
+	repeated Article Articles = 1;
+}
+
+message GetArticlesRequest {
 }
 
 message GetArticlesResponse {

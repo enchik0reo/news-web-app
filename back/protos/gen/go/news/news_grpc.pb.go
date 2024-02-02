@@ -22,7 +22,10 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type NewsClient interface {
+	GetArticlesByUid(ctx context.Context, in *GetArticlesByUidRequest, opts ...grpc.CallOption) (*GetArticlesByUidResponse, error)
 	SaveArticle(ctx context.Context, in *SaveArticleRequest, opts ...grpc.CallOption) (*SaveArticleResponse, error)
+	UpdateArticle(ctx context.Context, in *UpdateArticleRequest, opts ...grpc.CallOption) (*UpdateArticleResponse, error)
+	DeleteArticle(ctx context.Context, in *DeleteArticleRequest, opts ...grpc.CallOption) (*DeleteArticleResponse, error)
 	GetArticles(ctx context.Context, in *GetArticlesRequest, opts ...grpc.CallOption) (*GetArticlesResponse, error)
 	GetNewestArticle(ctx context.Context, in *GetNewestArticleRequest, opts ...grpc.CallOption) (*GetNewestArticleResponse, error)
 }
@@ -35,9 +38,36 @@ func NewNewsClient(cc grpc.ClientConnInterface) NewsClient {
 	return &newsClient{cc}
 }
 
+func (c *newsClient) GetArticlesByUid(ctx context.Context, in *GetArticlesByUidRequest, opts ...grpc.CallOption) (*GetArticlesByUidResponse, error) {
+	out := new(GetArticlesByUidResponse)
+	err := c.cc.Invoke(ctx, "/news.News/GetArticlesByUid", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *newsClient) SaveArticle(ctx context.Context, in *SaveArticleRequest, opts ...grpc.CallOption) (*SaveArticleResponse, error) {
 	out := new(SaveArticleResponse)
 	err := c.cc.Invoke(ctx, "/news.News/SaveArticle", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *newsClient) UpdateArticle(ctx context.Context, in *UpdateArticleRequest, opts ...grpc.CallOption) (*UpdateArticleResponse, error) {
+	out := new(UpdateArticleResponse)
+	err := c.cc.Invoke(ctx, "/news.News/UpdateArticle", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *newsClient) DeleteArticle(ctx context.Context, in *DeleteArticleRequest, opts ...grpc.CallOption) (*DeleteArticleResponse, error) {
+	out := new(DeleteArticleResponse)
+	err := c.cc.Invoke(ctx, "/news.News/DeleteArticle", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -66,7 +96,10 @@ func (c *newsClient) GetNewestArticle(ctx context.Context, in *GetNewestArticleR
 // All implementations must embed UnimplementedNewsServer
 // for forward compatibility
 type NewsServer interface {
+	GetArticlesByUid(context.Context, *GetArticlesByUidRequest) (*GetArticlesByUidResponse, error)
 	SaveArticle(context.Context, *SaveArticleRequest) (*SaveArticleResponse, error)
+	UpdateArticle(context.Context, *UpdateArticleRequest) (*UpdateArticleResponse, error)
+	DeleteArticle(context.Context, *DeleteArticleRequest) (*DeleteArticleResponse, error)
 	GetArticles(context.Context, *GetArticlesRequest) (*GetArticlesResponse, error)
 	GetNewestArticle(context.Context, *GetNewestArticleRequest) (*GetNewestArticleResponse, error)
 	mustEmbedUnimplementedNewsServer()
@@ -76,8 +109,17 @@ type NewsServer interface {
 type UnimplementedNewsServer struct {
 }
 
+func (UnimplementedNewsServer) GetArticlesByUid(context.Context, *GetArticlesByUidRequest) (*GetArticlesByUidResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetArticlesByUid not implemented")
+}
 func (UnimplementedNewsServer) SaveArticle(context.Context, *SaveArticleRequest) (*SaveArticleResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SaveArticle not implemented")
+}
+func (UnimplementedNewsServer) UpdateArticle(context.Context, *UpdateArticleRequest) (*UpdateArticleResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateArticle not implemented")
+}
+func (UnimplementedNewsServer) DeleteArticle(context.Context, *DeleteArticleRequest) (*DeleteArticleResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteArticle not implemented")
 }
 func (UnimplementedNewsServer) GetArticles(context.Context, *GetArticlesRequest) (*GetArticlesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetArticles not implemented")
@@ -98,6 +140,24 @@ func RegisterNewsServer(s grpc.ServiceRegistrar, srv NewsServer) {
 	s.RegisterService(&News_ServiceDesc, srv)
 }
 
+func _News_GetArticlesByUid_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetArticlesByUidRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(NewsServer).GetArticlesByUid(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/news.News/GetArticlesByUid",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(NewsServer).GetArticlesByUid(ctx, req.(*GetArticlesByUidRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _News_SaveArticle_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SaveArticleRequest)
 	if err := dec(in); err != nil {
@@ -112,6 +172,42 @@ func _News_SaveArticle_Handler(srv interface{}, ctx context.Context, dec func(in
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(NewsServer).SaveArticle(ctx, req.(*SaveArticleRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _News_UpdateArticle_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateArticleRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(NewsServer).UpdateArticle(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/news.News/UpdateArticle",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(NewsServer).UpdateArticle(ctx, req.(*UpdateArticleRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _News_DeleteArticle_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteArticleRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(NewsServer).DeleteArticle(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/news.News/DeleteArticle",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(NewsServer).DeleteArticle(ctx, req.(*DeleteArticleRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -160,8 +256,20 @@ var News_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*NewsServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
+			MethodName: "GetArticlesByUid",
+			Handler:    _News_GetArticlesByUid_Handler,
+		},
+		{
 			MethodName: "SaveArticle",
 			Handler:    _News_SaveArticle_Handler,
+		},
+		{
+			MethodName: "UpdateArticle",
+			Handler:    _News_UpdateArticle_Handler,
+		},
+		{
+			MethodName: "DeleteArticle",
+			Handler:    _News_DeleteArticle_Handler,
 		},
 		{
 			MethodName: "GetArticles",

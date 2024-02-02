@@ -21,8 +21,11 @@ type AuthService interface {
 	Refresh(ctx context.Context, refToken string) (int64, string, string, string, error)
 }
 
-type NewsSaver interface {
-	SaveArticle(ctx context.Context, userID int64, link string) error
+type UserNewsService interface {
+	GetArticlesByUid(ctx context.Context, userID int64) ([]models.Article, error)
+	SaveArticle(ctx context.Context, userID int64, link string) ([]models.Article, error)
+	UpdateArticle(ctx context.Context, userID int64, artID int64, link string) ([]models.Article, error)
+	DeleteArticle(ctx context.Context, userID int64, artID int64) ([]models.Article, error)
 }
 
 type NewsFetcher interface {
@@ -30,7 +33,7 @@ type NewsFetcher interface {
 }
 
 func New(auth AuthService,
-	news NewsSaver,
+	news UserNewsService,
 	fetcher NewsFetcher,
 
 	refTokTTL time.Duration,
@@ -46,13 +49,16 @@ func New(auth AuthService,
 	r.Use(corsSettings())
 	r.Use(refresh(refTokTTL, auth, slog))
 
-	r.Get("/home", home(auth, fetcher, slog))
+	r.Get("/home", home(fetcher, slog))
 	r.Post("/signup", signup(auth, slog))
 	r.Post("/login", login(refTokTTL, auth, slog))
 
-	r.Route("/suggest", func(r chi.Router) {
+	r.Route("/user_news", func(r chi.Router) {
 		r.Use(authenticate(refTokTTL, auth, slog))
-		r.Post("/", suggestArticle(auth, news, slog))
+		r.Get("/", userArticles(news, slog))
+		r.Post("/", addArticle(news, slog))
+		r.Put("/", updateArticle(news, slog))
+		r.Delete("/", deleteArticle(news, slog))
 	})
 
 	r.Handle("/metrics", promhttp.Handler())

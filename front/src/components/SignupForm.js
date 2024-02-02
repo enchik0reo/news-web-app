@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import validation from './Validation';
 import axios from 'axios';
+import { toast } from 'react-toastify';
 
 const baseurl = "/signup"
 
@@ -42,6 +43,7 @@ const SignupForm = ({ submitForm }) => {
             })
                 .catch((error) => {
                     if (error) {
+                        toast.error("Internal server error. Please, try later.")
                         console.error('Ошибка при выполнении запроса:', error)
                         setDataIsCorrect(false)
                     }

@@ -1,4 +1,4 @@
-package source
+package itemHandler
 
 import (
 	"context"
@@ -18,9 +18,11 @@ import (
 
 type Cacher interface {
 	CacheLink(context.Context, string) error
+	UpdateLink(context.Context, string, string) error
+	DeleteLink(context.Context, string) error
 }
 
-type RSSSource struct {
+type RSS struct {
 	cacher Cacher
 
 	sourceURL  string
@@ -28,8 +30,8 @@ type RSSSource struct {
 	sourceName string
 }
 
-func NewRRSSourceFromModel(cacher Cacher, m models.Source) *RSSSource {
-	return &RSSSource{
+func NewFromRSS(cacher Cacher, m models.Source) *RSS {
+	return &RSS{
 		cacher:     cacher,
 		sourceURL:  m.FeedURL,
 		sourceID:   m.ID,
@@ -37,19 +39,11 @@ func NewRRSSourceFromModel(cacher Cacher, m models.Source) *RSSSource {
 	}
 }
 
-func (s *RSSSource) ID() int64 {
-	return s.sourceID
-}
-
-func (s *RSSSource) Name() string {
+func (s *RSS) SourceName() string {
 	return s.sourceName
 }
 
-func (s *RSSSource) URL() string {
-	return s.sourceURL
-}
-
-func (s *RSSSource) IntervalLoad(ctx context.Context) ([]models.Item, error) {
+func (s *RSS) IntervalLoad(ctx context.Context) ([]models.Item, error) {
 	const op = "services.source.rss.interval_load"
 
 	feed, err := s.loadFeed(ctx, s.sourceURL)
@@ -94,6 +88,13 @@ Loop:
 
 		itm.SourceName = article.SiteName
 		itm.Excerpt = article.Excerpt
+
+		if article.Image != "" {
+			if article.Image[0] != 'h' {
+				article.Image = ""
+			}
+		}
+
 		itm.ImageURL = article.Image
 
 		resp.Body.Close()
@@ -104,7 +105,7 @@ Loop:
 	return items, nil
 }
 
-func (s *RSSSource) loadFeed(ctx context.Context, url string) (*rss.Feed, error) {
+func (s *RSS) loadFeed(ctx context.Context, url string) (*rss.Feed, error) {
 	const op = "services.source.rss.load_feed"
 
 	var feedCh = make(chan *rss.Feed)

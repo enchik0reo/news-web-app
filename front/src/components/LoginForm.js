@@ -40,7 +40,7 @@ const LoginForm = ({ submitForm }) => {
 
             axios.post(baseurl, jsonData, {}).then((r) => {
                 if (r.status === 204) {
-                    toast("Wrong e-mail or password.")
+                    toast.warn("Wrong e-mail or password.")
                     setDataIsCorrect(false)
                 } else {
                     submitForm(r)
@@ -48,6 +48,7 @@ const LoginForm = ({ submitForm }) => {
             })
                 .catch((error) => {
                     if (error) {
+                        toast.error("Internal server error. Please, try later.")
                         console.error('Ошибка при выполнении запроса:', error)
                         setDataIsCorrect(false)
                     }

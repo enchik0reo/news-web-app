@@ -9,7 +9,7 @@ const LoginFormSuccess = (props) => {
         <h2 className="answer-title">{props.answer}</h2>
 
         <div className="tologin">
-          <Nav.Link href="/suggest" >
+          <Nav.Link href="/user_news" >
             <button className="submit">Go</button>
           </Nav.Link>
         </div>
