@@ -106,7 +106,7 @@ func (a *App) MustRun() {
 	go func() {
 		if err := a.fetcher.Start(ctx); err != nil {
 			if !errors.Is(err, context.Canceled) {
-				a.log.Error("Failed ower working fetcher in api service", "err store", err.Error())
+				a.log.Error("Failed ower working fetcher in api service", "err", err.Error())
 			}
 		}
 	}()
@@ -132,11 +132,11 @@ func (a *App) mustStop() {
 	defer cancel()
 
 	if err := a.srv.Stop(ctx); err != nil {
-		a.log.Error("Closing connection to api server", "err store", err.Error())
+		a.log.Error("Closing connection to api server", "err", err.Error())
 	}
 
 	if err := a.cache.CloseConn(); err != nil {
-		a.log.Error("Closing connection to articles cache", "err store", err.Error())
+		a.log.Error("Closing connection to articles cache", "err", err.Error())
 	}
 
 	a.log.Info("Api service stoped gracefully")

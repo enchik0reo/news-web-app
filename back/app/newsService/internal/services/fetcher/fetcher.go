@@ -241,16 +241,23 @@ func (f *Fetcher) intervalFetch(ctx context.Context) error {
 		go func(rssSource *itemHandler.RSS) {
 			defer wg.Done()
 
-			items, err := rssSource.IntervalLoad(ctx)
-			if err != nil {
-				f.log.Warn("Can't fetch items from source", "source name", rssSource.SourceName(), "err", err.Error())
-				return
+			ich := make(chan models.Item)
+
+			go func() {
+				err := rssSource.IntervalLoad(ctx, f.log, ich)
+				if err != nil {
+					f.log.Warn("Can't fetch items from source", "source name", rssSource.SourceName(), "err", err.Error())
+					return
+				}
+			}()
+
+			for itm := range ich {
+				if err := f.saveItem(ctx, itm); err != nil {
+					f.log.Warn("Can't save items in articles", "source name", rssSource.SourceName(), "err", err.Error())
+					continue
+				}
 			}
 
-			if err := f.saveItems(ctx, items); err != nil {
-				f.log.Warn("Can't save items in articles", "source name", rssSource.SourceName(), "err", err.Error())
-				return
-			}
 		}(rssSource)
 	}
 
@@ -259,42 +266,27 @@ func (f *Fetcher) intervalFetch(ctx context.Context) error {
 	return nil
 }
 
-func (f *Fetcher) saveItems(ctx context.Context, items []models.Item) error {
-	const op = "services.fetcher.save_items"
+func (f *Fetcher) saveItem(ctx context.Context, item models.Item) error {
+	const op = "services.fetcher.save_item"
 
-	wg := new(sync.WaitGroup)
-
-	for _, item := range items {
-		wg.Add(1)
-
-		go func(item models.Item) error {
-			defer wg.Done()
-
-			if f.itemShouldBeSkipped(item) {
-				f.cacher.DeleteLink(ctx, item.Link)
-				return nil
-			}
-
-			if err := f.articleStor.SaveArticle(ctx, models.Article{
-				SourceName:  item.SourceName,
-				Title:       item.Title,
-				Link:        item.Link,
-				Excerpt:     item.Excerpt,
-				ImageURL:    item.ImageURL,
-				PublishedAt: item.Date,
-			}); err != nil {
-				if !errors.Is(err, storage.ErrArticleExists) {
-					f.log.Error("Can't save item", "err", err.Error())
-					return fmt.Errorf("%s: %w", op, err)
-				}
-			}
-
-			return nil
-		}(item)
+	if f.itemShouldBeSkipped(item) {
+		f.cacher.DeleteLink(ctx, item.Link)
+		return nil
 	}
 
-	wg.Wait()
-
+	if err := f.articleStor.SaveArticle(ctx, models.Article{
+		SourceName:  item.SourceName,
+		Title:       item.Title,
+		Link:        item.Link,
+		Excerpt:     item.Excerpt,
+		ImageURL:    item.ImageURL,
+		PublishedAt: item.Date,
+	}); err != nil {
+		if !errors.Is(err, storage.ErrArticleExists) {
+			f.log.Error("Can't save item", "err", err.Error())
+			return fmt.Errorf("%s: %w", op, err)
+		}
+	}
 	return nil
 }
 

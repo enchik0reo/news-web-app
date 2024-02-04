@@ -91,11 +91,11 @@ func (a *App) MustRun() {
 
 func (a *App) mustStop() {
 	if err := a.db.Close(); err != nil {
-		a.log.Error("Closing connection to user storage", "err store", err.Error())
+		a.log.Error("Closing connection to user storage", "err", err.Error())
 	}
 
 	if err := a.sessionStor.CloseConn(); err != nil {
-		a.log.Error("Closing connection to session storage", "err store", err.Error())
+		a.log.Error("Closing connection to session storage", "err", err.Error())
 	}
 
 	a.gRPCServer.Stop()

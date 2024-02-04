@@ -328,7 +328,7 @@ func (s *ArticleStorage) prepareStmt(ctx context.Context, query string) (*sql.St
 	var err error
 	var stmt *sql.Stmt
 
-	for i := 1; i <= 10; i++ {
+	for i := 1; i <= 3; i++ {
 		stmt, err = s.db.PrepareContext(ctx, query)
 		if err != nil {
 			pgErr, ok := err.(*pq.Error)
@@ -352,7 +352,7 @@ func (s *ArticleStorage) prepareStmt(ctx context.Context, query string) (*sql.St
 func (s *ArticleStorage) retrySave(ctx context.Context, stmt *sql.Stmt, article models.Article) error {
 	var err error
 
-	for i := 1; i <= 5; i++ {
+	for i := 1; i <= 3; i++ {
 		if _, err := stmt.ExecContext(ctx,
 			article.UserID,
 			article.SourceName,

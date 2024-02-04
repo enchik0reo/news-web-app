@@ -103,7 +103,7 @@ func (a *App) MustRun() {
 	go func() {
 		if err := a.fetcher.Start(ctx); err != nil {
 			if !errors.Is(err, context.Canceled) {
-				a.log.Error("Failed ower working fetcher in news grpc service", "err store", err.Error())
+				a.log.Error("Failed ower working fetcher in news grpc service", "err", err.Error())
 				os.Exit(1)
 			}
 		}
@@ -118,11 +118,11 @@ func (a *App) MustRun() {
 
 func (a *App) mustStop() {
 	if err := a.db.Close(); err != nil {
-		a.log.Error("Closing connection to news storage", "err store", err.Error())
+		a.log.Error("Closing connection to news storage", "err", err.Error())
 	}
 
 	if err := a.linkCache.CloseConn(); err != nil {
-		a.log.Error("Closing connection to session storage", "err store", err.Error())
+		a.log.Error("Closing connection to session storage", "err", err.Error())
 	}
 
 	a.gRPCServer.Stop()

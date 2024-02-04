@@ -71,8 +71,6 @@ func (u *User) LoadItem(ctx context.Context) (models.Item, error) {
 
 	itm.ImageURL = article.Image
 
-	resp.Body.Close()
-
 	return itm, nil
 }
 
@@ -118,8 +116,6 @@ func (u *User) UpdateItem(ctx context.Context, oldLink string) (models.Item, err
 	}
 
 	itm.ImageURL = article.Image
-
-	resp.Body.Close()
 
 	return itm, nil
 }
