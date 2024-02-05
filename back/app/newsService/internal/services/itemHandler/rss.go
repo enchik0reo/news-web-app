@@ -48,6 +48,8 @@ func (s *RSS) SourceName() string {
 func (s *RSS) IntervalLoad(ctx context.Context, slog *slog.Logger, ich chan models.Item) error {
 	const op = "services.source.rss.interval_load"
 
+	defer close(ich)
+
 	feed, err := s.loadFeed(ctx, s.sourceURL)
 	if err != nil {
 		return fmt.Errorf("%s: failed load rss feed: %w", op, err)

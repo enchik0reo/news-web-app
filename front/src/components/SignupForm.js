@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import validation from './Validation';
 import axios from 'axios';
 import { toast } from 'react-toastify';
+import { Link } from 'react-router-dom';
 
 const baseurl = "/signup"
 
@@ -68,7 +69,7 @@ const SignupForm = ({ submitForm }) => {
                             value={values.fullname}
                             onChange={handleChange}
                         />
-                        {errors.fullname && <p className="error">{errors.fullname}</p>}
+                         {errors.fullname && <p className="error">{errors.fullname}</p>}
                     </div>
 
                     <div className="email">
@@ -101,6 +102,10 @@ const SignupForm = ({ submitForm }) => {
                         </button>
                     </div>
                 </form>
+            </div>
+            <div className="app-mini-login">
+                <p>Already have an account?</p>
+                <Link className="back-link" to="/login">Back</Link>
             </div>
         </div>
     )

@@ -7,14 +7,20 @@ body {
     font-weight: 300;
 }
 
+.read-all {
+    color: #3d50ff;
+    width: 85px;
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 600;
+}
+
 div .article {
-    margin: 0 auto;
     width: 70%;
     background-color: #ffffff;
     padding: 10px;
     border: 1px solid #c8cace;
     border-radius: 5px;
-    margin: 50px auto;
+    margin: 20px auto 70px auto;
 }
 
 h2 {
@@ -43,13 +49,6 @@ div .article  img{
     height: 500px;
     width: 100%;
     object-fit: cover;
-}
-
-.read-all {
-    color: #3d50ff;
-    width: 85px;
-    font-family: 'Montserrat', sans-serif;
-    font-weight: 600;
 }
 
 .no-articles {
