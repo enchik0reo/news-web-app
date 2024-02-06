@@ -54,7 +54,12 @@ export default class LoggedForm extends React.Component {
   }
 
   deleteArticle(id) {
-    
+
+    var result = window.confirm('Remove article?')
+    if (!result) {
+      return
+    }
+
     const config = {
       headers: {
         "Authorization": localStorage.getItem('access_token'),
