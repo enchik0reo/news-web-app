@@ -11,6 +11,7 @@ import (
 	chiprometheus "github.com/766b/chi-prometheus"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
+	"github.com/gorilla/websocket"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
@@ -37,6 +38,7 @@ func New(auth AuthService,
 	fetcher NewsFetcher,
 
 	refTokTTL time.Duration,
+	refreshInterval time.Duration,
 	slog *slog.Logger,
 ) (http.Handler, error) {
 	r := chi.NewRouter()
@@ -49,6 +51,15 @@ func New(auth AuthService,
 	r.Use(corsSettings())
 	r.Use(refresh(refTokTTL, auth, slog))
 
+	var upgrader = websocket.Upgrader{
+		ReadBufferSize:  10240,
+		WriteBufferSize: 10240,
+		CheckOrigin: func(r *http.Request) bool {
+			return true
+		},
+	}
+
+	r.HandleFunc("/ws", handleConnection(refreshInterval, upgrader, fetcher, slog))
 	r.Get("/home", home(fetcher, slog))
 	r.Post("/signup", signup(auth, slog))
 	r.Post("/login", login(refTokTTL, auth, slog))

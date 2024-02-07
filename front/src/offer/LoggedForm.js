@@ -72,10 +72,10 @@ export default class LoggedForm extends React.Component {
         localStorage.setItem('access_token', 'Bearer ' + res.headers.access_token)
       }
       if (res.status === 204) {
-        toast.warn('You have successfully deleted an article! It won`t be published.')
+        toast.warn('You have successfully deleted an article!.')
         this.setState({ articles: [] })
       } else if (res.status === 200) {
-        toast.warn('You have successfully deleted an article! It won`t be published.')
+        toast.warn('You have successfully deleted an article!.')
         this.setState({ articles: res.data })
       }
     })
@@ -105,7 +105,7 @@ export default class LoggedForm extends React.Component {
         localStorage.setItem('access_token', 'Bearer ' + res.headers.access_token)
       }
       if (res.status === 206) {
-        toast.info("We already know about this article and will publish it soon. Thank you!")
+        toast.info("We already know about this article. Thank you!")
       } else if (res.status === 204) {
         toast.warn("This article is not suitable, sorry. Please, try another one.")
       } else if (res.status === 205) {
@@ -145,7 +145,7 @@ export default class LoggedForm extends React.Component {
         localStorage.setItem('access_token', 'Bearer ' + res.headers.access_token)
       }
       if (res.status === 206) {
-        toast.info("We already know about this article and will publish it soon. Thank you!")
+        toast.info("We already know about this article. Thank you!")
       } else if (res.status === 204) {
         toast.warn("This article is not suitable, sorry. Please, try another one.")
       } else if (res.status === 205) {

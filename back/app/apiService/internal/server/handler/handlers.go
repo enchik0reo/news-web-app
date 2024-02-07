@@ -12,7 +12,55 @@ import (
 
 	"newsWebApp/app/apiService/internal/metrics"
 	"newsWebApp/app/apiService/internal/services"
+
+	"github.com/gorilla/websocket"
 )
+
+func handleConnection(rI time.Duration, upgrader websocket.Upgrader, fetcher NewsFetcher, slog *slog.Logger) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		wsConn, err := upgrader.Upgrade(w, r, nil)
+		if err != nil {
+			slog.Warn("Can't upgrade connection", "err", err.Error())
+			return
+		}
+
+		go sendNewMsg(rI, wsConn, fetcher, slog)
+	}
+}
+
+func sendNewMsg(refreshInterval time.Duration, client *websocket.Conn, fetcher NewsFetcher, slog *slog.Logger) {
+	ticker := time.NewTicker(refreshInterval / 2)
+
+	defer client.Close()
+
+	for {
+		w, err := client.NextWriter(websocket.TextMessage)
+		if err != nil {
+			ticker.Stop()
+			break
+		}
+
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		defer cancel()
+
+		arts, err := fetcher.FetchArticles(ctx)
+		if err != nil {
+			ticker.Stop()
+			slog.Debug("Can't fetch articles", "err", err.Error())
+			break
+		}
+
+		if err := json.NewEncoder(w).Encode(arts); err != nil {
+			if !strings.Contains(err.Error(), "write: broken pipe") {
+				slog.Error("Can't encode articles", "err", err.Error())
+			}
+		}
+
+		w.Close()
+
+		<-ticker.C
+	}
+}
 
 func home(fetcher NewsFetcher, slog *slog.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -22,26 +70,8 @@ func home(fetcher NewsFetcher, slog *slog.Logger) http.HandlerFunc {
 			metrics.ObserveRequest(time.Since(start), statusCode)
 		}()
 
-		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-		defer cancel()
-
-		arts, err := fetcher.FetchArticles(ctx)
-		if err != nil {
-			slog.Debug("Can't fetch articles", "err", err.Error())
-		}
-
-		if len(arts) == 0 {
-			statusCode = http.StatusNoContent
-			w.WriteHeader(statusCode)
-			return
-		}
-
 		statusCode = http.StatusOK
 		w.WriteHeader(statusCode)
-
-		if err := json.NewEncoder(w).Encode(arts); err != nil {
-			slog.Error("Can't encode articles", "err", err.Error())
-		}
 	}
 }
 

@@ -47,7 +47,7 @@ func (s *ArticleStorage) SaveArticle(ctx context.Context, article models.Article
 func (s *ArticleStorage) UpdateArticle(ctx context.Context, artID int64, article models.Article) error {
 	stmt, err := s.prepareStmt(ctx, `UPDATE articles 
 	SET source_name = $1, title = $2, link = $3, excerpt = $4, image = $5, created_at = $6::timestamp, published_at = $7::timestamp 
-	WHERE article_id = $8`)
+	WHERE article_id = $8 AND published_at IS NULL`)
 	if err != nil {
 		return fmt.Errorf("can't prepare statement: %w", err)
 	}
@@ -77,7 +77,7 @@ func (s *ArticleStorage) UpdateArticle(ctx context.Context, artID int64, article
 }
 
 func (s *ArticleStorage) DeleteArticle(ctx context.Context, userID int64, artID int64) error {
-	stmt, err := s.prepareStmt(ctx, `DELETE FROM articles WHERE article_id = $1 AND user_id = $2`)
+	stmt, err := s.prepareStmt(ctx, `DELETE FROM articles WHERE article_id = $1 AND user_id = $2 AND published_at IS NULL`)
 	if err != nil {
 		return fmt.Errorf("can't prepare statement: %w", err)
 	}

@@ -20,7 +20,6 @@ export default class Home extends React.Component {
             if (res.headers.access_token) {
                 localStorage.setItem('access_token', 'Bearer ' + res.headers.access_token)
             }
-            this.setState({ articles: res.data })
         })
             .catch((error) => {
                 if (error) {
@@ -28,6 +27,13 @@ export default class Home extends React.Component {
                     console.error('Ошибка при выполнении запроса:', error)
                 }
             })
+
+        const ws = new WebSocket('ws://localhost:8008/ws')
+
+        ws.onmessage = (event) => {
+            const data = JSON.parse(event.data)
+            this.setState({ articles: data })
+        }
 
         this.state = {
             articles: []

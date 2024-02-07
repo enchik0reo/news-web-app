@@ -86,7 +86,13 @@ func New() *App {
 
 	a.fetcher = fetcher.New(newsClient, a.cache, a.cfg.Manager.RefreshInterval, a.log)
 
-	a.handler, err = handler.New(authClient, newsClient, a.fetcher, a.cfg.TokenManager.RefreshTokenTTL, a.log)
+	a.handler, err = handler.New(authClient,
+		newsClient,
+		a.fetcher,
+		a.cfg.TokenManager.RefreshTokenTTL,
+		a.cfg.Manager.RefreshInterval,
+		a.log,
+	)
 	if err != nil {
 		a.log.Error("Failed to create new handler", "err", err.Error())
 		os.Exit(1)

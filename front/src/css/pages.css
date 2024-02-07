@@ -46,9 +46,9 @@ div .article  h4{
 }
 
 div .article  img{
-    height: 500px;
+    max-height: 500px;
     width: 100%;
-    object-fit: cover;
+    object-fit: contain;
 }
 
 .no-articles {
