@@ -113,6 +113,7 @@ func (a *App) MustRun() {
 		if err := a.fetcher.Start(ctx); err != nil {
 			if !errors.Is(err, context.Canceled) {
 				a.log.Error("Failed ower working fetcher in api service", "err", err.Error())
+				os.Exit(1)
 			}
 		}
 	}()

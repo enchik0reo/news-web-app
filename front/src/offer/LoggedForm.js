@@ -72,10 +72,13 @@ export default class LoggedForm extends React.Component {
         localStorage.setItem('access_token', 'Bearer ' + res.headers.access_token)
       }
       if (res.status === 204) {
-        toast.warn('You have successfully deleted an article!.')
+        toast.info('You have successfully deleted an article!')
         this.setState({ articles: [] })
       } else if (res.status === 200) {
-        toast.warn('You have successfully deleted an article!.')
+        toast.info('You have successfully deleted an article!')
+        this.setState({ articles: res.data })
+      } else if (res.status === 208) {
+        toast.warn('Can`t be deleted. This article has already been published.')
         this.setState({ articles: res.data })
       }
     })
@@ -113,6 +116,9 @@ export default class LoggedForm extends React.Component {
         this.setState({ articles: [] })
       } else if (res.status === 202) {
         toast.info('You have successfully changed an article!')
+        this.setState({ articles: res.data })
+      } else if (res.status === 208) {
+        toast.warn('Can`t be changed. This article has already been published.')
         this.setState({ articles: res.data })
       }
     })

@@ -107,6 +107,8 @@ func (s *serverAPI) UpdateArticle(ctx context.Context, req *newsv1.UpdateArticle
 			return nil, status.Error(codes.AlreadyExists, "article already exists")
 		case errors.Is(err, services.ErrNoOfferedArticles):
 			return nil, status.Error(codes.NotFound, "there are no offered articles")
+		case errors.Is(err, services.ErrArticleNotAvailable):
+			return nil, status.Error(codes.Unavailable, "there are no changed articles")
 		default:
 			return nil, status.Error(codes.Internal, "internal error")
 		}
@@ -137,6 +139,8 @@ func (s *serverAPI) DeleteArticle(ctx context.Context, req *newsv1.DeleteArticle
 		switch {
 		case errors.Is(err, services.ErrNoOfferedArticles):
 			return nil, status.Error(codes.NotFound, "there are no offered articles")
+		case errors.Is(err, services.ErrArticleNotAvailable):
+			return nil, status.Error(codes.Unavailable, "there are no changed articles")
 		default:
 			return nil, status.Error(codes.Internal, "internal error")
 		}

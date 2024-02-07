@@ -11,4 +11,5 @@ var (
 	ErrArticleSkipped      = errors.New("invalid article")
 	ErrLinkExists          = errors.New("link already exists")
 	ErrNoOfferedArticles   = errors.New("there are no offered articles")
+	ErrArticleNotAvailable = errors.New("article not available")
 )

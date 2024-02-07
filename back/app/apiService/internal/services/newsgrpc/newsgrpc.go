@@ -135,6 +135,8 @@ func (c *Client) UpdateArticle(ctx context.Context, userID int64, artID int64, l
 			return nil, services.ErrArticleExists
 		case errors.Is(err, status.Error(codes.NotFound, "there are no offered articles")):
 			return nil, services.ErrNoOfferedArticles
+		case errors.Is(err, status.Error(codes.Unavailable, "there are no changed articles")):
+			return nil, services.ErrArticleNotAvailable
 		default:
 			return nil, fmt.Errorf("%s: %w", op, err)
 		}
@@ -165,6 +167,8 @@ func (c *Client) DeleteArticle(ctx context.Context, userID int64, artID int64) (
 		switch {
 		case errors.Is(err, status.Error(codes.NotFound, "there are no offered articles")):
 			return nil, services.ErrNoOfferedArticles
+		case errors.Is(err, status.Error(codes.Unavailable, "there are no changed articles")):
+			return nil, services.ErrArticleNotAvailable
 		default:
 			return nil, fmt.Errorf("%s: %w", op, err)
 		}

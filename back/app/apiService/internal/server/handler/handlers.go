@@ -327,6 +327,9 @@ func updateArticle(news UserNewsService, slog *slog.Logger) http.HandlerFunc {
 			case errors.Is(err, services.ErrNoOfferedArticles):
 				w.WriteHeader(http.StatusResetContent)
 				return
+			case errors.Is(err, services.ErrArticleNotAvailable):
+				w.WriteHeader(http.StatusAlreadyReported)
+				return
 			default:
 				slog.Error("Can't update article", "err", err.Error())
 				w.WriteHeader(http.StatusInternalServerError)
@@ -380,6 +383,9 @@ func deleteArticle(news UserNewsService, slog *slog.Logger) http.HandlerFunc {
 			switch {
 			case errors.Is(err, services.ErrNoOfferedArticles):
 				w.WriteHeader(http.StatusNoContent)
+				return
+			case errors.Is(err, services.ErrArticleNotAvailable):
+				w.WriteHeader(http.StatusAlreadyReported)
 				return
 			default:
 				slog.Error("Can't delete article", "err", err.Error())

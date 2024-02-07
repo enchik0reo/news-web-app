@@ -47,7 +47,7 @@ func (s *ArticleStorage) SaveArticle(ctx context.Context, article models.Article
 func (s *ArticleStorage) UpdateArticle(ctx context.Context, artID int64, article models.Article) error {
 	stmt, err := s.prepareStmt(ctx, `UPDATE articles 
 	SET source_name = $1, title = $2, link = $3, excerpt = $4, image = $5, created_at = $6::timestamp, published_at = $7::timestamp 
-	WHERE article_id = $8 AND published_at IS NULL`)
+	WHERE article_id = $8 AND posted_at IS NULL RETURNING article_id`)
 	if err != nil {
 		return fmt.Errorf("can't prepare statement: %w", err)
 	}
@@ -55,7 +55,9 @@ func (s *ArticleStorage) UpdateArticle(ctx context.Context, artID int64, article
 
 	now := time.Now().UTC().Format(time.RFC3339)
 
-	if _, err := stmt.ExecContext(ctx,
+	var id int64
+
+	if err := stmt.QueryRowContext(ctx,
 		article.SourceName,
 		article.Title,
 		article.Link,
@@ -64,10 +66,12 @@ func (s *ArticleStorage) UpdateArticle(ctx context.Context, artID int64, article
 		now,
 		article.PublishedAt,
 		artID,
-	); err != nil {
+	).Scan(&id); err != nil {
 		pqErr, ok := err.(*pq.Error)
 		if ok && pqErr.Code.Name() == "unique_violation" {
 			return storage.ErrArticleExists
+		} else if errors.Is(err, sql.ErrNoRows) {
+			return storage.ErrArticleNotAvailable
 		} else {
 			return fmt.Errorf("can't update article: %v", err)
 		}
@@ -77,17 +81,19 @@ func (s *ArticleStorage) UpdateArticle(ctx context.Context, artID int64, article
 }
 
 func (s *ArticleStorage) DeleteArticle(ctx context.Context, userID int64, artID int64) error {
-	stmt, err := s.prepareStmt(ctx, `DELETE FROM articles WHERE article_id = $1 AND user_id = $2 AND published_at IS NULL`)
+	stmt, err := s.prepareStmt(ctx, `DELETE FROM articles WHERE article_id = $1 AND user_id = $2 AND posted_at IS NULL RETURNING article_id`)
 	if err != nil {
 		return fmt.Errorf("can't prepare statement: %w", err)
 	}
 	defer stmt.Close()
 
-	if _, err := stmt.ExecContext(ctx,
-		artID,
-		userID,
-	); err != nil {
-		return fmt.Errorf("can't delete article: %v", err)
+	var id int64
+
+	if err := stmt.QueryRowContext(ctx, artID, userID).Scan(&id); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return storage.ErrArticleNotAvailable
+		}
+		return fmt.Errorf("can't get last insert id: %w", err)
 	}
 
 	return nil

@@ -181,12 +181,18 @@ func (f *Fetcher) UpdateArticleByID(ctx context.Context, userID int64, artID int
 		ImageURL:    item.ImageURL,
 		PublishedAt: item.Date,
 	}); err != nil {
-		if errors.Is(err, storage.ErrArticleExists) {
+		switch {
+		case errors.Is(err, storage.ErrArticleExists):
 			f.log.Debug("Can't update article from user", "err", err.Error())
 			return services.ErrArticleExists
+		case errors.Is(err, storage.ErrArticleNotAvailable):
+			f.log.Debug("Can't update article from user", "err", err.Error())
+			f.cacher.DeleteLink(ctx, link)
+			return services.ErrArticleNotAvailable
+		default:
+			f.log.Error("Can't update article from user", "err", err.Error())
+			return fmt.Errorf("%s: %w", op, err)
 		}
-		f.log.Error("Can't update article from user", "err", err.Error())
-		return fmt.Errorf("%s: %w", op, err)
 	}
 
 	return nil
@@ -209,6 +215,10 @@ func (f *Fetcher) DeleteArticleByID(ctx context.Context, userID int64, artID int
 	}
 
 	if err := f.articleStor.DeleteArticle(ctx, userID, artID); err != nil {
+		if errors.Is(err, storage.ErrArticleNotAvailable) {
+			f.log.Debug("Can't delete article from user", "err", err.Error())
+			return services.ErrArticleNotAvailable
+		}
 		f.log.Error("Can't delete article", "err", err.Error())
 		return fmt.Errorf("%s: %w", op, err)
 	}

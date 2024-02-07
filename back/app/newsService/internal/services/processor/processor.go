@@ -103,13 +103,16 @@ func (p *Processor) UpdateArticleByID(ctx context.Context, userID int64, artID i
 	if err := p.uArt.UpdateArticleByID(ctx, userID, artID, link); err != nil {
 		switch {
 		case errors.Is(err, services.ErrArticleSkipped):
-			p.log.Debug("Can't save article from user", "err", err.Error())
+			p.log.Debug("Can't update article from user", "err", err.Error())
 			return nil, services.ErrArticleSkipped
 		case errors.Is(err, services.ErrArticleExists):
-			p.log.Debug("Can't save article from user", "err", err.Error())
+			p.log.Debug("Can't update article from user", "err", err.Error())
 			return nil, services.ErrArticleExists
+		case errors.Is(err, services.ErrArticleNotAvailable):
+			p.log.Debug("Can't update article from user", "err", err.Error())
+			return nil, services.ErrArticleNotAvailable
 		default:
-			p.log.Error("Can't save article from user", "err", err.Error())
+			p.log.Error("Can't update article from user", "err", err.Error())
 			return nil, fmt.Errorf("%s: %w", op, err)
 		}
 	}
@@ -133,6 +136,10 @@ func (p *Processor) DeleteArticleByID(ctx context.Context, userID int64, artID i
 	const op = "services.processor.delete_article_by_id"
 
 	if err := p.uArt.DeleteArticleByID(ctx, userID, artID); err != nil {
+		if errors.Is(err, services.ErrArticleNotAvailable) {
+			p.log.Debug("Can't delete article from user", "err", err.Error())
+			return nil, services.ErrArticleNotAvailable
+		}
 		p.log.Error("Can't delete articles by id", "err", err.Error())
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
