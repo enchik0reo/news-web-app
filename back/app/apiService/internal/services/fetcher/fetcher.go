@@ -65,7 +65,6 @@ func (f *NewsFetcher) Start(ctx context.Context) error {
 					f.log.Debug("Can't do interval fetch", "err", err.Error())
 				} else {
 					f.log.Error("Can't do interval fetch", "err", err.Error())
-					return fmt.Errorf("%s: %w", op, err)
 				}
 			}
 		}

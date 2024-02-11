@@ -106,8 +106,8 @@ func New() *App {
 func (a *App) MustRun() {
 	a.log.Info("Starting api service", "env", a.cfg.Env, "address", a.cfg.Server.Address)
 
-	ctx, cacnel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer cacnel()
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer cancel()
 
 	go func() {
 		if err := a.fetcher.Start(ctx); err != nil {

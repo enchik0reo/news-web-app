@@ -57,8 +57,8 @@ func New() *App {
 	sourceStor := psql.NewSourceStorage(a.db)
 	articleStor := psql.NewArticleStorage(a.db)
 
-	ctx, cacnel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer cacnel()
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer cancel()
 
 	a.linkCache, err = connectToLinkCache(ctx, a.cfg.LinkStorage.Host, a.cfg.LinkStorage.Port)
 	if err != nil {
@@ -97,8 +97,8 @@ func (a *App) MustRun() {
 		}
 	}()
 
-	ctx, cacnel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer cacnel()
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer cancel()
 
 	go func() {
 		if err := a.fetcher.Start(ctx); err != nil {

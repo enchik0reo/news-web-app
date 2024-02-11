@@ -52,8 +52,8 @@ func New() *App {
 
 	userStor := psql.NewUserStorage(a.db)
 
-	ctx, cacnel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer cacnel()
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer cancel()
 
 	a.sessionStor, err = connectToSessionStorage(ctx,
 		a.cfg.SessionStorage.Host,
