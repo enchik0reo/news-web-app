@@ -29,7 +29,7 @@ export default class Art extends React.Component {
                 }} className="edit-icon" />
                 {this.state.editForm && <EditArt id={this.props.art.article_id} onEdit={this.props.onEdit} />}
 
-                <small>Suggested by {this.props.art.user_name} | {this.props.art.source_name}</small>
+                <small className="small-info">Suggested by {this.props.art.user_name} | {this.props.art.source_name}</small>
                 <h4>{this.props.art.title}</h4>
                 <p>{this.props.art.excerpt}</p>
                 <Nav.Link className="read-all" href={this.props.art.link}> Read full... </Nav.Link>

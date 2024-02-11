@@ -31,20 +31,27 @@ aside {
     width: 100%;
     background-color: #ffffff;
     padding: 10px;
-    border: 1px solid #c8cace;
     border-radius: 5px;
     margin: 30px auto;
+    box-shadow: rgba(0, 0, 0, 0.3) 0px 12px 20px,
+    rgba(0, 0, 0, 0.22) 0px 15px 12px;
 }
 
 .offer-article img{
-    height: 500px;
+    max-height: 500px;
     width: 100%;
-    object-fit: cover;
+    object-fit: contain;
+    border-radius: 5px;
 }
-
 
 .offer-article  h4{
     padding-bottom: 10px;
+    font-weight: 400;
+}
+
+.offer-article  p{
+   font-weight: 100;
+   font-size: 15px;
 }
 
 .offer-app {
@@ -60,8 +67,6 @@ aside {
     border: 1px solid #c8cace;
     margin: 0 auto;
     position: fixed;
-    box-shadow: rgba(0, 0, 0, 0.3) 0px 10px 30px,
-    rgba(0, 0, 0, 0.22) 0px 15px 12px;
 }
 
 .offer-submit {

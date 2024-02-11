@@ -49,11 +49,10 @@ const LoginForm = ({ submitForm }) => {
                 .catch((error) => {
                     if (error) {
                         toast.error("Internal server error. Please, try later.")
-                        console.error('Ошибка при выполнении запроса:', error)
+                        console.error('Internal server error:', error)
                         setDataIsCorrect(false)
                     }
                 })
-
         }
     }, [errors, dataIsCorrect, submitForm, values])
 

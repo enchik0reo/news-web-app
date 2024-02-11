@@ -29,7 +29,7 @@ export default class LoggedForm extends React.Component {
       .catch((error) => {
         if (error) {
           toast.error("Internal server error. Failed to load suggested articles.")
-          console.error('Ошибка при выполнении запроса:', error)
+          console.error('Internal server error:', error)
         }
       })
 
@@ -85,7 +85,7 @@ export default class LoggedForm extends React.Component {
       .catch((error) => {
         if (error) {
           toast.error("Internal server error.")
-          console.error('Ошибка при выполнении запроса:', error)
+          console.error('Internal server error:', error)
         }
       })
   }
@@ -128,7 +128,7 @@ export default class LoggedForm extends React.Component {
             toast.error("Sorry, your session is expired. Please, relogin.")
           } else {
             toast.error("Internal server error. Failed to load suggested articles.")
-            console.error('Ошибка при выполнении запроса:', error)
+            console.error('Internal server error:', error)
           }
         }
       })
@@ -168,7 +168,7 @@ export default class LoggedForm extends React.Component {
             toast.error("Sorry, your session is expired. Please, relogin.")
           } else {
             toast.error("Internal server error. Failed to load suggested articles.")
-            console.error('Ошибка при выполнении запроса:', error)
+            console.error('Internal server error:', error)
           }
         }
       })

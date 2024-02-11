@@ -1,4 +1,9 @@
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;600&display=swap');
+@font-face {
+    font-family: 'Montserrat';
+    src: url('../fonts/Montserrat-VariableFont_wght.ttf') format('truetype'); 
+    font-weight: normal;
+    font-style: normal;
+}
 
 body {
     background-color: #F1F3F6;
@@ -15,12 +20,13 @@ body {
 }
 
 div .article {
-    width: 70%;
+    width: 60%;
     background-color: #ffffff;
     padding: 10px;
-    border: 1px solid #c8cace;
     border-radius: 5px;
     margin: 20px auto 70px auto;
+    box-shadow: rgba(0, 0, 0, 0.3) 0px 19px 38px,
+    rgba(0, 0, 0, 0.22) 0px 15px 12px;
 }
 
 h2 {
@@ -43,15 +49,22 @@ h2 {
 
 div .article  h4{
     padding-bottom: 10px;
+    font-weight: 400;
 }
 
 div .article  img{
-    max-height: 500px;
+    max-height: 450px;
     width: 100%;
     object-fit: contain;
+    border-radius: 5px;
 }
 
 .no-articles {
     color: #3d50ff;
     text-align: center;
+}
+
+.small-info{
+    font-size: smaller;
+    font-weight: 100;
 }
