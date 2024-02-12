@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import SignupForm from './SignupForm';
 import SignupFormSuccess from './SignupFormSuccess';
+import { toast } from 'react-toastify';
 
 const Form = () => {
 
@@ -8,14 +9,15 @@ const Form = () => {
   const [answer, setAnswer] = useState('')
 
   const submitForm = (props) => {
-    if (props.status === 201) {
+    if (props.data.status === 201) {
       setAnswer('Account Created!')
       setFormIsSubmitted(true)
-    } else if (props.status === 204) {
+    } else if (props.data.status === 204) {
       setAnswer('User already exists!')
       setFormIsSubmitted(true)
     } else {
-      console.log(props.status)
+      toast.error("Failed to signup. Internal server error.")
+      console.log(props.data.status)
     }
   }
 

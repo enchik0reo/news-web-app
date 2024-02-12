@@ -8,13 +8,13 @@ const Forml = ({ onLoginForm }) => {
   const [answer, setAnswer] = useState('')
 
   const submitForm = (props) => {
-    if (props.status === 202) {
+    if (props.data.status === 202) {
       setAnswer('You have successfully logged in!')
-      localStorage.setItem('access_token', 'Bearer ' + props.headers.access_token)
+      localStorage.setItem('access_token', 'Bearer ' + props.data.access_token)
       setFormIsSubmitted(true)
       onLoginForm(true)
     } else {
-      console.log(props.status)
+      console.log(props.data.status)
     }
   }
 

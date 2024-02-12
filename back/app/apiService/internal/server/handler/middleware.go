@@ -21,7 +21,12 @@ func authenticate(refTokTTL time.Duration, service AuthService, slog *slog.Logge
 			auth := r.Header.Get("Authorization")
 			if auth == "" {
 				slog.Debug("Can't authenticate user, access token is empty")
-				w.WriteHeader(http.StatusUnauthorized)
+
+				resp, err := makeResponse(http.StatusNotFound, "", "", nil, "Empty Authorization")
+				if err != nil {
+					slog.Error("Can't make response", "err", err.Error())
+				}
+				w.Write(resp)
 				return
 			}
 
@@ -31,7 +36,12 @@ func authenticate(refTokTTL time.Duration, service AuthService, slog *slog.Logge
 			_, _, err := service.Parse(ctx, auth)
 			if err != nil {
 				slog.Debug("Can't authenticate user", "error", err.Error())
-				w.WriteHeader(http.StatusUnauthorized)
+
+				resp, err := makeResponse(http.StatusUnauthorized, "", "", nil, "Authorization expired")
+				if err != nil {
+					slog.Error("Can't make response", "err", err.Error())
+				}
+				w.Write(resp)
 				return
 			} else {
 				next.ServeHTTP(w, r)
@@ -83,10 +93,9 @@ func refresh(refTokTTL time.Duration, service AuthService, slog *slog.Logger) fu
 						return
 					}
 
-					w.Header().Set("Content-Type", "application/json")
-					w.Header().Set("id", fmt.Sprint(id))
-					w.Header().Set("access_token", acsToken)
 					r.Header.Set("Authorization", "Bearer "+acsToken)
+					r.Header.Set("uid", fmt.Sprint(id))
+					r.Header.Set("access_token", acsToken)
 
 					ck := http.Cookie{
 						Name:     "refresh_token",
@@ -109,7 +118,8 @@ func refresh(refTokTTL time.Duration, service AuthService, slog *slog.Logger) fu
 					return
 				}
 			} else {
-				w.Header().Set("id", fmt.Sprint(id))
+				r.Header.Set("uid", fmt.Sprint(id))
+
 				next.ServeHTTP(w, r)
 				return
 			}
@@ -122,8 +132,8 @@ func corsSettings() func(next http.Handler) http.Handler {
 	h := cors.Handler(cors.Options{
 		AllowedOrigins:   []string{"http://localhost:3003"},
 		AllowedMethods:   []string{http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete},
-		AllowedHeaders:   []string{"Content-Type", "Set-Cookie", "Authorization", "id", "article_id", "access_token"},
-		ExposedHeaders:   []string{"Content-Type", "Set-Cookie", "Authorization", "id", "article_id", "access_token"},
+		AllowedHeaders:   []string{"Content-Type", "Set-Cookie", "Authorization", "id", "article_id"},
+		ExposedHeaders:   []string{"Content-Type", "Set-Cookie", "Authorization", "id", "article_id"},
 		AllowCredentials: true,
 	})
 

@@ -104,7 +104,7 @@ const SignupForm = ({ submitForm }) => {
             </div>
             <div className="app-mini-login">
                 <p>Already have an account?</p>
-                <Link className="back-link" to="/login">Back</Link>
+                <Link className="back-link" to="/login">Login</Link>
             </div>
         </div>
     )

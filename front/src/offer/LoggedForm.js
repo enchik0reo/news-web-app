@@ -18,12 +18,18 @@ export default class LoggedForm extends React.Component {
     }
 
     axios.get(baseurl, config).then((res) => {
-      if (res.headers.access_token) {
-        localStorage.setItem('access_token', 'Bearer ' + res.headers.access_token)
+      if (res.data.access_token) {
+        localStorage.setItem('access_token', 'Bearer ' + res.data.access_token)
       }
 
-      if (res.status === 200) {
-        this.setState({ articles: res.data })
+      if (res.data.status === 200) {
+        this.setState({ articles: res.data.body.articles })
+      } else if (res.data.status === 204) {
+        this.setState({ articles: [] })
+      } else if (res.data.status === 401) {
+        toast.error("Sorry, your session is expired. Please, relogin.")
+      } else if (res.data.status === 404) {
+        toast.error('Please, login.')
       }
     })
       .catch((error) => {
@@ -43,7 +49,7 @@ export default class LoggedForm extends React.Component {
   }
   render() {
     return (<div>
-      <h3 className="special-offer-h3">Submit your articles!</h3>
+      <h3 className="special-offer-h3">Submit your articles</h3>
       <main>
         <UserArts articles={this.state.articles} onEdit={this.editArticle} onDelete={this.deleteArticle} />
       </main>
@@ -68,18 +74,45 @@ export default class LoggedForm extends React.Component {
     }
 
     axios.delete(baseurl, config).then((res) => {
-      if (res.headers.access_token) {
-        localStorage.setItem('access_token', 'Bearer ' + res.headers.access_token)
+      if (res.data.access_token) {
+        localStorage.setItem('access_token', 'Bearer ' + res.data.access_token)
       }
-      if (res.status === 204) {
+      if (res.data.status === 500) {
+        toast.error("Internal server error. Please try later.")
+      } else if (res.data.status === 401) {
+        toast.error("Sorry, your session is expired. Please, relogin.")
+      } else if (res.data.status === 404) {
+        toast.error('Please, login.')
+      } else if (res.data.status === 204) {
         toast.info('You have successfully deleted an article!')
         this.setState({ articles: [] })
-      } else if (res.status === 200) {
+      } else if (res.data.status === 200) {
         toast.info('You have successfully deleted an article!')
-        this.setState({ articles: res.data })
-      } else if (res.status === 208) {
+        this.setState({ articles: res.data.body.articles })
+      } else if (res.data.status === 208) {
+        axios.get(baseurl, config).then((res) => {
+          if (res.data.access_token) {
+            localStorage.setItem('access_token', 'Bearer ' + res.data.access_token)
+          }
+          
+          if (res.data.status === 200) {
+            this.setState({ articles: res.data.body.articles })
+          } else if (res.data.status === 204) {
+            this.setState({ articles: [] })
+          } else if (res.data.status === 401) {
+            toast.error("Sorry, your session is expired. Please, relogin.")
+          } else if (res.data.status === 404) {
+            toast.error('Please, login.')
+          }
+        })
+          .catch((error) => {
+            if (error) {
+              toast.error("Internal server error. Failed to load suggested articles.")
+              console.error('Internal server error:', error)
+            }
+          })
+        
         toast.warn('Can`t be deleted. This article has already been published.')
-        this.setState({ articles: res.data })
       }
     })
       .catch((error) => {
@@ -104,32 +137,55 @@ export default class LoggedForm extends React.Component {
     }
 
     axios.put(baseurl, jsonEditData, config).then((res) => {
-      if (res.headers.access_token) {
-        localStorage.setItem('access_token', 'Bearer ' + res.headers.access_token)
+      if (res.data.access_token) {
+        localStorage.setItem('access_token', 'Bearer ' + res.data.access_token)
       }
-      if (res.status === 206) {
+      if (res.data.status === 500) {
+        toast.error("Internal server error. Please try later.")
+      } else if (res.data.status === 401) {
+        toast.error("Sorry, your session is expired. Please, relogin.")
+      } else if (res.data.status === 404) {
+        toast.error('Please, login.')
+      } else if (res.data.status === 206) {
         toast.info("We already know about this article. Thank you!")
-      } else if (res.status === 204) {
+      } else if (res.data.status === 204) {
         toast.warn("This article is not suitable, sorry. Please, try another one.")
-      } else if (res.status === 205) {
+      } else if (res.data.status === 205) {
         toast.info('You have successfully changed an article!')
         this.setState({ articles: [] })
-      } else if (res.status === 202) {
+      } else if (res.data.status === 202) {
         toast.info('You have successfully changed an article!')
-        this.setState({ articles: res.data })
-      } else if (res.status === 208) {
+        this.setState({ articles: res.data.body.articles })
+      } else if (res.data.status === 403) {
+        axios.get(baseurl, config).then((res) => {
+          if (res.data.access_token) {
+            localStorage.setItem('access_token', 'Bearer ' + res.data.access_token)
+          }
+          
+          if (res.data.status === 200) {
+            this.setState({ articles: res.data.body.articles })
+          } else if (res.data.status === 204) {
+            this.setState({ articles: [] })
+          } else if (res.data.status === 401) {
+            toast.error("Sorry, your session is expired. Please, relogin.")
+          } else if (res.data.status === 404) {
+            toast.error('Please, login.')
+          }
+        })
+          .catch((error) => {
+            if (error) {
+              toast.error("Internal server error. Failed to load suggested articles.")
+              console.error('Internal server error:', error)
+            }
+          })
+
         toast.warn('Can`t be changed. This article has already been published.')
-        this.setState({ articles: res.data })
       }
     })
       .catch((error) => {
         if (error) {
-          if (error.res && error.res.status === 401) {
-            toast.error("Sorry, your session is expired. Please, relogin.")
-          } else {
-            toast.error("Internal server error. Failed to load suggested articles.")
-            console.error('Internal server error:', error)
-          }
+          toast.error("Internal server error. Failed to load suggested articles.")
+          console.error('Internal server error:', error)
         }
       })
   }
@@ -147,29 +203,31 @@ export default class LoggedForm extends React.Component {
     }
 
     axios.post(baseurl, jsonAddData, config).then((res) => {
-      if (res.headers.access_token) {
-        localStorage.setItem('access_token', 'Bearer ' + res.headers.access_token)
+      if (res.data.access_token) {
+        localStorage.setItem('access_token', 'Bearer ' + res.data.access_token)
       }
-      if (res.status === 206) {
+      if (res.data.status === 500) {
+        toast.error("Internal server error. Please try later.")
+      } else if (res.data.status === 401) {
+        toast.error("Sorry, your session is expired. Please, relogin.")
+      } else if (res.data.status === 404) {
+        toast.error('Please, login.')
+      } else if (res.data.status === 206) {
         toast.info("We already know about this article. Thank you!")
-      } else if (res.status === 204) {
+      } else if (res.data.status === 204) {
         toast.warn("This article is not suitable, sorry. Please, try another one.")
-      } else if (res.status === 205) {
+      } else if (res.data.status === 205) {
         toast.success('You have successfully suggested an article!')
         this.setState({ articles: [] })
-      } else if (res.status === 201) {
+      } else if (res.data.status === 201) {
         toast.success('You have successfully suggested an article!')
-        this.setState({ articles: res.data })
+        this.setState({ articles: res.data.body.articles })
       }
     })
       .catch((error) => {
         if (error) {
-          if (error.res && error.res.status === 401) {
-            toast.error("Sorry, your session is expired. Please, relogin.")
-          } else {
-            toast.error("Internal server error. Failed to load suggested articles.")
-            console.error('Internal server error:', error)
-          }
+          toast.error("Internal server error. Failed to load suggested articles.")
+          console.error('Internal server error:', error)
         }
       })
   }

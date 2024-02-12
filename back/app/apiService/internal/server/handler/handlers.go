@@ -50,11 +50,12 @@ func sendNewMsg(refreshInterval time.Duration, client *websocket.Conn, fetcher N
 			break
 		}
 
-		if err := json.NewEncoder(w).Encode(arts); err != nil {
-			if !strings.Contains(err.Error(), "write: broken pipe") {
-				slog.Error("Can't encode articles", "err", err.Error())
-			}
+		resp, err := makeResponse(http.StatusOK, "", "", arts, "")
+		if err != nil {
+			slog.Error("Can't make response", "err", err.Error())
 		}
+
+		w.Write(resp)
 
 		w.Close()
 
@@ -64,14 +65,24 @@ func sendNewMsg(refreshInterval time.Duration, client *websocket.Conn, fetcher N
 
 func home(fetcher NewsFetcher, slog *slog.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		start := time.Now()
-		statusCode := 0
+		var start = time.Now()
+		var statusCode int
+
 		defer func() {
 			metrics.ObserveRequest(time.Since(start), statusCode)
 		}()
 
 		statusCode = http.StatusOK
-		w.WriteHeader(statusCode)
+
+		uid := r.Header.Get("uid")
+		acToken := r.Header.Get("access_token")
+
+		resp, err := makeResponse(statusCode, uid, acToken, nil, "")
+		if err != nil {
+			slog.Error("Can't make response", "err", err.Error())
+		}
+
+		w.Write(resp)
 	}
 }
 
@@ -87,7 +98,12 @@ func signup(service AuthService, slog *slog.Logger) http.HandlerFunc {
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			if !strings.Contains(err.Error(), "EOF") {
 				slog.Debug("Can't decode body from sign-up request", "err", err.Error())
-				w.WriteHeader(http.StatusBadRequest)
+
+				resp, err := makeResponse(http.StatusBadRequest, "", "", nil, "Bad request")
+				if err != nil {
+					slog.Error("Can't make response", "err", err.Error())
+				}
+				w.Write(resp)
 				return
 			}
 		}
@@ -98,19 +114,36 @@ func signup(service AuthService, slog *slog.Logger) http.HandlerFunc {
 		if _, err := service.SaveUser(ctx, req.Name, req.Email, req.Password); err != nil {
 			switch {
 			case errors.Is(err, services.ErrUserExists):
-				w.WriteHeader(http.StatusNoContent)
+				resp, err := makeResponse(http.StatusNoContent, "", "", nil, "User already exists")
+				if err != nil {
+					slog.Error("Can't make response", "err", err.Error())
+				}
+				w.Write(resp)
 				return
 			case errors.Is(err, services.ErrInvalidValue):
-				w.WriteHeader(http.StatusBadRequest)
+				resp, err := makeResponse(http.StatusBadRequest, "", "", nil, "Invalid value")
+				if err != nil {
+					slog.Error("Can't make response", "err", err.Error())
+				}
+				w.Write(resp)
 				return
 			default:
 				slog.Error("Can't save user", "err", err.Error())
-				w.WriteHeader(http.StatusInternalServerError)
+
+				resp, err := makeResponse(http.StatusInternalServerError, "", "", nil, "Internal error")
+				if err != nil {
+					slog.Error("Can't make response", "err", err.Error())
+				}
+				w.Write(resp)
 				return
 			}
 		}
 
-		w.WriteHeader(http.StatusCreated)
+		resp, err := makeResponse(http.StatusCreated, "", "", nil, "")
+		if err != nil {
+			slog.Error("Can't make response", "err", err.Error())
+		}
+		w.Write(resp)
 	}
 }
 
@@ -126,7 +159,12 @@ func login(refTokTTL time.Duration, service AuthService, slog *slog.Logger) http
 		if err := json.NewDecoder(r.Body).Decode(req); err != nil {
 			if !strings.Contains(err.Error(), "EOF") {
 				slog.Debug("Can't decode body from login request", "err", err.Error())
-				w.WriteHeader(http.StatusBadRequest)
+
+				resp, err := makeResponse(http.StatusBadRequest, "", "", nil, "Bad request")
+				if err != nil {
+					slog.Error("Can't make response", "err", err.Error())
+				}
+				w.Write(resp)
 				return
 			}
 		}
@@ -138,20 +176,30 @@ func login(refTokTTL time.Duration, service AuthService, slog *slog.Logger) http
 		if err != nil {
 			switch {
 			case errors.Is(err, services.ErrUserDoesntExists):
-				w.WriteHeader(http.StatusNoContent)
+				resp, err := makeResponse(http.StatusNoContent, "", "", nil, "Wrong e-mail or password")
+				if err != nil {
+					slog.Error("Can't make response", "err", err.Error())
+				}
+				w.Write(resp)
 				return
 			case errors.Is(err, services.ErrInvalidValue):
-				w.WriteHeader(http.StatusBadRequest)
+				resp, err := makeResponse(http.StatusBadRequest, "", "", nil, "Invalid value")
+				if err != nil {
+					slog.Error("Can't make response", "err", err.Error())
+				}
+				w.Write(resp)
 				return
 			default:
 				slog.Error("Can't login user", "err", err.Error())
-				w.WriteHeader(http.StatusInternalServerError)
+
+				resp, err := makeResponse(http.StatusInternalServerError, "", "", nil, "Internal error")
+				if err != nil {
+					slog.Error("Can't make response", "err", err.Error())
+				}
+				w.Write(resp)
 				return
 			}
 		}
-
-		w.Header().Set("Content-Type", "application/json")
-		w.Header().Set("access_token", acsToken)
 
 		ck := http.Cookie{
 			Name:     "refresh_token",
@@ -166,23 +214,39 @@ func login(refTokTTL time.Duration, service AuthService, slog *slog.Logger) http
 
 		http.SetCookie(w, &ck)
 
-		w.WriteHeader(http.StatusAccepted)
+		resp, err := makeResponse(http.StatusAccepted, "", acsToken, nil, "")
+		if err != nil {
+			slog.Error("Can't make response", "err", err.Error())
+		}
+		w.Write(resp)
 	}
 }
 
 func userArticles(news UserNewsService, slog *slog.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		id := w.Header().Get("id")
+		id := r.Header.Get("uid")
+		acToken := r.Header.Get("access_token")
+
 		if id == "" {
-			slog.Error("Can't get header id is empty")
-			w.WriteHeader(http.StatusInternalServerError)
+			slog.Debug("Can't get header id is empty")
+
+			resp, err := makeResponse(http.StatusInternalServerError, id, acToken, nil, "Internal error")
+			if err != nil {
+				slog.Error("Can't make response", "err", err.Error())
+			}
+			w.Write(resp)
 			return
 		}
 
 		uid, err := strconv.Atoi(id)
 		if err != nil {
 			slog.Debug("Can't Atoi", "err", err.Error())
-			w.WriteHeader(http.StatusInternalServerError)
+
+			resp, err := makeResponse(http.StatusInternalServerError, id, acToken, nil, "Internal error")
+			if err != nil {
+				slog.Error("Can't make response", "err", err.Error())
+			}
+			w.Write(resp)
 			return
 		}
 
@@ -192,22 +256,30 @@ func userArticles(news UserNewsService, slog *slog.Logger) http.HandlerFunc {
 		arts, err := news.GetArticlesByUid(ctx, int64(uid))
 		if err != nil {
 			if errors.Is(err, services.ErrNoOfferedArticles) {
-				w.WriteHeader(http.StatusNoContent)
+				resp, err := makeResponse(http.StatusNoContent, id, acToken, nil, "There are no articles")
+				if err != nil {
+					slog.Error("Can't make response", "err", err.Error())
+				}
+				w.Write(resp)
 				return
 			}
 			slog.Debug("Can't fetch articles", "err", err.Error())
 		}
 
 		if len(arts) == 0 {
-			w.WriteHeader(http.StatusNoContent)
+			resp, err := makeResponse(http.StatusNoContent, id, acToken, nil, "There are no articles")
+			if err != nil {
+				slog.Error("Can't make response", "err", err.Error())
+			}
+			w.Write(resp)
 			return
 		}
 
-		w.WriteHeader(http.StatusOK)
-
-		if err := json.NewEncoder(w).Encode(arts); err != nil {
-			slog.Error("Can't encode articles", "err", err.Error())
+		resp, err := makeResponse(http.StatusOK, id, acToken, arts, "")
+		if err != nil {
+			slog.Error("Can't make response", "err", err.Error())
 		}
+		w.Write(resp)
 	}
 }
 
@@ -220,24 +292,41 @@ func addArticle(news UserNewsService, slog *slog.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		req := new(addRequest)
 
-		id := w.Header().Get("id")
+		id := r.Header.Get("uid")
+		acToken := r.Header.Get("access_token")
+
 		if id == "" {
-			slog.Error("Can't get header id is empty")
-			w.WriteHeader(http.StatusInternalServerError)
+			slog.Debug("Can't get header id is empty")
+
+			resp, err := makeResponse(http.StatusInternalServerError, id, acToken, nil, "Internal error")
+			if err != nil {
+				slog.Error("Can't make response", "err", err.Error())
+			}
+			w.Write(resp)
 			return
 		}
 
 		uid, err := strconv.Atoi(id)
 		if err != nil {
 			slog.Debug("Can't Atoi", "err", err.Error())
-			w.WriteHeader(http.StatusInternalServerError)
+
+			resp, err := makeResponse(http.StatusInternalServerError, id, acToken, nil, "Internal error")
+			if err != nil {
+				slog.Error("Can't make response", "err", err.Error())
+			}
+			w.Write(resp)
 			return
 		}
 
 		if err := json.NewDecoder(r.Body).Decode(req); err != nil {
 			if !strings.Contains(err.Error(), "EOF") {
 				slog.Debug("Can't decode body from suggest-article request", "err", err.Error())
-				w.WriteHeader(http.StatusBadRequest)
+
+				resp, err := makeResponse(http.StatusBadRequest, id, acToken, nil, "Bad request")
+				if err != nil {
+					slog.Error("Can't make response", "err", err.Error())
+				}
+				w.Write(resp)
 				return
 			}
 		}
@@ -250,32 +339,55 @@ func addArticle(news UserNewsService, slog *slog.Logger) http.HandlerFunc {
 			switch {
 			case errors.Is(err, services.ErrArticleSkipped):
 				slog.Debug("Can't save article", "err", err.Error())
-				w.WriteHeader(http.StatusNoContent)
+
+				resp, err := makeResponse(http.StatusNoContent, id, acToken, arts, "")
+				if err != nil {
+					slog.Error("Can't make response", "err", err.Error())
+				}
+				w.Write(resp)
 				return
 			case errors.Is(err, services.ErrArticleExists):
 				slog.Debug("Can't save article", "err", err.Error())
-				w.WriteHeader(http.StatusPartialContent)
+
+				resp, err := makeResponse(http.StatusPartialContent, id, acToken, arts, "")
+				if err != nil {
+					slog.Error("Can't make response", "err", err.Error())
+				}
+				w.Write(resp)
 				return
 			case errors.Is(err, services.ErrNoOfferedArticles):
-				w.WriteHeader(http.StatusResetContent)
+				resp, err := makeResponse(http.StatusResetContent, id, acToken, arts, "")
+				if err != nil {
+					slog.Error("Can't make response", "err", err.Error())
+				}
+				w.Write(resp)
 				return
 			default:
 				slog.Error("Can't save article", "err", err.Error())
-				w.WriteHeader(http.StatusInternalServerError)
+
+				resp, err := makeResponse(http.StatusInternalServerError, id, acToken, arts, "")
+				if err != nil {
+					slog.Error("Can't make response", "err", err.Error())
+				}
+				w.Write(resp)
 				return
 			}
 		}
 
 		if len(arts) == 0 {
-			w.WriteHeader(http.StatusResetContent)
+			resp, err := makeResponse(http.StatusResetContent, id, acToken, nil, "There are no articles")
+			if err != nil {
+				slog.Error("Can't make response", "err", err.Error())
+			}
+			w.Write(resp)
 			return
 		}
 
-		w.WriteHeader(http.StatusCreated)
-
-		if err := json.NewEncoder(w).Encode(arts); err != nil {
-			slog.Error("Can't encode articles", "err", err.Error())
+		resp, err := makeResponse(http.StatusCreated, id, acToken, arts, "")
+		if err != nil {
+			slog.Error("Can't make response", "err", err.Error())
 		}
+		w.Write(resp)
 	}
 }
 
@@ -288,24 +400,41 @@ func updateArticle(news UserNewsService, slog *slog.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		req := new(updateRequest)
 
-		id := w.Header().Get("id")
+		id := r.Header.Get("uid")
+		acToken := r.Header.Get("access_token")
+
 		if id == "" {
-			slog.Error("Can't get header id is empty")
-			w.WriteHeader(http.StatusInternalServerError)
+			slog.Debug("Can't get header id is empty")
+
+			resp, err := makeResponse(http.StatusInternalServerError, id, acToken, nil, "Internal error")
+			if err != nil {
+				slog.Error("Can't make response", "err", err.Error())
+			}
+			w.Write(resp)
 			return
 		}
 
 		uid, err := strconv.Atoi(id)
 		if err != nil {
 			slog.Debug("Can't Atoi", "err", err.Error())
-			w.WriteHeader(http.StatusInternalServerError)
+
+			resp, err := makeResponse(http.StatusInternalServerError, id, acToken, nil, "Internal error")
+			if err != nil {
+				slog.Error("Can't make response", "err", err.Error())
+			}
+			w.Write(resp)
 			return
 		}
 
 		if err := json.NewDecoder(r.Body).Decode(req); err != nil {
 			if !strings.Contains(err.Error(), "EOF") {
 				slog.Debug("Can't decode body from suggest-article request", "err", err.Error())
-				w.WriteHeader(http.StatusBadRequest)
+
+				resp, err := makeResponse(http.StatusBadRequest, id, acToken, nil, "Bad request")
+				if err != nil {
+					slog.Error("Can't make response", "err", err.Error())
+				}
+				w.Write(resp)
 				return
 			}
 		}
@@ -318,51 +447,90 @@ func updateArticle(news UserNewsService, slog *slog.Logger) http.HandlerFunc {
 			switch {
 			case errors.Is(err, services.ErrArticleSkipped):
 				slog.Debug("Can't update article", "err", err.Error())
-				w.WriteHeader(http.StatusNoContent)
+
+				resp, err := makeResponse(http.StatusNoContent, id, acToken, arts, "")
+				if err != nil {
+					slog.Error("Can't make response", "err", err.Error())
+				}
+				w.Write(resp)
 				return
 			case errors.Is(err, services.ErrArticleExists):
 				slog.Debug("Can't update article", "err", err.Error())
-				w.WriteHeader(http.StatusPartialContent)
+
+				resp, err := makeResponse(http.StatusPartialContent, id, acToken, arts, "")
+				if err != nil {
+					slog.Error("Can't make response", "err", err.Error())
+				}
+				w.Write(resp)
 				return
 			case errors.Is(err, services.ErrNoOfferedArticles):
-				w.WriteHeader(http.StatusResetContent)
+				resp, err := makeResponse(http.StatusResetContent, id, acToken, arts, "")
+				if err != nil {
+					slog.Error("Can't make response", "err", err.Error())
+				}
+				w.Write(resp)
 				return
 			case errors.Is(err, services.ErrArticleNotAvailable):
-				w.WriteHeader(http.StatusAlreadyReported)
+				resp, err := makeResponse(http.StatusForbidden, id, acToken, arts, "")
+				if err != nil {
+					slog.Error("Can't make response", "err", err.Error())
+				}
+				w.Write(resp)
 				return
 			default:
 				slog.Error("Can't update article", "err", err.Error())
-				w.WriteHeader(http.StatusInternalServerError)
+
+				resp, err := makeResponse(http.StatusInternalServerError, id, acToken, arts, "")
+				if err != nil {
+					slog.Error("Can't make response", "err", err.Error())
+				}
+				w.Write(resp)
 				return
 			}
 		}
 
 		if len(arts) == 0 {
-			w.WriteHeader(http.StatusResetContent)
+			resp, err := makeResponse(http.StatusResetContent, id, acToken, nil, "There are no articles")
+			if err != nil {
+				slog.Error("Can't make response", "err", err.Error())
+			}
+			w.Write(resp)
 			return
 		}
 
-		w.WriteHeader(http.StatusAccepted)
-
-		if err := json.NewEncoder(w).Encode(arts); err != nil {
-			slog.Error("Can't encode articles", "err", err.Error())
+		resp, err := makeResponse(http.StatusAccepted, id, acToken, arts, "")
+		if err != nil {
+			slog.Error("Can't make response", "err", err.Error())
 		}
+		w.Write(resp)
 	}
 }
 
 func deleteArticle(news UserNewsService, slog *slog.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		id := w.Header().Get("id")
+		id := r.Header.Get("uid")
+		acToken := r.Header.Get("access_token")
+
 		if id == "" {
-			slog.Error("Can't get header id is empty")
-			w.WriteHeader(http.StatusInternalServerError)
+			slog.Debug("Can't get header id is empty")
+
+			resp, err := makeResponse(http.StatusInternalServerError, id, acToken, nil, "Internal error")
+			if err != nil {
+				slog.Error("Can't make response", "err", err.Error())
+			}
+			w.Write(resp)
 			return
 		}
 
 		uid, err := strconv.Atoi(id)
 		if err != nil {
-			slog.Error("Can't Atoi", "err", err.Error())
-			w.WriteHeader(http.StatusInternalServerError)
+			slog.Debug("Can't convert to int", "err", err.Error())
+
+			resp, err := makeResponse(http.StatusInternalServerError, id, acToken, nil, "Internal error")
+			if err != nil {
+				slog.Error("Can't make response", "err", err.Error())
+			}
+			w.Write(resp)
 			return
 		}
 
@@ -370,8 +538,13 @@ func deleteArticle(news UserNewsService, slog *slog.Logger) http.HandlerFunc {
 
 		articleId, err := strconv.Atoi(articleIdHeader)
 		if err != nil {
-			slog.Error("Can't Atoi", "err", err.Error())
-			w.WriteHeader(http.StatusInternalServerError)
+			slog.Debug("Can't convert to int", "err", err.Error())
+
+			resp, err := makeResponse(http.StatusInternalServerError, id, acToken, nil, "Internal error")
+			if err != nil {
+				slog.Error("Can't make response", "err", err.Error())
+			}
+			w.Write(resp)
 			return
 		}
 
@@ -382,27 +555,44 @@ func deleteArticle(news UserNewsService, slog *slog.Logger) http.HandlerFunc {
 		if err != nil {
 			switch {
 			case errors.Is(err, services.ErrNoOfferedArticles):
-				w.WriteHeader(http.StatusNoContent)
+				resp, err := makeResponse(http.StatusNoContent, id, acToken, arts, "")
+				if err != nil {
+					slog.Error("Can't make response", "err", err.Error())
+				}
+				w.Write(resp)
 				return
 			case errors.Is(err, services.ErrArticleNotAvailable):
-				w.WriteHeader(http.StatusAlreadyReported)
+				resp, err := makeResponse(http.StatusAlreadyReported, id, acToken, arts, "")
+				if err != nil {
+					slog.Error("Can't make response", "err", err.Error())
+				}
+				w.Write(resp)
 				return
 			default:
 				slog.Error("Can't delete article", "err", err.Error())
-				w.WriteHeader(http.StatusInternalServerError)
+
+				resp, err := makeResponse(http.StatusInternalServerError, id, acToken, nil, "Internal error")
+				if err != nil {
+					slog.Error("Can't make response", "err", err.Error())
+				}
+				w.Write(resp)
 				return
 			}
 		}
 
 		if len(arts) == 0 {
-			w.WriteHeader(http.StatusNoContent)
+			resp, err := makeResponse(http.StatusResetContent, id, acToken, nil, "There are no articles")
+			if err != nil {
+				slog.Error("Can't make response", "err", err.Error())
+			}
+			w.Write(resp)
 			return
 		}
 
-		w.WriteHeader(http.StatusOK)
-
-		if err := json.NewEncoder(w).Encode(arts); err != nil {
-			slog.Error("Can't encode articles", "err", err.Error())
+		resp, err := makeResponse(http.StatusOK, id, acToken, arts, "")
+		if err != nil {
+			slog.Error("Can't make response", "err", err.Error())
 		}
+		w.Write(resp)
 	}
 }

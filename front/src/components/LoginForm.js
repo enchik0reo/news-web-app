@@ -39,7 +39,7 @@ const LoginForm = ({ submitForm }) => {
             };
 
             axios.post(baseurl, jsonData, {}).then((r) => {
-                if (r.status === 204) {
+                if (r.data.status === 204) {
                     toast.warn("Wrong e-mail or password.")
                     setDataIsCorrect(false)
                 } else {

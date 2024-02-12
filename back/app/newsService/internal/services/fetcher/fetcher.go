@@ -209,17 +209,17 @@ func (f *Fetcher) DeleteArticleByID(ctx context.Context, userID int64, artID int
 		return fmt.Errorf("%s: %w", op, err)
 	}
 
-	if err := userHandler.DeleteItem(ctx, oldLink); err != nil {
-		f.log.Error("Can't delete article from cache", "err", err.Error())
-		return fmt.Errorf("%s: %w", op, err)
-	}
-
 	if err := f.articleStor.DeleteArticle(ctx, userID, artID); err != nil {
 		if errors.Is(err, storage.ErrArticleNotAvailable) {
 			f.log.Debug("Can't delete article from user", "err", err.Error())
 			return services.ErrArticleNotAvailable
 		}
 		f.log.Error("Can't delete article", "err", err.Error())
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	if err := userHandler.DeleteItem(ctx, oldLink); err != nil {
+		f.log.Error("Can't delete article from cache", "err", err.Error())
 		return fmt.Errorf("%s: %w", op, err)
 	}
 

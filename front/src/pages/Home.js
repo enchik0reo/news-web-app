@@ -17,14 +17,14 @@ export default class Home extends React.Component {
         }
 
         axios.get(baseurl, config).then((res) => {
-            if (res.headers.access_token) {
-                localStorage.setItem('access_token', 'Bearer ' + res.headers.access_token)
+            if (res.data.access_token) {
+                localStorage.setItem('access_token', 'Bearer ' + res.data.access_token)
             }
         })
             .catch((error) => {
                 if (error) {
-                    toast.error("Internal server error. Failed to load news.")
-                    console.error('Ошибка при выполнении запроса:', error)
+                    toast.error("Failed to load news. Internal server error.")
+                    console.error('Internal server error:', error)
                 }
             })
 
@@ -32,7 +32,7 @@ export default class Home extends React.Component {
 
         ws.onmessage = (event) => {
             const data = JSON.parse(event.data)
-            this.setState({ articles: data })
+            this.setState({ articles: data.body.articles })
         }
 
         this.state = {
