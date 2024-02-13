@@ -17,8 +17,8 @@ export default class Home extends React.Component {
         }
 
         axios.get(baseurl, config).then((res) => {
-            if (res.data.access_token) {
-                localStorage.setItem('access_token', 'Bearer ' + res.data.access_token)
+            if (res.data.body.access_token) {
+                localStorage.setItem('access_token', 'Bearer ' + res.data.body.access_token)
             }
         })
             .catch((error) => {

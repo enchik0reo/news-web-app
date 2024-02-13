@@ -22,11 +22,10 @@ func authenticate(refTokTTL time.Duration, service AuthService, slog *slog.Logge
 			if auth == "" {
 				slog.Debug("Can't authenticate user, access token is empty")
 
-				resp, err := makeResponse(http.StatusNotFound, "", "", nil, "Empty Authorization")
+				err := responseJSONError(w, http.StatusNotFound, "", "", "Empty Authorization")
 				if err != nil {
 					slog.Error("Can't make response", "err", err.Error())
 				}
-				w.Write(resp)
 				return
 			}
 
@@ -37,11 +36,10 @@ func authenticate(refTokTTL time.Duration, service AuthService, slog *slog.Logge
 			if err != nil {
 				slog.Debug("Can't authenticate user", "error", err.Error())
 
-				resp, err := makeResponse(http.StatusUnauthorized, "", "", nil, "Authorization expired")
+				err = responseJSONError(w, http.StatusUnauthorized, "", "", "Authorization expired")
 				if err != nil {
 					slog.Error("Can't make response", "err", err.Error())
 				}
-				w.Write(resp)
 				return
 			} else {
 				next.ServeHTTP(w, r)

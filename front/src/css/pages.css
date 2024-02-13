@@ -49,7 +49,7 @@ h2 {
 
 div .article  h4{
     padding-bottom: 10px;
-    font-weight: 400;
+    font-weight: 500;
 }
 
 div .article  img{
@@ -58,6 +58,11 @@ div .article  img{
     object-fit: contain;
     border-radius: 5px;
 }
+
+div .article  p{
+    font-weight: 100;
+    font-size: 15px;
+ }
 
 .no-articles {
     color: #3d50ff;

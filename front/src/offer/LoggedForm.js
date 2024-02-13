@@ -18,8 +18,8 @@ export default class LoggedForm extends React.Component {
     }
 
     axios.get(baseurl, config).then((res) => {
-      if (res.data.access_token) {
-        localStorage.setItem('access_token', 'Bearer ' + res.data.access_token)
+      if (res.data.body.access_token) {
+        localStorage.setItem('access_token', 'Bearer ' + res.data.body.access_token)
       }
 
       if (res.data.status === 200) {
@@ -27,7 +27,7 @@ export default class LoggedForm extends React.Component {
       } else if (res.data.status === 204) {
         this.setState({ articles: [] })
       } else if (res.data.status === 401) {
-        toast.error("Sorry, your session is expired. Please, relogin.")
+        toast.error("Sorry, your session is wrong. Please, relogin.")
       } else if (res.data.status === 404) {
         toast.error('Please, login.')
       }
@@ -74,13 +74,13 @@ export default class LoggedForm extends React.Component {
     }
 
     axios.delete(baseurl, config).then((res) => {
-      if (res.data.access_token) {
-        localStorage.setItem('access_token', 'Bearer ' + res.data.access_token)
+      if (res.data.body.access_token) {
+        localStorage.setItem('access_token', 'Bearer ' + res.data.body.access_token)
       }
       if (res.data.status === 500) {
         toast.error("Internal server error. Please try later.")
       } else if (res.data.status === 401) {
-        toast.error("Sorry, your session is expired. Please, relogin.")
+        toast.error("Sorry, your session is wrong. Please, relogin.")
       } else if (res.data.status === 404) {
         toast.error('Please, login.')
       } else if (res.data.status === 204) {
@@ -91,8 +91,8 @@ export default class LoggedForm extends React.Component {
         this.setState({ articles: res.data.body.articles })
       } else if (res.data.status === 208) {
         axios.get(baseurl, config).then((res) => {
-          if (res.data.access_token) {
-            localStorage.setItem('access_token', 'Bearer ' + res.data.access_token)
+          if (res.data.body.access_token) {
+            localStorage.setItem('access_token', 'Bearer ' + res.data.body.access_token)
           }
           
           if (res.data.status === 200) {
@@ -100,7 +100,7 @@ export default class LoggedForm extends React.Component {
           } else if (res.data.status === 204) {
             this.setState({ articles: [] })
           } else if (res.data.status === 401) {
-            toast.error("Sorry, your session is expired. Please, relogin.")
+            toast.error("Sorry, your session is wrong. Please, relogin.")
           } else if (res.data.status === 404) {
             toast.error('Please, login.')
           }
@@ -137,13 +137,13 @@ export default class LoggedForm extends React.Component {
     }
 
     axios.put(baseurl, jsonEditData, config).then((res) => {
-      if (res.data.access_token) {
-        localStorage.setItem('access_token', 'Bearer ' + res.data.access_token)
+      if (res.data.body.access_token) {
+        localStorage.setItem('access_token', 'Bearer ' + res.data.body.access_token)
       }
       if (res.data.status === 500) {
         toast.error("Internal server error. Please try later.")
       } else if (res.data.status === 401) {
-        toast.error("Sorry, your session is expired. Please, relogin.")
+        toast.error("Sorry, your session is wrong. Please, relogin.")
       } else if (res.data.status === 404) {
         toast.error('Please, login.')
       } else if (res.data.status === 206) {
@@ -158,8 +158,8 @@ export default class LoggedForm extends React.Component {
         this.setState({ articles: res.data.body.articles })
       } else if (res.data.status === 403) {
         axios.get(baseurl, config).then((res) => {
-          if (res.data.access_token) {
-            localStorage.setItem('access_token', 'Bearer ' + res.data.access_token)
+          if (res.data.body.access_token) {
+            localStorage.setItem('access_token', 'Bearer ' + res.data.body.access_token)
           }
           
           if (res.data.status === 200) {
@@ -167,7 +167,7 @@ export default class LoggedForm extends React.Component {
           } else if (res.data.status === 204) {
             this.setState({ articles: [] })
           } else if (res.data.status === 401) {
-            toast.error("Sorry, your session is expired. Please, relogin.")
+            toast.error("Sorry, your session is wrong. Please, relogin.")
           } else if (res.data.status === 404) {
             toast.error('Please, login.')
           }
@@ -203,13 +203,13 @@ export default class LoggedForm extends React.Component {
     }
 
     axios.post(baseurl, jsonAddData, config).then((res) => {
-      if (res.data.access_token) {
-        localStorage.setItem('access_token', 'Bearer ' + res.data.access_token)
+      if (res.data.body.access_token) {
+        localStorage.setItem('access_token', 'Bearer ' + res.data.body.access_token)
       }
       if (res.data.status === 500) {
         toast.error("Internal server error. Please try later.")
       } else if (res.data.status === 401) {
-        toast.error("Sorry, your session is expired. Please, relogin.")
+        toast.error("Sorry, your session is wrong. Please, relogin.")
       } else if (res.data.status === 404) {
         toast.error('Please, login.')
       } else if (res.data.status === 206) {
