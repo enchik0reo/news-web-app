@@ -47,9 +47,17 @@ func sendNewMsg(refreshInterval time.Duration, client *websocket.Conn, fetcher N
 
 		arts, err := fetcher.FetchArticles(ctx)
 		if err != nil {
-			ticker.Stop()
-			slog.Debug("Can't fetch articles", "err", err.Error())
-			break
+			if errors.Is(err, services.ErrNoPublishedArticles) {
+				err = socketResponse(w, http.StatusOK, arts)
+				if err != nil {
+					slog.Debug("Can't make socket response", "err", err.Error())
+				}
+				<-ticker.C
+				continue
+			}
+			slog.Error("Can't fetch articles", "err", err.Error())
+			<-ticker.C
+			continue
 		}
 
 		err = socketResponse(w, http.StatusOK, arts)
@@ -79,7 +87,6 @@ func home(fetcher NewsFetcher, slog *slog.Logger) http.HandlerFunc {
 		if err != nil {
 			slog.Error("Can't make response", "err", err.Error())
 		}
-
 	}
 }
 

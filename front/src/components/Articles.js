@@ -3,7 +3,7 @@ import Article from './Article';
 
 export default class Articles extends React.Component {
     render() {
-        if (this.props.articles)
+        if (this.props.articles.length > 0)
             return (<div className="art" >
                 {this.props.articles.map((elem) => (
                     <Article art={elem} key={elem.article_id} />

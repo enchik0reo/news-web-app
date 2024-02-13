@@ -32,7 +32,9 @@ export default class Home extends React.Component {
 
         ws.onmessage = (event) => {
             const data = JSON.parse(event.data)
-            this.setState({ articles: data.body.articles })
+            if (data.body.articles) {
+                this.setState({ articles: data.body.articles })
+            }
         }
 
         this.state = {
