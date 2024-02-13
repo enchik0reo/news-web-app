@@ -130,8 +130,8 @@ func corsSettings() func(next http.Handler) http.Handler {
 	h := cors.Handler(cors.Options{
 		AllowedOrigins:   []string{"http://localhost:3003"},
 		AllowedMethods:   []string{http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete},
-		AllowedHeaders:   []string{"Content-Type", "Set-Cookie", "Authorization", "id", "article_id"},
-		ExposedHeaders:   []string{"Content-Type", "Set-Cookie", "Authorization", "id", "article_id"},
+		AllowedHeaders:   []string{"Content-Type", "Set-Cookie", "Authorization", "id"},
+		ExposedHeaders:   []string{"Content-Type", "Set-Cookie", "Authorization", "id"},
 		AllowCredentials: true,
 	})
 

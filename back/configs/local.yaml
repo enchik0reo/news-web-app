@@ -15,13 +15,11 @@ grpc_auth:
   host : "authsrv"
   port: 44044
   timeout: 2s
-  retries_count: 5
 
 grpc_news:
   host : "newssrv"
   port: 55055
-  timeout: 2s
-  retries_count: 5
+  timeout: 4s
 
 psql_storage:
   db_driver: "postgres"

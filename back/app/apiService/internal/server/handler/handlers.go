@@ -16,7 +16,7 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-func handleConnection(rI time.Duration, upgrader websocket.Upgrader, fetcher NewsFetcher, slog *slog.Logger) http.HandlerFunc {
+func handleConnection(timeout, rI time.Duration, upgrader websocket.Upgrader, fetcher NewsFetcher, slog *slog.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		wsConn, err := upgrader.Upgrade(w, r, nil)
 		if err != nil {
@@ -26,11 +26,11 @@ func handleConnection(rI time.Duration, upgrader websocket.Upgrader, fetcher New
 
 		w.Header().Add("Content-Type", "application/json")
 
-		go sendNewMsg(rI, wsConn, fetcher, slog)
+		go sendNewMsg(timeout, rI, wsConn, fetcher, slog)
 	}
 }
 
-func sendNewMsg(refreshInterval time.Duration, client *websocket.Conn, fetcher NewsFetcher, slog *slog.Logger) {
+func sendNewMsg(timeout, refreshInterval time.Duration, client *websocket.Conn, fetcher NewsFetcher, slog *slog.Logger) {
 	ticker := time.NewTicker(refreshInterval / 2)
 
 	defer client.Close()
@@ -42,22 +42,31 @@ func sendNewMsg(refreshInterval time.Duration, client *websocket.Conn, fetcher N
 			break
 		}
 
-		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), timeout)
 		defer cancel()
 
 		arts, err := fetcher.FetchArticles(ctx)
 		if err != nil {
-			if errors.Is(err, services.ErrNoPublishedArticles) {
+			switch {
+			case errors.Is(err, services.ErrNoPublishedArticles):
 				err = socketResponse(w, http.StatusOK, arts)
 				if err != nil {
 					slog.Debug("Can't make socket response", "err", err.Error())
 				}
 				<-ticker.C
 				continue
+			case errors.Is(err, context.DeadlineExceeded):
+				err = socketResponse(w, http.StatusOK, arts)
+				if err != nil {
+					slog.Debug("Can't make socket response", "err", err.Error())
+				}
+				<-ticker.C
+				continue
+			default:
+				slog.Error("Can't fetch articles", "err", err.Error())
+				<-ticker.C
+				continue
 			}
-			slog.Error("Can't fetch articles", "err", err.Error())
-			<-ticker.C
-			continue
 		}
 
 		err = socketResponse(w, http.StatusOK, arts)
@@ -96,7 +105,7 @@ type signUpRequest struct {
 	Password string `json:"password"`
 }
 
-func signup(service AuthService, slog *slog.Logger) http.HandlerFunc {
+func signup(timeout time.Duration, service AuthService, slog *slog.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		req := signUpRequest{}
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -111,7 +120,7 @@ func signup(service AuthService, slog *slog.Logger) http.HandlerFunc {
 			}
 		}
 
-		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), timeout)
 		defer cancel()
 
 		if _, err := service.SaveUser(ctx, req.Name, req.Email, req.Password); err != nil {
@@ -151,7 +160,7 @@ type loginRequest struct {
 	Password string `json:"password"`
 }
 
-func login(refTokTTL time.Duration, service AuthService, slog *slog.Logger) http.HandlerFunc {
+func login(timeout time.Duration, refTokTTL time.Duration, service AuthService, slog *slog.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		req := new(loginRequest)
 
@@ -167,7 +176,7 @@ func login(refTokTTL time.Duration, service AuthService, slog *slog.Logger) http
 			}
 		}
 
-		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), timeout)
 		defer cancel()
 
 		_, _, acsToken, refToken, err := service.LoginUser(ctx, req.Email, req.Password)
@@ -216,7 +225,7 @@ func login(refTokTTL time.Duration, service AuthService, slog *slog.Logger) http
 	}
 }
 
-func userArticles(news UserNewsService, slog *slog.Logger) http.HandlerFunc {
+func userArticles(timeout time.Duration, news UserNewsService, slog *slog.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		id := r.Header.Get("uid")
 		acToken := r.Header.Get("access_token")
@@ -242,7 +251,7 @@ func userArticles(news UserNewsService, slog *slog.Logger) http.HandlerFunc {
 			return
 		}
 
-		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), timeout)
 		defer cancel()
 
 		arts, err := news.GetArticlesByUid(ctx, int64(uid))
@@ -277,7 +286,7 @@ type addRequest struct {
 	Content string `json:"content"`
 }
 
-func addArticle(news UserNewsService, slog *slog.Logger) http.HandlerFunc {
+func addArticle(timeout time.Duration, news UserNewsService, slog *slog.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		req := new(addRequest)
 
@@ -317,7 +326,7 @@ func addArticle(news UserNewsService, slog *slog.Logger) http.HandlerFunc {
 			}
 		}
 
-		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), timeout)
 		defer cancel()
 
 		arts, err := news.SaveArticle(ctx, int64(uid), req.Link)
@@ -376,7 +385,7 @@ type updateRequest struct {
 	Link      string `json:"link"`
 }
 
-func updateArticle(news UserNewsService, slog *slog.Logger) http.HandlerFunc {
+func updateArticle(timeout time.Duration, news UserNewsService, slog *slog.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		req := new(updateRequest)
 
@@ -406,7 +415,7 @@ func updateArticle(news UserNewsService, slog *slog.Logger) http.HandlerFunc {
 
 		if err := json.NewDecoder(r.Body).Decode(req); err != nil {
 			if !strings.Contains(err.Error(), "EOF") {
-				slog.Debug("Can't decode body from suggest-article request", "err", err.Error())
+				slog.Debug("Can't decode body from update-article request", "err", err.Error())
 
 				err = responseJSONError(w, http.StatusBadRequest, id, acToken, "Bad request")
 				if err != nil {
@@ -416,7 +425,7 @@ func updateArticle(news UserNewsService, slog *slog.Logger) http.HandlerFunc {
 			}
 		}
 
-		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), timeout)
 		defer cancel()
 
 		arts, err := news.UpdateArticle(ctx, int64(uid), int64(req.ArticleID), req.Link)
@@ -476,8 +485,14 @@ func updateArticle(news UserNewsService, slog *slog.Logger) http.HandlerFunc {
 	}
 }
 
-func deleteArticle(news UserNewsService, slog *slog.Logger) http.HandlerFunc {
+type deleteRequest struct {
+	ArticleID int `json:"article_id"`
+}
+
+func deleteArticle(timeout time.Duration, news UserNewsService, slog *slog.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		req := new(deleteRequest)
+
 		id := r.Header.Get("uid")
 		acToken := r.Header.Get("access_token")
 
@@ -502,23 +517,22 @@ func deleteArticle(news UserNewsService, slog *slog.Logger) http.HandlerFunc {
 			return
 		}
 
-		articleIdHeader := r.Header.Get("article_id")
+		if err := json.NewDecoder(r.Body).Decode(req); err != nil {
+			if !strings.Contains(err.Error(), "EOF") {
+				slog.Debug("Can't decode body from delete-article request", "err", err.Error())
 
-		articleId, err := strconv.Atoi(articleIdHeader)
-		if err != nil {
-			slog.Debug("Can't convert to int", "err", err.Error())
-
-			err = responseJSONError(w, http.StatusInternalServerError, id, acToken, "Internal error")
-			if err != nil {
-				slog.Error("Can't make response", "err", err.Error())
+				err = responseJSONError(w, http.StatusBadRequest, id, acToken, "Bad request")
+				if err != nil {
+					slog.Error("Can't make response", "err", err.Error())
+				}
+				return
 			}
-			return
 		}
 
-		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), timeout)
 		defer cancel()
 
-		arts, err := news.DeleteArticle(ctx, int64(uid), int64(articleId))
+		arts, err := news.DeleteArticle(ctx, int64(uid), int64(req.ArticleID))
 		if err != nil {
 			switch {
 			case errors.Is(err, services.ErrNoOfferedArticles):

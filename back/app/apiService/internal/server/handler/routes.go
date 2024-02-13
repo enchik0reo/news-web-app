@@ -39,6 +39,7 @@ func New(auth AuthService,
 
 	refTokTTL time.Duration,
 	refreshInterval time.Duration,
+	timeout time.Duration,
 	slog *slog.Logger,
 ) (http.Handler, error) {
 	r := chi.NewRouter()
@@ -59,17 +60,17 @@ func New(auth AuthService,
 		},
 	}
 
-	r.HandleFunc("/ws", handleConnection(refreshInterval, upgrader, fetcher, slog))
+	r.HandleFunc("/ws", handleConnection(timeout, refreshInterval, upgrader, fetcher, slog))
 	r.Get("/home", home(fetcher, slog))
-	r.Post("/signup", signup(auth, slog))
-	r.Post("/login", login(refTokTTL, auth, slog))
+	r.Post("/signup", signup(timeout, auth, slog))
+	r.Post("/login", login(timeout, refTokTTL, auth, slog))
 
 	r.Route("/user_news", func(r chi.Router) {
 		r.Use(authenticate(refTokTTL, auth, slog))
-		r.Get("/", userArticles(news, slog))
-		r.Post("/", addArticle(news, slog))
-		r.Put("/", updateArticle(news, slog))
-		r.Delete("/", deleteArticle(news, slog))
+		r.Get("/", userArticles(timeout, news, slog))
+		r.Post("/", addArticle(timeout, news, slog))
+		r.Put("/", updateArticle(timeout, news, slog))
+		r.Delete("/", deleteArticle(timeout, news, slog))
 	})
 
 	r.Handle("/metrics", promhttp.Handler())

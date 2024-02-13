@@ -69,6 +69,8 @@ export default class LoggedForm extends React.Component {
     const config = {
       headers: {
         "Authorization": localStorage.getItem('access_token'),
+      },
+      data: {
         "article_id": id,
       }
     }

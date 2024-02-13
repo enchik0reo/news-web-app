@@ -84,6 +84,9 @@ func (f *NewsFetcher) FetchArticles(ctx context.Context) ([]models.Article, erro
 				case errors.Is(err, services.ErrNoPublishedArticles):
 					f.log.Debug("Can't get articles form news service", "err", err.Error())
 					return nil, err
+				case errors.Is(err, context.DeadlineExceeded):
+					f.log.Debug("Can't get articles form news service", "err", err.Error())
+					return nil, err
 				default:
 					f.log.Error("Can't get articles form news service", "err", err.Error())
 					return nil, err

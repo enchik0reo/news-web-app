@@ -91,6 +91,7 @@ func New() *App {
 		a.fetcher,
 		a.cfg.TokenManager.RefreshTokenTTL,
 		a.cfg.Manager.RefreshInterval,
+		a.cfg.Server.Timeout,
 		a.log,
 	)
 	if err != nil {
