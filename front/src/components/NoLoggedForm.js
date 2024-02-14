@@ -1,6 +1,6 @@
 import React from 'react';
 import { Nav } from 'react-bootstrap';
-import '../css/suggest.css'
+import '../css/suggest.css';
 
 const NoLoggedForm = () => {
 

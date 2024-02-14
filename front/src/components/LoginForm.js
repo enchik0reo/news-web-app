@@ -14,7 +14,7 @@ const LoginForm = ({ submitForm }) => {
         password: "",
     })
 
-    const [errors, setErrors] = useState({});
+    const [errors, setErrors] = useState({})
     const [dataIsCorrect, setDataIsCorrect] = useState(false)
 
     const handleChange = (event) => {
@@ -25,8 +25,8 @@ const LoginForm = ({ submitForm }) => {
     }
 
     const handleFormSubmit = (event) => {
-        event.preventDefault();
-        setErrors(validationl(values));
+        event.preventDefault()
+        setErrors(validationl(values))
         setDataIsCorrect(true)
     }
 
@@ -36,7 +36,7 @@ const LoginForm = ({ submitForm }) => {
             const jsonData = {
                 email: values.email,
                 password: values.password
-            };
+            }
 
             axios.post(baseurl, jsonData, {}).then((r) => {
                 if (r.data.status === 204) {

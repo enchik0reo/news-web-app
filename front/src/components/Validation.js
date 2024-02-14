@@ -1,6 +1,6 @@
 const Validation = (values) => {
 
-    let errors = {};
+    let errors = {}
 
     if (!values.fullname) {
         errors.fullname = "Name is required."

@@ -3,7 +3,6 @@ package handler
 import (
 	"context"
 	"errors"
-	"fmt"
 	"log/slog"
 	"net/http"
 	"time"
@@ -14,7 +13,7 @@ import (
 	"github.com/go-chi/cors"
 )
 
-func authenticate(refTokTTL time.Duration, service AuthService, slog *slog.Logger) func(http.Handler) http.Handler {
+func authenticate(timeout, refTokTTL time.Duration, service AuthService, slog *slog.Logger) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 
 		fn := func(w http.ResponseWriter, r *http.Request) {
@@ -22,21 +21,21 @@ func authenticate(refTokTTL time.Duration, service AuthService, slog *slog.Logge
 			if auth == "" {
 				slog.Debug("Can't authenticate user, access token is empty")
 
-				err := responseJSONError(w, http.StatusNotFound, "", "", "Empty Authorization")
+				err := responseJSONError(w, http.StatusNotFound, 0, "", "Empty Authorization")
 				if err != nil {
 					slog.Error("Can't make response", "err", err.Error())
 				}
 				return
 			}
 
-			ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+			ctx, cancel := context.WithTimeout(context.Background(), timeout)
 			defer cancel()
 
 			_, _, err := service.Parse(ctx, auth)
 			if err != nil {
 				slog.Debug("Can't authenticate user", "error", err.Error())
 
-				err = responseJSONError(w, http.StatusUnauthorized, "", "", "Authorization expired")
+				err = responseJSONError(w, http.StatusUnauthorized, 0, "", "Authorization expired")
 				if err != nil {
 					slog.Error("Can't make response", "err", err.Error())
 				}
@@ -50,7 +49,7 @@ func authenticate(refTokTTL time.Duration, service AuthService, slog *slog.Logge
 	}
 }
 
-func refresh(refTokTTL time.Duration, service AuthService, slog *slog.Logger) func(http.Handler) http.Handler {
+func refresh(timeout, refTokTTL time.Duration, service AuthService, slog *slog.Logger) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 
 		fn := func(w http.ResponseWriter, r *http.Request) {
@@ -61,7 +60,7 @@ func refresh(refTokTTL time.Duration, service AuthService, slog *slog.Logger) fu
 				return
 			}
 
-			ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+			ctx, cancel := context.WithTimeout(context.Background(), timeout)
 			defer cancel()
 
 			id, _, err := service.Parse(ctx, auth)
@@ -81,7 +80,7 @@ func refresh(refTokTTL time.Duration, service AuthService, slog *slog.Logger) fu
 						}
 					}
 
-					ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+					ctx, cancel := context.WithTimeout(context.Background(), timeout)
 					defer cancel()
 
 					id, _, acsToken, refToken, err := service.Refresh(ctx, cookie.Value)
@@ -91,9 +90,10 @@ func refresh(refTokTTL time.Duration, service AuthService, slog *slog.Logger) fu
 						return
 					}
 
+					r = r.WithContext(context.WithValue(r.Context(), uid, id))
+					r = r.WithContext(context.WithValue(r.Context(), accessToken, acsToken))
+
 					r.Header.Set("Authorization", "Bearer "+acsToken)
-					r.Header.Set("uid", fmt.Sprint(id))
-					r.Header.Set("access_token", acsToken)
 
 					ck := http.Cookie{
 						Name:     "refresh_token",
@@ -116,7 +116,7 @@ func refresh(refTokTTL time.Duration, service AuthService, slog *slog.Logger) fu
 					return
 				}
 			} else {
-				r.Header.Set("uid", fmt.Sprint(id))
+				r = r.WithContext(context.WithValue(r.Context(), uid, id))
 
 				next.ServeHTTP(w, r)
 				return
@@ -130,8 +130,8 @@ func corsSettings() func(next http.Handler) http.Handler {
 	h := cors.Handler(cors.Options{
 		AllowedOrigins:   []string{"http://localhost:3003"},
 		AllowedMethods:   []string{http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete},
-		AllowedHeaders:   []string{"Content-Type", "Set-Cookie", "Authorization", "id"},
-		ExposedHeaders:   []string{"Content-Type", "Set-Cookie", "Authorization", "id"},
+		AllowedHeaders:   []string{"Content-Type", "Set-Cookie", "Authorization"},
+		ExposedHeaders:   []string{"Content-Type", "Set-Cookie", "Authorization"},
 		AllowCredentials: true,
 	})
 

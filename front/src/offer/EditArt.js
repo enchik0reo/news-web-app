@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import 'react-toastify/dist/ReactToastify.css';
-import '../css/suggest.css'
+import '../css/suggest.css';
 import valid from '../components/Valid';
 import { Nav } from 'react-bootstrap';
 
@@ -11,8 +11,9 @@ const EditArt = ({ id, onEdit }) => {
         article_id: id,
     })
 
-    const [errors, setErrors] = useState({});
+    const [errors, setErrors] = useState({})
     const [dataIsCorrect, setDataIsCorrect] = useState(false)
+    const [resetValues, setResetValues] = useState(false)
 
     const handleChange = (event) => {
         setValues({
@@ -22,17 +23,33 @@ const EditArt = ({ id, onEdit }) => {
     }
 
     const handleFormSubmit = (event) => {
-        event.preventDefault();
-        setErrors(valid(values));
+        event.preventDefault()
+        setErrors(valid(values))
         setDataIsCorrect(true)
+    }
+
+    const handleResetValues = () => {
+        setResetValues(true)
     }
 
     useEffect(() => {
         if (Object.keys(errors).length === 0 && dataIsCorrect) {
             onEdit(values)
             setDataIsCorrect(false)
+            handleResetValues()
         }
     }, [errors, dataIsCorrect, onEdit, values])
+
+    useEffect(() => {
+        if (resetValues) {
+            setValues({
+                link: "",
+                content: "",
+            })
+
+            setResetValues(false)
+        }
+    }, [resetValues, values])
 
     return (
         <div className="offer-edit-app">

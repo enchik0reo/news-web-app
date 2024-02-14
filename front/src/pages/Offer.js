@@ -13,7 +13,7 @@ const Offer = () => {
         } else {
             setFormIsLogged(false)
         }
-    }, []);
+    }, [])
     
     return (
         <>

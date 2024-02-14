@@ -1,5 +1,5 @@
-import React from "react"
-import Art from "./Art"
+import React from "react";
+import Art from "./Art";
 
 export default class UserArts extends React.Component {
     render() {

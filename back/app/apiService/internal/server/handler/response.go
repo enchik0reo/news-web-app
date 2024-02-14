@@ -14,23 +14,23 @@ type response struct {
 }
 
 type respBody struct {
-	UserID   string           `json:"uid,omitempty"`
+	UserID   int64            `json:"uid,omitempty"`
 	AcToken  string           `json:"access_token,omitempty"`
 	Articles []models.Article `json:"articles,omitempty"`
 	Error    string           `json:"error,omitempty"`
 }
 
-func responseJSON(w http.ResponseWriter, status int, uid, acToken string, articles []models.Article) error {
-	resp := response{}
-
-	resp.Status = status
-
-	if acToken != "" {
-		resp.Body.AcToken = acToken
+func responseJSON(w http.ResponseWriter, status int, uID int64, acsToken string, articles []models.Article) error {
+	resp := response{
+		Status: status,
 	}
 
-	if uid != "" {
-		resp.Body.UserID = uid
+	if acsToken != "" {
+		resp.Body.AcToken = acsToken
+	}
+
+	if uID != 0 {
+		resp.Body.UserID = uID
 	}
 
 	if len(articles) > 0 {
@@ -52,17 +52,17 @@ func responseJSON(w http.ResponseWriter, status int, uid, acToken string, articl
 	return nil
 }
 
-func responseJSONError(w http.ResponseWriter, status int, uid, acToken string, error string) error {
-	resp := response{}
-
-	resp.Status = status
-
-	if acToken != "" {
-		resp.Body.AcToken = acToken
+func responseJSONError(w http.ResponseWriter, status int, uID int64, acsToken string, error string) error {
+	resp := response{
+		Status: status,
 	}
 
-	if uid != "" {
-		resp.Body.UserID = uid
+	if acsToken != "" {
+		resp.Body.AcToken = acsToken
+	}
+
+	if uID != 0 {
+		resp.Body.UserID = uID
 	}
 
 	if error != "" {
@@ -85,9 +85,9 @@ func responseJSONError(w http.ResponseWriter, status int, uid, acToken string, e
 }
 
 func socketResponse(w io.WriteCloser, status int, articles []models.Article) error {
-	resp := response{}
-
-	resp.Status = status
+	resp := response{
+		Status: status,
+	}
 
 	if len(articles) > 0 {
 		resp.Body.Articles = articles

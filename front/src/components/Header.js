@@ -25,7 +25,7 @@ const Header = () => {
         } else {
             setLoginB(true)
         }
-    }, []);
+    }, [])
 
     return (
         <div>

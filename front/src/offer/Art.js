@@ -1,6 +1,6 @@
-import React from "react"
-import { IoTrashOutline, IoConstructOutline } from 'react-icons/io5'
-import EditArt from "./EditArt"
+import React from "react";
+import { IoTrashOutline, IoConstructOutline } from 'react-icons/io5';
+import EditArt from "./EditArt";
 import { Nav } from 'react-bootstrap';
 import empty from '../img/empty.png';
 

@@ -1,6 +1,6 @@
 const Validationl = (values) => {
 
-    let errors = {};
+    let errors = {}
 
     if (!values.email) {
         errors.email = "E-mail is required."

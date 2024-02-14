@@ -1,9 +1,9 @@
-import React from "react"
-import UserArts from "./UserArts"
-import AddArt from "./AddArt"
-import axios from "axios"
+import React from "react";
+import UserArts from "./UserArts";
+import AddArt from "./AddArt";
+import axios from "axios";
 import { toast } from 'react-toastify';
-import "../css/offer.css"
+import "../css/offer.css";
 
 const baseurl = "/user_news"
 
@@ -96,7 +96,7 @@ export default class LoggedForm extends React.Component {
           if (res.data.body.access_token) {
             localStorage.setItem('access_token', 'Bearer ' + res.data.body.access_token)
           }
-          
+
           if (res.data.status === 200) {
             this.setState({ articles: res.data.body.articles })
           } else if (res.data.status === 204) {
@@ -113,7 +113,7 @@ export default class LoggedForm extends React.Component {
               console.error('Internal server error:', error)
             }
           })
-        
+
         toast.warn('Can`t be deleted. This article has already been published.')
       }
     })
@@ -130,7 +130,7 @@ export default class LoggedForm extends React.Component {
     const jsonEditData = {
       link: data.link,
       article_id: data.article_id
-    };
+    }
 
     const config = {
       headers: {
@@ -163,7 +163,7 @@ export default class LoggedForm extends React.Component {
           if (res.data.body.access_token) {
             localStorage.setItem('access_token', 'Bearer ' + res.data.body.access_token)
           }
-          
+
           if (res.data.status === 200) {
             this.setState({ articles: res.data.body.articles })
           } else if (res.data.status === 204) {
@@ -195,8 +195,8 @@ export default class LoggedForm extends React.Component {
   addArticle(data) {
     const jsonAddData = {
       link: data.link,
-      article_id: data.article_id
-    };
+      content: data.content
+    }
 
     const config = {
       headers: {

@@ -1,6 +1,6 @@
 const Valid = (values) => {
 
-  let errors = {};
+  let errors = {}
 
   if (!values.link) {
     errors.link = "Link is required."

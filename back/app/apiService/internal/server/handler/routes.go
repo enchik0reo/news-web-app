@@ -50,7 +50,7 @@ func New(auth AuthService,
 	r.Use(chiprometheus.NewMiddleware("apisrv"))
 	r.Use(loggerMw(slog))
 	r.Use(corsSettings())
-	r.Use(refresh(refTokTTL, auth, slog))
+	r.Use(refresh(timeout, refTokTTL, auth, slog))
 
 	var upgrader = websocket.Upgrader{
 		ReadBufferSize:  10240,
@@ -66,7 +66,7 @@ func New(auth AuthService,
 	r.Post("/login", login(timeout, refTokTTL, auth, slog))
 
 	r.Route("/user_news", func(r chi.Router) {
-		r.Use(authenticate(refTokTTL, auth, slog))
+		r.Use(authenticate(timeout, refTokTTL, auth, slog))
 		r.Get("/", userArticles(timeout, news, slog))
 		r.Post("/", addArticle(timeout, news, slog))
 		r.Put("/", updateArticle(timeout, news, slog))
