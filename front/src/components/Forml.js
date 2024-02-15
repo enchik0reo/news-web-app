@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import LoginForm from './LoginForm';
 import LoginFormSuccess from './LoginFormSuccess';
+import { toast } from 'react-toastify';
 
 const Forml = ({ onLoginForm }) => {
 
@@ -14,7 +15,8 @@ const Forml = ({ onLoginForm }) => {
       setFormIsSubmitted(true)
       onLoginForm(true)
     } else {
-      console.log(props.data.status)
+      toast.error("Failed to login. Internal server error.")
+      console.error(props.data.status)
     }
   }
 

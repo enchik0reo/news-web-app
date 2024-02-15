@@ -13,13 +13,13 @@ import (
 
 	"newsWebApp/app/newsService/internal/config"
 	grpcServer "newsWebApp/app/newsService/internal/grpc/server"
-	"newsWebApp/app/newsService/internal/logs"
 	"newsWebApp/app/newsService/internal/services/cacher"
 	"newsWebApp/app/newsService/internal/services/fetcher"
 	"newsWebApp/app/newsService/internal/services/processor"
 	"newsWebApp/app/newsService/internal/storage/psql"
 	"newsWebApp/app/newsService/internal/storage/redis"
 	"newsWebApp/migrations/migrator"
+	"newsWebApp/pkg/logs"
 )
 
 type App struct {

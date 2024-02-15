@@ -17,7 +17,7 @@ const Form = () => {
       setFormIsSubmitted(true)
     } else {
       toast.error("Failed to signup. Internal server error.")
-      console.log(props.data.status)
+      console.error(props.data.status)
     }
   }
 

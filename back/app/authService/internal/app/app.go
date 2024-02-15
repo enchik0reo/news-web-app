@@ -12,11 +12,11 @@ import (
 
 	"newsWebApp/app/authService/internal/config"
 	grpcServer "newsWebApp/app/authService/internal/grpc/server"
-	"newsWebApp/app/authService/internal/logs"
 	"newsWebApp/app/authService/internal/services/auth"
 	"newsWebApp/app/authService/internal/storage/psql"
 	"newsWebApp/app/authService/internal/storage/redis"
 	"newsWebApp/migrations/migrator"
+	"newsWebApp/pkg/logs"
 )
 
 type App struct {

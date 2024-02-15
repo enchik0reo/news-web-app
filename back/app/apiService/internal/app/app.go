@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"newsWebApp/app/apiService/internal/config"
-	"newsWebApp/app/apiService/internal/logs"
 	"newsWebApp/app/apiService/internal/server/handler"
 	"newsWebApp/app/apiService/internal/server/server"
 	"newsWebApp/app/apiService/internal/services/authgrpc"
@@ -20,6 +19,7 @@ import (
 	"newsWebApp/app/apiService/internal/services/newsgrpc"
 	"newsWebApp/app/apiService/internal/storage/cache"
 	"newsWebApp/migrations/migrator"
+	"newsWebApp/pkg/logs"
 )
 
 type App struct {
