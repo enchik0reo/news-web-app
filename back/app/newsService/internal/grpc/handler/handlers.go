@@ -22,6 +22,7 @@ type NewsService interface {
 	DeleteArticleByID(ctx context.Context, userID int64, artID int64) ([]models.Article, error)
 	SelectAndSendArticle(ctx context.Context) (*models.Article, error)
 	SelectPostedArticles(ctx context.Context) ([]models.Article, error)
+	SelectPostedArticlesWithLimit(ctx context.Context, page int64) ([]models.Article, error)
 }
 
 type serverAPI struct {
@@ -215,6 +216,36 @@ func (s *serverAPI) GetArticles(ctx context.Context, req *newsv1.GetArticlesRequ
 	}
 
 	return &newsv1.GetArticlesResponse{
+		Articles: grpcArticles,
+	}, nil
+}
+
+func (s *serverAPI) GetArticlesByPage(ctx context.Context, req *newsv1.GetArticlesByPageRequest) (*newsv1.GetArticlesByPageResponse, error) {
+	articles, err := s.newsService.SelectPostedArticlesWithLimit(ctx, req.Page)
+	if err != nil {
+		if errors.Is(err, services.ErrNoPublishedArticles) {
+			return nil, status.Error(codes.NotFound, "there are no published articles")
+		} else {
+			return nil, status.Error(codes.Internal, "internal error")
+		}
+	}
+
+	grpcArticles := make([]*newsv1.Article, len(articles))
+
+	for i, art := range articles {
+		grpcArticles[i] = &newsv1.Article{
+			ArticleId:  art.ID,
+			UserName:   art.UserName,
+			SourceName: art.SourceName,
+			Title:      art.Title,
+			Link:       art.Link,
+			Excerpt:    art.Excerpt,
+			ImageUrl:   art.ImageURL,
+			PostedAt:   art.PostedAt.Format(time.DateTime),
+		}
+	}
+
+	return &newsv1.GetArticlesByPageResponse{
 		Articles: grpcArticles,
 	}, nil
 }

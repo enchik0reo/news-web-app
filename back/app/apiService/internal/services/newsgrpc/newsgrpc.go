@@ -259,6 +259,41 @@ func (c *Client) GetArticles(ctx context.Context) ([]models.Article, error) {
 	return articles, nil
 }
 
+func (c *Client) GetArticlesByPage(ctx context.Context, page int64) ([]models.Article, error) {
+	const op = "services.newsgrpc.GetArticles"
+
+	resp, err := c.api.GetArticlesByPage(ctx, &newsv1.GetArticlesByPageRequest{Page: page})
+	if err != nil {
+		if errors.Is(err, status.Error(codes.NotFound, "there are no published articles")) {
+			return nil, fmt.Errorf("%s: %w", op, services.ErrNoPublishedArticles)
+		} else {
+			return nil, fmt.Errorf("%s: %w", op, err)
+		}
+	}
+
+	articles := make([]models.Article, len(resp.Articles))
+
+	for i, art := range resp.Articles {
+		postedAt, err := time.Parse(time.DateTime, art.PostedAt)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", op, err)
+		}
+
+		articles[i] = models.Article{
+			ArticleID:  art.ArticleId,
+			UserName:   art.UserName,
+			SourceName: art.SourceName,
+			Title:      art.Title,
+			Link:       art.Link,
+			Excerpt:    art.Excerpt,
+			ImageURL:   art.ImageUrl,
+			PostedAt:   postedAt,
+		}
+	}
+
+	return articles, nil
+}
+
 func interceptorLogger(l *slog.Logger) grpclog.Logger {
 	return grpclog.LoggerFunc(func(ctx context.Context, level grpclog.Level, msg string, fields ...any) {
 		l.Log(ctx, slog.Level(level), msg, fields...)

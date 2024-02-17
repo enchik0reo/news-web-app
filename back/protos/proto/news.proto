@@ -11,6 +11,7 @@ service News{
 	rpc DeleteArticle (DeleteArticleRequest) returns (DeleteArticleResponse);
     rpc GetArticles (GetArticlesRequest) returns (GetArticlesResponse);
 	rpc GetNewestArticle (GetNewestArticleRequest) returns (GetNewestArticleResponse);
+	rpc GetArticlesByPage (GetArticlesByPageRequest) returns (GetArticlesByPageResponse);
 }
 
 message Article {    
@@ -72,4 +73,12 @@ message GetNewestArticleRequest {
 
 message GetNewestArticleResponse {
 	Article Articl =1;
+}
+
+message GetArticlesByPageRequest {
+	int64 page = 1;
+}
+
+message GetArticlesByPageResponse {
+	repeated Article Articles = 1;
 }

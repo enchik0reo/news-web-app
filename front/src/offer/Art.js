@@ -10,6 +10,8 @@ export default class Art extends React.Component {
         this.state = {
             editForm: false
         }
+
+        this.editBtn = this.editBtn.bind(this)
     }
 
     render() {
@@ -27,7 +29,7 @@ export default class Art extends React.Component {
                         editForm: !this.state.editForm
                     })
                 }} className="edit-icon" />
-                {this.state.editForm && <EditArt id={this.props.art.article_id} onEdit={this.props.onEdit} />}
+                {this.state.editForm && <EditArt id={this.props.art.article_id} onEdit={this.props.onEdit} editBtn={this.editBtn} />}
 
                 <small className="small-info">Suggested by {this.props.art.user_name}</small>
                 <h4>{this.props.art.title}</h4>
@@ -37,5 +39,9 @@ export default class Art extends React.Component {
                 <small className="small-info">Publication time | {this.props.art.source_name}</small>
             </div>
         )
+    }
+
+    editBtn(d) {
+        this.setState({ editForm: d })
     }
 }

@@ -20,6 +20,7 @@ type NewsService interface {
 	DeleteArticleByID(ctx context.Context, userID int64, artID int64) ([]models.Article, error)
 	SelectAndSendArticle(ctx context.Context) (*models.Article, error)
 	SelectPostedArticles(ctx context.Context) ([]models.Article, error)
+	SelectPostedArticlesWithLimit(ctx context.Context, page int64) ([]models.Article, error)
 }
 
 type Server struct {

@@ -14,7 +14,8 @@ import (
 
 type ArticleStorage interface {
 	NewestNotPosted(ctx context.Context) (*models.Article, error)
-	LatestPosted(ctx context.Context, limit int) ([]models.Article, error)
+	LatestPosted(ctx context.Context) ([]models.Article, error)
+	LatestPostedWithLimit(ctx context.Context, limit int64) ([]models.Article, error)
 	MarkPosted(ctx context.Context, id int64) (time.Time, error)
 	ArticlesByUid(ctx context.Context, userID int64) ([]models.Article, error)
 }
@@ -29,8 +30,8 @@ type Processor struct {
 	articles ArticleStorage
 	uArt     UserArticleStorage
 
-	articlesLimit int
-	log           *slog.Logger
+	pageLimit int
+	log       *slog.Logger
 }
 
 func New(
@@ -40,10 +41,10 @@ func New(
 	log *slog.Logger,
 ) *Processor {
 	return &Processor{
-		articles:      articles,
-		uArt:          uArt,
-		articlesLimit: articlesLimit,
-		log:           log,
+		articles:  articles,
+		uArt:      uArt,
+		pageLimit: articlesLimit,
+		log:       log,
 	}
 }
 
@@ -162,7 +163,30 @@ func (p *Processor) DeleteArticleByID(ctx context.Context, userID int64, artID i
 func (p *Processor) SelectPostedArticles(ctx context.Context) ([]models.Article, error) {
 	const op = "services.processor.select_posted_articles"
 
-	articles, err := p.articles.LatestPosted(ctx, p.articlesLimit)
+	articles, err := p.articles.LatestPosted(ctx)
+	if err != nil || len(articles) == 0 {
+		switch {
+		case len(articles) == 0:
+			p.log.Debug("There are no latest posted articles")
+			return nil, services.ErrNoPublishedArticles
+		case errors.Is(err, storage.ErrNoSources):
+			p.log.Debug("Can't get latest posted articles", "err", err.Error())
+			return nil, services.ErrNoPublishedArticles
+		default:
+			p.log.Error("Can't get latest posted articles", "err", err.Error())
+			return nil, fmt.Errorf("%s: %w", op, err)
+		}
+	}
+
+	return articles, nil
+}
+
+func (p *Processor) SelectPostedArticlesWithLimit(ctx context.Context, page int64) ([]models.Article, error) {
+	const op = "services.processor.select_posted_articles"
+
+	limit := page * int64(p.pageLimit)
+
+	articles, err := p.articles.LatestPostedWithLimit(ctx, limit)
 	if err != nil || len(articles) == 0 {
 		switch {
 		case len(articles) == 0:

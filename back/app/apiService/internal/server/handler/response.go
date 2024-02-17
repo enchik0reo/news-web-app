@@ -2,7 +2,6 @@ package handler
 
 import (
 	"encoding/json"
-	"io"
 	"net/http"
 
 	"newsWebApp/app/apiService/internal/models"
@@ -77,33 +76,6 @@ func responseJSONError(w http.ResponseWriter, status int, uID int64, acsToken st
 	}
 
 	_, err = w.Write(respJSON)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func socketResponse(w io.WriteCloser, status int, articles []models.Article) error {
-	resp := response{
-		Status: status,
-	}
-
-	if len(articles) > 0 {
-		resp.Body.Articles = articles
-	}
-
-	respJSON, err := json.Marshal(resp)
-	if err != nil {
-		return err
-	}
-
-	_, err = w.Write(respJSON)
-	if err != nil {
-		return err
-	}
-
-	err = w.Close()
 	if err != nil {
 		return err
 	}

@@ -4,7 +4,7 @@ import '../css/suggest.css';
 import valid from '../components/Valid';
 import { Nav } from 'react-bootstrap';
 
-const EditArt = ({ id, onEdit }) => {
+const EditArt = ({ id, onEdit, editBtn }) => {
 
     const [values, setValues] = useState({
         link: "",
@@ -44,12 +44,13 @@ const EditArt = ({ id, onEdit }) => {
         if (resetValues) {
             setValues({
                 link: "",
-                content: "",
+                article_id: "",
             })
 
+            editBtn(false)
             setResetValues(false)
         }
-    }, [resetValues, values])
+    }, [resetValues, values, editBtn])
 
     return (
         <div className="offer-edit-app">

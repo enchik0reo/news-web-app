@@ -6,6 +6,7 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -13,10 +14,10 @@ import (
 	"newsWebApp/app/apiService/internal/services"
 )
 
-func home(fetcher NewsFetcher, slog *slog.Logger) http.HandlerFunc {
+func home(timeout time.Duration, fetcher NewsFetcher, slog *slog.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var start = time.Now()
-		var statusCode int
+		start := time.Now()
+		statusCode := 0
 
 		defer func() {
 			metrics.ObserveRequest(time.Since(start), statusCode)
@@ -24,10 +25,54 @@ func home(fetcher NewsFetcher, slog *slog.Logger) http.HandlerFunc {
 
 		id, acToken := getInfoFromCtx(r)
 
+		currentPage := r.URL.Query().Get("page")
+
+		page, err := strconv.Atoi(currentPage)
+		if err != nil {
+			slog.Debug("Can't convert current page to int", "err", err.Error())
+			statusCode = http.StatusBadRequest
+
+			if err = responseJSONError(w, statusCode, id, acToken, "Bad request"); err != nil {
+				slog.Error("Can't make response", "err", err.Error())
+			}
+			return
+		}
+
+		ctx, cancel := context.WithTimeout(context.Background(), timeout)
+		defer cancel()
+
+		arts, err := fetcher.FetchArticlesOnPage(ctx, int64(page))
+		if err != nil {
+			switch {
+			case errors.Is(err, services.ErrNoPublishedArticles):
+				statusCode = http.StatusNoContent
+
+				if err = responseJSONError(w, statusCode, id, acToken, "There are no articles"); err != nil {
+					slog.Error("Can't make response", "err", err.Error())
+				}
+				return
+			case errors.Is(err, context.DeadlineExceeded):
+				slog.Debug("Can't fetch articles", "err", err.Error())
+				statusCode = http.StatusInternalServerError
+
+				if err = responseJSONError(w, statusCode, id, acToken, "Internal server error"); err != nil {
+					slog.Error("Can't make response", "err", err.Error())
+				}
+				return
+			default:
+				slog.Error("Can't fetch articles", "err", err.Error())
+				statusCode = http.StatusInternalServerError
+
+				if err = responseJSONError(w, statusCode, id, acToken, "Internal server error"); err != nil {
+					slog.Error("Can't make response", "err", err.Error())
+				}
+				return
+			}
+		}
+
 		statusCode = http.StatusOK
 
-		err := responseJSON(w, statusCode, id, acToken, nil)
-		if err != nil {
+		if err = responseJSON(w, statusCode, id, acToken, arts); err != nil {
 			slog.Error("Can't make response", "err", err.Error())
 		}
 	}

@@ -167,7 +167,49 @@ func (s *ArticleStorage) ArticlesByUid(ctx context.Context, userID int64) ([]mod
 	return articles, nil
 }
 
-func (s *ArticleStorage) LatestPosted(ctx context.Context, limit int) ([]models.Article, error) {
+func (s *ArticleStorage) LatestPosted(ctx context.Context) ([]models.Article, error) {
+	stmt, err := s.db.PrepareContext(ctx, `SELECT article_id, u.user_name AS user_name, source_name, title, link, excerpt, image, posted_at FROM articles a 
+	LEFT JOIN users u ON u.user_id = a.user_id 
+	WHERE a.posted_at IS NOT NULL 
+	ORDER BY a.posted_at`)
+	if err != nil {
+		return nil, fmt.Errorf("can't prepare statement: %w", err)
+	}
+	defer stmt.Close()
+
+	var articles []models.Article
+
+	rows, err := stmt.QueryContext(ctx)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, storage.ErrNoLatestArticles
+		}
+		return nil, fmt.Errorf("can't get articles from db: %v", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		articl := models.Article{}
+		err = rows.Scan(&articl.ID,
+			&articl.UserName,
+			&articl.SourceName,
+			&articl.Title,
+			&articl.Link,
+			&articl.Excerpt,
+			&articl.ImageURL,
+			&articl.PostedAt,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("can't scan model article: %w", err)
+		}
+
+		articles = append(articles, articl)
+	}
+
+	return articles, nil
+}
+
+func (s *ArticleStorage) LatestPostedWithLimit(ctx context.Context, limit int64) ([]models.Article, error) {
 	stmt, err := s.db.PrepareContext(ctx, `SELECT article_id, u.user_name AS user_name, source_name, title, link, excerpt, image, posted_at FROM articles a 
 	LEFT JOIN users u ON u.user_id = a.user_id 
 	WHERE a.posted_at IS NOT NULL 

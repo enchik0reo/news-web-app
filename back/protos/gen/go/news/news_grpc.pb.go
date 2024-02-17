@@ -28,6 +28,7 @@ type NewsClient interface {
 	DeleteArticle(ctx context.Context, in *DeleteArticleRequest, opts ...grpc.CallOption) (*DeleteArticleResponse, error)
 	GetArticles(ctx context.Context, in *GetArticlesRequest, opts ...grpc.CallOption) (*GetArticlesResponse, error)
 	GetNewestArticle(ctx context.Context, in *GetNewestArticleRequest, opts ...grpc.CallOption) (*GetNewestArticleResponse, error)
+	GetArticlesByPage(ctx context.Context, in *GetArticlesByPageRequest, opts ...grpc.CallOption) (*GetArticlesByPageResponse, error)
 }
 
 type newsClient struct {
@@ -92,6 +93,15 @@ func (c *newsClient) GetNewestArticle(ctx context.Context, in *GetNewestArticleR
 	return out, nil
 }
 
+func (c *newsClient) GetArticlesByPage(ctx context.Context, in *GetArticlesByPageRequest, opts ...grpc.CallOption) (*GetArticlesByPageResponse, error) {
+	out := new(GetArticlesByPageResponse)
+	err := c.cc.Invoke(ctx, "/news.News/GetArticlesByPage", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // NewsServer is the server API for News service.
 // All implementations must embed UnimplementedNewsServer
 // for forward compatibility
@@ -102,6 +112,7 @@ type NewsServer interface {
 	DeleteArticle(context.Context, *DeleteArticleRequest) (*DeleteArticleResponse, error)
 	GetArticles(context.Context, *GetArticlesRequest) (*GetArticlesResponse, error)
 	GetNewestArticle(context.Context, *GetNewestArticleRequest) (*GetNewestArticleResponse, error)
+	GetArticlesByPage(context.Context, *GetArticlesByPageRequest) (*GetArticlesByPageResponse, error)
 	mustEmbedUnimplementedNewsServer()
 }
 
@@ -126,6 +137,9 @@ func (UnimplementedNewsServer) GetArticles(context.Context, *GetArticlesRequest)
 }
 func (UnimplementedNewsServer) GetNewestArticle(context.Context, *GetNewestArticleRequest) (*GetNewestArticleResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetNewestArticle not implemented")
+}
+func (UnimplementedNewsServer) GetArticlesByPage(context.Context, *GetArticlesByPageRequest) (*GetArticlesByPageResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetArticlesByPage not implemented")
 }
 func (UnimplementedNewsServer) mustEmbedUnimplementedNewsServer() {}
 
@@ -248,6 +262,24 @@ func _News_GetNewestArticle_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
+func _News_GetArticlesByPage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetArticlesByPageRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(NewsServer).GetArticlesByPage(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/news.News/GetArticlesByPage",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(NewsServer).GetArticlesByPage(ctx, req.(*GetArticlesByPageRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // News_ServiceDesc is the grpc.ServiceDesc for News service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -278,6 +310,10 @@ var News_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetNewestArticle",
 			Handler:    _News_GetNewestArticle_Handler,
+		},
+		{
+			MethodName: "GetArticlesByPage",
+			Handler:    _News_GetArticlesByPage_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

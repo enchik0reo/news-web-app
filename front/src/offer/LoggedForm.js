@@ -114,7 +114,7 @@ export default class LoggedForm extends React.Component {
             }
           })
 
-        toast.warn('Can`t be deleted. This article has already been published.')
+        toast.warn('Can`t be deleted. This article has just been published.')
       }
     })
       .catch((error) => {
@@ -181,7 +181,7 @@ export default class LoggedForm extends React.Component {
             }
           })
 
-        toast.warn('Can`t be changed. This article has already been published.')
+        toast.warn('Can`t be changed. This article has just been published.')
       }
     })
       .catch((error) => {

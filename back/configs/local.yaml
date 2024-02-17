@@ -4,7 +4,7 @@ news_managment:
   filter_keywords: ["golang", "go", "go*"]
   fetch_interval: 30m
   refresh_interval: 15m
-  articles_limit: 30
+  articles_limit: 10
 
 api_server:
   address: "0.0.0.0:8008"
