@@ -133,7 +133,7 @@ func (h *PrettyHandler) Handle(_ context.Context, r slog.Record) error {
 		level,
 		msg,
 		color.WhiteString(info),
-		color.BlackString(string(b)),
+		color.HiBlackString(string(b)),
 	)
 
 	return nil

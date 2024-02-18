@@ -1,9 +1,10 @@
-env: "local_info" # "local" | "dev" | "prod"
+# levels of logging: "local"; "local_info"; "dev"; "prod"
+env: "local"
 
 news_managment:
-  filter_keywords: ["golang", "go", "go*"]
-  fetch_interval: 30m
-  refresh_interval: 15m
+  filter_keywords: ["golang", "go", "go*"] # filter for articles
+  fetch_interval: 600m # updating new items from rss sources
+  refresh_interval: 15m # publication newest article on home page
   articles_limit: 10
 
 api_server:

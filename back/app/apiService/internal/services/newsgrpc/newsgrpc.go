@@ -19,6 +19,11 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+type articleInformer interface {
+	String() string
+	GetArticles() []*newsv1.Article
+}
+
 type Client struct {
 	api newsv1.NewsClient
 }
@@ -296,6 +301,35 @@ func (c *Client) GetArticlesByPage(ctx context.Context, page int64) ([]models.Ar
 
 func interceptorLogger(l *slog.Logger) grpclog.Logger {
 	return grpclog.LoggerFunc(func(ctx context.Context, level grpclog.Level, msg string, fields ...any) {
-		l.Log(ctx, slog.Level(level), msg, fields...)
+		grpcFields := grpclog.Fields(fields)
+		iterator := grpcFields.Iterator()
+
+		contentLen := 0
+		contentCount := 0
+
+	Loop:
+		for iterator.Next() {
+			k, v := iterator.At()
+			if k == "grpc.response.content" {
+				switch resp := v.(type) {
+				case articleInformer:
+					contentLen = len(resp.String())
+					contentCount = len(resp.GetArticles())
+					grpcFields.Delete("grpc.response.content")
+					break Loop
+				default:
+					break Loop
+				}
+			}
+		}
+
+		if contentCount > 0 {
+			grpcFields = grpcFields.AppendUnique(grpclog.Fields{"grpc.response.content", map[string]interface{}{
+				"Articles count": fmt.Sprintf("%d", contentCount),
+				"Total lenght":   fmt.Sprintf("%d bytes", contentLen),
+			}})
+		}
+
+		l.Log(ctx, slog.Level(level), msg, grpcFields...)
 	})
 }

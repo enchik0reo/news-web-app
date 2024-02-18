@@ -10,6 +10,7 @@ Backend powered by Go. Frontend powered by React.
 ## Features
 
 - Application backend contains three separate services (Auth, News, Api)
+- 4 levels of logging (edit in ./back/configs/local.yaml)
 - Backend services communicate with each other using gRPC
 - Auth service for user authentication
 - User can signup and login. Using JWT Access and Refresh tokens
