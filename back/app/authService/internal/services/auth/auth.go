@@ -165,7 +165,7 @@ func (a *Auth) Refresh(ctx context.Context, refrToken string) (int64, string, st
 
 			return 0, "", "", "", services.ErrSessionNotFound
 		}
-		a.log.Error("Failed to get user by refresh token", "err", err)
+		a.log.Error("Failed to get user by refresh token", "err", err.Error())
 
 		return 0, "", "", "", errCantLoginUser
 	}

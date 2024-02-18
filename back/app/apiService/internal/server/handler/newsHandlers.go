@@ -129,6 +129,7 @@ type addRequest struct {
 
 func addArticle(timeout time.Duration, news UserNewsService, slog *slog.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		req := new(addRequest)
 
 		id, acToken := getInfoFromCtx(r)
@@ -216,6 +217,7 @@ type updateRequest struct {
 
 func updateArticle(timeout time.Duration, news UserNewsService, slog *slog.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		req := new(updateRequest)
 
 		id, acToken := getInfoFromCtx(r)
@@ -308,6 +310,7 @@ type deleteRequest struct {
 
 func deleteArticle(timeout time.Duration, news UserNewsService, slog *slog.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		req := new(deleteRequest)
 
 		id, acToken := getInfoFromCtx(r)

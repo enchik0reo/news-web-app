@@ -20,6 +20,7 @@ type signUpRequest struct {
 
 func signup(timeout time.Duration, service AuthService, slog *slog.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		req := signUpRequest{}
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			if !strings.Contains(err.Error(), "EOF") {
@@ -75,6 +76,7 @@ type loginRequest struct {
 
 func login(timeout time.Duration, refTokTTL time.Duration, service AuthService, slog *slog.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		req := new(loginRequest)
 
 		if err := json.NewDecoder(r.Body).Decode(req); err != nil {
