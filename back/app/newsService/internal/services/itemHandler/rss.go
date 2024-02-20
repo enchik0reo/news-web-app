@@ -81,6 +81,7 @@ func (s *RSS) IntervalLoad(ctx context.Context, slog *slog.Logger, ich chan mode
 
 			resp, err := getResp(itm.Link)
 			if err != nil {
+				s.cacher.DeleteLink(ctx, rssItem.Link)
 				slog.Debug("Failed to get response", "err", err.Error())
 				return
 			}
@@ -88,12 +89,14 @@ func (s *RSS) IntervalLoad(ctx context.Context, slog *slog.Logger, ich chan mode
 
 			parsedURL, err := url.Parse(itm.Link)
 			if err != nil {
+				s.cacher.DeleteLink(ctx, rssItem.Link)
 				slog.Debug("Failed to parse link", "err", err.Error())
 				return
 			}
 
 			article, err := readability.FromReader(resp.Body, parsedURL)
 			if err != nil {
+				s.cacher.DeleteLink(ctx, rssItem.Link)
 				slog.Debug("Failed to parse body", "err", err.Error())
 				return
 			}

@@ -19,9 +19,14 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-type articleInformer interface {
+type articlesInformer interface {
 	String() string
 	GetArticles() []*newsv1.Article
+}
+
+type articleInformer interface {
+	String() string
+	GetArticl() *newsv1.Article
 }
 
 type Client struct {
@@ -106,6 +111,8 @@ func (c *Client) SaveArticle(ctx context.Context, userID int64, link string) ([]
 			return nil, services.ErrArticleExists
 		case errors.Is(err, status.Error(codes.NotFound, "there are no offered articles")):
 			return nil, services.ErrNoOfferedArticles
+		case errors.Is(err, status.Error(codes.Unknown, "url is invalid")):
+			return nil, services.ErrInvalidUrl
 		default:
 			return nil, fmt.Errorf("%s: %w", op, err)
 		}
@@ -142,6 +149,8 @@ func (c *Client) UpdateArticle(ctx context.Context, userID int64, artID int64, l
 			return nil, services.ErrNoOfferedArticles
 		case errors.Is(err, status.Error(codes.Unavailable, "there are no changed articles")):
 			return nil, services.ErrArticleNotAvailable
+		case errors.Is(err, status.Error(codes.Unknown, "url is invalid")):
+			return nil, services.ErrInvalidUrl
 		default:
 			return nil, fmt.Errorf("%s: %w", op, err)
 		}
@@ -312,9 +321,14 @@ func interceptorLogger(l *slog.Logger) grpclog.Logger {
 			k, v := iterator.At()
 			if k == "grpc.response.content" {
 				switch resp := v.(type) {
-				case articleInformer:
+				case articlesInformer:
 					contentLen = len(resp.String())
 					contentCount = len(resp.GetArticles())
+					grpcFields.Delete("grpc.response.content")
+					break Loop
+				case articleInformer:
+					contentLen = len(resp.String())
+					contentCount = 1
 					grpcFields.Delete("grpc.response.content")
 					break Loop
 				default:

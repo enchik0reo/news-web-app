@@ -148,6 +148,8 @@ export default class LoggedForm extends React.Component {
         toast.error("Sorry, your session is wrong. Please, relogin.")
       } else if (res.data.status === 404) {
         toast.error('Please, login.')
+      } else if (res.data.status === 405) {
+        toast.warn('Invalid link. Please, try another one.')
       } else if (res.data.status === 206) {
         toast.info("We already know about this article. Thank you!")
       } else if (res.data.status === 204) {
@@ -214,6 +216,8 @@ export default class LoggedForm extends React.Component {
         toast.error("Sorry, your session is wrong. Please, relogin.")
       } else if (res.data.status === 404) {
         toast.error('Please, login.')
+      } else if (res.data.status === 405) {
+        toast.warn('Invalid link. Please, try another one.')
       } else if (res.data.status === 206) {
         toast.info("We already know about this article. Thank you!")
       } else if (res.data.status === 204) {

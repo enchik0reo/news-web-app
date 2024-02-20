@@ -1,6 +1,7 @@
 @font-face {
-    font-family: 'Montserrat';
-    src: url('../fonts/Montserrat-VariableFont_wght.ttf') format('truetype'); 
+    font-family: 'Open Sans', sans-serif;
+    src: url("../fonts/OpenSans-VariableFont_wdth,wght.ttf") format("truetype"); 
+    font-optical-sizing: auto;
     font-weight: normal;
     font-style: normal;
 }
@@ -8,15 +9,19 @@
 body {
     background-color: #e9ecf0;
     float: center;
-    font-family: 'Montserrat', sans-serif;
+    font-family: 'Open Sans', sans-serif;
     font-weight: 300;
 }
 
 .read-all {
     color: #3d50ff;
-    width: 85px;
-    font-family: 'Montserrat', sans-serif;
+    width: 81px;
+    font-family: 'Open Sans', sans-serif;
     font-weight: 600;
+}
+
+.home-link{
+    font-weight: 400;
 }
 
 div .article {

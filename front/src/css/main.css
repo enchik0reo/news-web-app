@@ -1,6 +1,6 @@
 @font-face {
-    font-family: 'Montserrat', sans-serif;
-    src: url("../fonts/Montserrat-VariableFont_wght.ttf") format("truetype"); 
+    font-family: 'Open Sans', sans-serif;
+    src: url("../fonts/OpenSans-VariableFont_wdth,wght.ttf") format("truetype"); 
     font-optical-sizing: auto;
     font-weight: normal;
     font-style: normal;
@@ -8,6 +8,6 @@
 
 body {
     padding-top: 60px;
-    font-family: 'Montserrat', sans-serif;
+    font-family: 'Open Sans', sans-serif;
     font-weight: 300;
 }

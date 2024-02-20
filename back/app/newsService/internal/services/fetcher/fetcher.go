@@ -113,13 +113,18 @@ func (f *Fetcher) SaveArticleFromUser(ctx context.Context, userID int64, link st
 
 	item, err := userHandler.LoadItem(ctx)
 	if err != nil {
-		if errors.Is(err, services.ErrArticleExists) {
+		switch {
+		case errors.Is(err, services.ErrArticleExists):
 			f.log.Debug("Can't save article from user", "err", err.Error())
 			return services.ErrArticleExists
+		case errors.Is(err, services.ErrInvalidUrl):
+			f.log.Debug("Can't save article from user", "err", err.Error())
+			return services.ErrInvalidUrl
+		default:
+			f.cacher.DeleteLink(ctx, link)
+			f.log.Error("Can't save article", "link", link, "err", err.Error())
+			return fmt.Errorf("%s: %w", op, err)
 		}
-		f.cacher.DeleteLink(ctx, link)
-		f.log.Error("Can't load article", "link", link, "err", err.Error())
-		return fmt.Errorf("%s: %w", op, err)
 	}
 
 	if f.itemShouldBeSkipped(item) {
@@ -160,12 +165,18 @@ func (f *Fetcher) UpdateArticleByID(ctx context.Context, userID int64, artID int
 
 	item, err := userHandler.UpdateItem(ctx, oldLink)
 	if err != nil {
-		if errors.Is(err, services.ErrArticleExists) {
+		switch {
+		case errors.Is(err, services.ErrArticleExists):
 			f.log.Debug("Can't update article from user", "err", err.Error())
 			return services.ErrArticleExists
+		case errors.Is(err, services.ErrInvalidUrl):
+			f.log.Debug("Can't update article from user", "err", err.Error())
+			return services.ErrInvalidUrl
+		default:
+			f.cacher.DeleteLink(ctx, link)
+			f.log.Error("Can't update article", "link", link, "err", err.Error())
+			return fmt.Errorf("%s: %w", op, err)
 		}
-		f.log.Error("Can't load article", "link", link, "err", err.Error())
-		return fmt.Errorf("%s: %w", op, err)
 	}
 
 	if f.itemShouldBeSkipped(item) {

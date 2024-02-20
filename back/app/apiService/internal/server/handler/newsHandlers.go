@@ -184,6 +184,12 @@ func addArticle(timeout time.Duration, news UserNewsService, slog *slog.Logger) 
 					slog.Error("Can't make response", "err", err.Error())
 				}
 				return
+			case errors.Is(err, services.ErrInvalidUrl):
+				err = responseJSON(w, http.StatusMethodNotAllowed, id, acToken, arts)
+				if err != nil {
+					slog.Error("Can't make response", "err", err.Error())
+				}
+				return
 			default:
 				slog.Error("Can't save article", "err", err.Error())
 
@@ -274,6 +280,12 @@ func updateArticle(timeout time.Duration, news UserNewsService, slog *slog.Logge
 				return
 			case errors.Is(err, services.ErrArticleNotAvailable):
 				err = responseJSON(w, http.StatusForbidden, id, acToken, arts)
+				if err != nil {
+					slog.Error("Can't make response", "err", err.Error())
+				}
+				return
+			case errors.Is(err, services.ErrInvalidUrl):
+				err = responseJSON(w, http.StatusMethodNotAllowed, id, acToken, arts)
 				if err != nil {
 					slog.Error("Can't make response", "err", err.Error())
 				}

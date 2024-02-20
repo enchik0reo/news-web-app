@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"strings"
 	"time"
 
 	"newsWebApp/app/newsService/internal/models"
@@ -43,17 +44,29 @@ func (u *User) LoadItem(ctx context.Context) (models.Item, error) {
 
 	resp, err := getResp(u.userLink)
 	if err != nil {
-		return itm, fmt.Errorf("%s: failed to download %s: %v", op, u.userLink, err)
+		switch {
+		case strings.Contains(err.Error(), "unsupported protocol scheme"):
+			u.cacher.DeleteLink(ctx, u.userLink)
+			return itm, services.ErrInvalidUrl
+		case strings.Contains(err.Error(), "no such host"):
+			u.cacher.DeleteLink(ctx, u.userLink)
+			return itm, services.ErrInvalidUrl
+		default:
+			u.cacher.DeleteLink(ctx, u.userLink)
+			return itm, fmt.Errorf("%s: failed to download %s: %v", op, u.userLink, err)
+		}
 	}
 	defer resp.Body.Close()
 
 	parsedURL, err := url.Parse(u.userLink)
 	if err != nil {
+		u.cacher.DeleteLink(ctx, u.userLink)
 		return itm, fmt.Errorf("%s: error parsing url %s: %v", op, u.userLink, err)
 	}
 
 	article, err := readability.FromReader(resp.Body, parsedURL)
 	if err != nil {
+		u.cacher.DeleteLink(ctx, u.userLink)
 		return itm, fmt.Errorf("%s: failed to parse %s: %v", op, u.userLink, err)
 	}
 
@@ -89,17 +102,29 @@ func (u *User) UpdateItem(ctx context.Context, oldLink string) (models.Item, err
 
 	resp, err := getResp(u.userLink)
 	if err != nil {
-		return itm, fmt.Errorf("%s: failed to download %s: %v", op, u.userLink, err)
+		switch {
+		case strings.Contains(err.Error(), "unsupported protocol scheme"):
+			u.cacher.DeleteLink(ctx, u.userLink)
+			return itm, services.ErrInvalidUrl
+		case strings.Contains(err.Error(), "no such host"):
+			u.cacher.DeleteLink(ctx, u.userLink)
+			return itm, services.ErrInvalidUrl
+		default:
+			u.cacher.DeleteLink(ctx, u.userLink)
+			return itm, fmt.Errorf("%s: failed to download %s: %v", op, u.userLink, err)
+		}
 	}
 	defer resp.Body.Close()
 
 	parsedURL, err := url.Parse(u.userLink)
 	if err != nil {
+		u.cacher.DeleteLink(ctx, u.userLink)
 		return itm, fmt.Errorf("%s: error parsing url %s: %v", op, u.userLink, err)
 	}
 
 	article, err := readability.FromReader(resp.Body, parsedURL)
 	if err != nil {
+		u.cacher.DeleteLink(ctx, u.userLink)
 		return itm, fmt.Errorf("%s: failed to parse %s: %v", op, u.userLink, err)
 	}
 

@@ -77,6 +77,9 @@ func (p *Processor) SaveArticleFromUser(ctx context.Context, userID int64, link 
 		case errors.Is(err, services.ErrArticleExists):
 			p.log.Debug("Can't save article from user", "err", err.Error())
 			return nil, services.ErrArticleExists
+		case errors.Is(err, services.ErrInvalidUrl):
+			p.log.Debug("Can't save article from user", "err", err.Error())
+			return nil, services.ErrInvalidUrl
 		default:
 			p.log.Error("Can't save article from user", "err", err.Error())
 			return nil, fmt.Errorf("%s: %w", op, err)
@@ -112,6 +115,9 @@ func (p *Processor) UpdateArticleByID(ctx context.Context, userID int64, artID i
 		case errors.Is(err, services.ErrArticleNotAvailable):
 			p.log.Debug("Can't update article from user", "err", err.Error())
 			return nil, services.ErrArticleNotAvailable
+		case errors.Is(err, services.ErrInvalidUrl):
+			p.log.Debug("Can't update article from user", "err", err.Error())
+			return nil, services.ErrInvalidUrl
 		default:
 			p.log.Error("Can't update article from user", "err", err.Error())
 			return nil, fmt.Errorf("%s: %w", op, err)

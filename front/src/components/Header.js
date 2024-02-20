@@ -31,7 +31,7 @@ const Header = () => {
         <div>
             <Navbar fixed="top" collapseOnSelect expand="sm" bg="light" variant="light" >
                 <Container>
-                    <Navbar.Brand href="/">
+                    <Navbar.Brand className="home-link" href="/">
                         <img
                             src={logo}
                             height="30"
