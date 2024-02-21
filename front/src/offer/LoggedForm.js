@@ -50,12 +50,12 @@ export default class LoggedForm extends React.Component {
   render() {
     return (<div>
       <h3 className="special-offer-h3">Submit your articles</h3>
-      <main>
-        <UserArts articles={this.state.articles} onEdit={this.editArticle} onDelete={this.deleteArticle} />
-      </main>
       <aside>
         <AddArt onAdd={this.addArticle} />
       </aside>
+      <main>
+        <UserArts articles={this.state.articles} onEdit={this.editArticle} onDelete={this.deleteArticle} />
+      </main>
     </div>)
   }
 

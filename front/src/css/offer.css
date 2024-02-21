@@ -6,10 +6,24 @@ main {
 }
 
 aside {
-    width: 25%;
+    width: 30%;
     margin-top: 10px;
-    margin-left: 10%;
-    float: left;
+    margin-right: 5%;
+    float: right;
+}
+
+@media screen and (max-width: 940px) {
+    main {
+      float: none;
+      width: 80%;
+      margin: 10px auto;
+    }
+  
+    aside {
+      float: none;
+      width: 80%;
+      margin: 10px  auto;
+    }
 }
 
 .special-offer-h3 {
@@ -57,7 +71,7 @@ aside {
 .offer-app {
     width: 25%;
     background-color: #fff;
-    min-width: 280px;
+    min-width: 320px;
     max-width: 340px;
     min-height: 350px;
     max-height: 430px;
@@ -66,7 +80,6 @@ aside {
     border-radius: 5px;
     border: 1px solid #c8cace;
     margin: 0 auto;
-    position: fixed;
 }
 
 .offer-submit {
