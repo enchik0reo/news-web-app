@@ -27,25 +27,32 @@ type SessionStorage interface {
 	GetSessionToken(ctx context.Context, userID int64) (string, error)
 }
 
+type RegistrStorage interface {
+	SaveUser(userName, email string) error
+}
+
 var (
 	errCantSaveUser  = errors.New("can't save user")
 	errCantLoginUser = errors.New("can't login user")
 )
 
 type Auth struct {
-	userStorage     UserStorage
-	sessionStorage  SessionStorage
+	userStorage    UserStorage
+	sessionStorage SessionStorage
+	registrStorage RegistrStorage
+
 	tokenManager    tokenmanager.TokenManager
 	log             *slog.Logger
 	refreshTokenTTL time.Duration
 }
 
-func New(usrS UserStorage, sesS SessionStorage, l *slog.Logger, cfg *config.TokenManager) *Auth {
+func New(usrS UserStorage, sesS SessionStorage, regS RegistrStorage, l *slog.Logger, cfg *config.TokenManager) *Auth {
 	tM := tokenmanager.New(cfg.AccessTokenTTL, cfg.RefreshTokenTTL, cfg.SecretKey)
 
 	return &Auth{
 		userStorage:     usrS,
 		sessionStorage:  sesS,
+		registrStorage:  regS,
 		tokenManager:    *tM,
 		log:             l,
 		refreshTokenTTL: cfg.RefreshTokenTTL,
@@ -66,14 +73,20 @@ func (a *Auth) SaveUser(ctx context.Context, userName string, email string, pass
 		return 0, errCantSaveUser
 	}
 
+	if err := a.registrStorage.SaveUser(userName, email); err != nil {
+		a.log.Error("Failed save user in registration storage", "err", err.Error())
+
+		return 0, errCantSaveUser
+	}
+
 	id, err := a.userStorage.SaveUser(ctx, userName, email, passHash)
 	if err != nil {
 		if errors.Is(err, storage.ErrUserExists) {
-			a.log.Debug("Failed save user", "err", err.Error())
+			a.log.Debug("Failed save user in user storage", "err", err.Error())
 
 			return 0, services.ErrUserExists
 		}
-		a.log.Error("Failed save user", "err", err.Error())
+		a.log.Error("Failed save user in user storage", "err", err.Error())
 
 		return 0, errCantSaveUser
 	}

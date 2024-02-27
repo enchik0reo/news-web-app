@@ -1,13 +1,12 @@
 @font-face {
-    font-family: 'Open Sans', sans-serif;
-    src: url("../fonts/OpenSans-VariableFont_wdth,wght.ttf") format("truetype"); 
-    font-optical-sizing: auto;
-    font-weight: normal;
+    font-family: 'Ubuntu Mono', monospace;
+    src: url("../fonts/UbuntuMono-Regular.ttf") format("truetype"); 
+    font-weight: 400;
     font-style: normal;
-}
+} 
 
 body {
     padding-top: 60px;
-    font-family: 'Open Sans', sans-serif;
+    font-family: 'Ubuntu Mono', monospace;
     font-weight: 300;
 }

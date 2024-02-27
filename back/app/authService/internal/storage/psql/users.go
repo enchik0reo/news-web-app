@@ -73,3 +73,42 @@ func (s *UserStorage) GetUserByEmail(ctx context.Context, email string) (*models
 
 	return &u, nil
 }
+
+func (s *UserStorage) GetInfo(ctx context.Context) (*models.UsersInfo, error) {
+	stmt, err := s.db.PrepareContext(ctx, "SELECT user_name, email FROM users")
+	if err != nil {
+		return nil, fmt.Errorf("can't prepare statement: %w", err)
+	}
+	defer stmt.Close()
+
+	rows, err := stmt.QueryContext(ctx)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, storage.ErrNoUsers
+		}
+		return nil, fmt.Errorf("can't get users from db: %v", err)
+	}
+	defer rows.Close()
+
+	usersInfo := models.UsersInfo{
+		Names:  make([]string, 0, 100),
+		Emails: make([]string, 0, 100),
+	}
+
+	for rows.Next() {
+		var (
+			name  string
+			email string
+		)
+
+		err = rows.Scan(&name, &email)
+		if err != nil {
+			return nil, fmt.Errorf("can't scan model article: %w", err)
+		}
+
+		usersInfo.Names = append(usersInfo.Names, name)
+		usersInfo.Emails = append(usersInfo.Emails, email)
+	}
+
+	return &usersInfo, nil
+}

@@ -60,6 +60,14 @@ services:
     environment:
       - ALLOW_EMPTY_PASSWORD=yes
 
+  memcached:
+    image: memcached:1.6.23
+    restart: always
+    ports:
+      - "11211:11211"
+    volumes: 
+      - memcached_data:/data
+
   prometheus:
     image: prom/prometheus:v2.48.1
     ports:
@@ -78,3 +86,4 @@ services:
 
 volumes:
   grafana_data:
+  memcached_data:

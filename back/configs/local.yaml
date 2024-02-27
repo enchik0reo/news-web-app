@@ -15,7 +15,7 @@ api_server:
 grpc_auth:
   host : "authsrv"
   port: 44044
-  timeout: 2s
+  timeout: 4s
 
 grpc_news:
   host : "newssrv"
@@ -33,6 +33,11 @@ psql_storage:
 redis_storage:
   host: "redis"
   port: "6379"
+
+memcached_storage:
+  host: "memcached"
+  port: "11211"
+  timeout: 4s
 
 token_managment:
   access_token_ttl: 20m

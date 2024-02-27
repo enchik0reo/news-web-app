@@ -13,6 +13,7 @@ type Config struct {
 	Env            string       `yaml:"env" env-required:"true"`
 	Storage        Postgres     `yaml:"psql_storage"`
 	SessionStorage Redis        `yaml:"redis_storage"`
+	RegistrStorage Memcached    `yaml:"memcached_storage"`
 	Manager        TokenManager `yaml:"token_managment"`
 	GRPC           GRPCConfig   `yaml:"grpc_auth"`
 }
@@ -31,6 +32,12 @@ type Redis struct {
 	Host   string        `yaml:"host"`
 	Port   string        `yaml:"port"`
 	Expire time.Duration `yaml:"expire"`
+}
+
+type Memcached struct {
+	Host    string        `yaml:"host"`
+	Port    string        `yaml:"port"`
+	Timeout time.Duration `yaml:"timeout"`
 }
 
 type TokenManager struct {

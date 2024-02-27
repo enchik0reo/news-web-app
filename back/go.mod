@@ -5,6 +5,7 @@ go 1.21.4
 require (
 	github.com/766b/chi-prometheus v0.0.0-20211217152057-87afa9aa2ca8
 	github.com/SlyMarbo/rss v1.0.5
+	github.com/bradfitz/gomemcache v0.0.0-20230905024940-24af94b03874
 	github.com/fatih/color v1.16.0
 	github.com/go-chi/chi v1.5.5
 	github.com/go-chi/cors v1.2.1

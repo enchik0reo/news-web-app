@@ -123,6 +123,24 @@ func (c *Client) Refresh(ctx context.Context, refToken string) (int64, string, s
 	return resp.UserId, resp.UserName, resp.AccessToken, resp.RefreshToken, nil
 }
 
+func (c *Client) CheckEmail(ctx context.Context, email string) (bool, error) {
+	resp, err := c.api.CheckEmail(ctx, &authv1.CheckEmailRequest{Email: email})
+	if err != nil {
+		return false, err
+	}
+
+	return resp.Answer, nil
+}
+
+func (c *Client) CheckUserName(ctx context.Context, userName string) (bool, error) {
+	resp, err := c.api.CheckUserName(ctx, &authv1.CheckUserNameRequest{UserName: userName})
+	if err != nil {
+		return false, err
+	}
+
+	return resp.Answer, nil
+}
+
 func interceptorLogger(l *slog.Logger) grpclog.Logger {
 	return grpclog.LoggerFunc(func(ctx context.Context, level grpclog.Level, msg string, fields ...any) {
 		l.Log(ctx, slog.Level(level), msg, fields...)

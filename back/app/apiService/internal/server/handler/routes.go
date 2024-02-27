@@ -19,6 +19,8 @@ type AuthService interface {
 	LoginUser(ctx context.Context, email, password string) (int64, string, string, string, error)
 	Parse(ctx context.Context, acToken string) (int64, string, error)
 	Refresh(ctx context.Context, refToken string) (int64, string, string, string, error)
+	CheckEmail(ctx context.Context, email string) (bool, error)
+	CheckUserName(ctx context.Context, userName string) (bool, error)
 }
 
 type UserNewsService interface {
@@ -54,6 +56,9 @@ func New(auth AuthService,
 	r.Get("/home", home(timeout, fetcher, slog))
 	r.Post("/signup", signup(timeout, auth, slog))
 	r.Post("/login", login(timeout, refTokTTL, auth, slog))
+
+	r.Post("/check/email", checkEmail(timeout, auth, slog))
+	r.Post("/check/user_name", checkUserName(timeout, auth, slog))
 
 	r.Route("/user_news", func(r chi.Router) {
 		r.Use(authenticate(timeout, refTokTTL, auth, slog))

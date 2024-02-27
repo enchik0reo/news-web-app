@@ -9,6 +9,8 @@ service Auth {
     rpc LoginUser (LoginUserRequest) returns (LoginUserResponse);
     rpc Parse (ParseRequest) returns (ParseResponse);
     rpc Refresh (RefreshRequest) returns (RefreshResponse);
+    rpc CheckUserName (CheckUserNameRequest) returns (CheckUserNameResponse);
+    rpc CheckEmail (CheckEmailRequest) returns (CheckEmailResponse);
 }
 
 message SaveUserRequest {
@@ -51,4 +53,20 @@ message RefreshResponse{
     string user_name = 2;
     string access_token =3;
     string refresh_token=4;
+}
+
+message CheckUserNameRequest {
+    string user_name = 1;
+}
+
+message CheckUserNameResponse{
+    bool answer = 1;
+}
+
+message CheckEmailRequest{
+    string email = 1;
+}
+
+message CheckEmailResponse{
+    bool answer = 1;
 }

@@ -19,13 +19,19 @@ type AuthService interface {
 	Refresh(ctx context.Context, refToken string) (int64, string, string, string, error)
 }
 
-type serverAPI struct {
-	authv1.UnimplementedAuthServer
-	authService AuthService
+type RegistrService interface {
+	CheckEmail(email string) (bool, error)
+	CheckUserName(userName string) (bool, error)
 }
 
-func Register(gRPC *grpc.Server, aS AuthService) {
-	authv1.RegisterAuthServer(gRPC, &serverAPI{authService: aS})
+type serverAPI struct {
+	authv1.UnimplementedAuthServer
+	authService    AuthService
+	registrService RegistrService
+}
+
+func Register(gRPC *grpc.Server, aS AuthService, rS RegistrService) {
+	authv1.RegisterAuthServer(gRPC, &serverAPI{authService: aS, registrService: rS})
 }
 
 func (s *serverAPI) SaveUser(ctx context.Context, req *authv1.SaveUserRequest) (*authv1.SaveUserResponse, error) {
@@ -104,5 +110,27 @@ func (s *serverAPI) Refresh(ctx context.Context, req *authv1.RefreshRequest) (*a
 		UserName:     userName,
 		AccessToken:  acsToken,
 		RefreshToken: refTokren,
+	}, nil
+}
+
+func (s *serverAPI) CheckEmail(ctx context.Context, req *authv1.CheckEmailRequest) (*authv1.CheckEmailResponse, error) {
+	answer, err := s.registrService.CheckEmail(req.GetEmail())
+	if err != nil {
+		return nil, status.Error(codes.Internal, "internal error")
+	}
+
+	return &authv1.CheckEmailResponse{
+		Answer: answer,
+	}, nil
+}
+
+func (s *serverAPI) CheckUserName(ctx context.Context, req *authv1.CheckUserNameRequest) (*authv1.CheckUserNameResponse, error) {
+	answer, err := s.registrService.CheckUserName(req.GetUserName())
+	if err != nil {
+		return nil, status.Error(codes.Internal, "internal error")
+	}
+
+	return &authv1.CheckUserNameResponse{
+		Answer: answer,
 	}, nil
 }

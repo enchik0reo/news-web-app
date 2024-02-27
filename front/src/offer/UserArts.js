@@ -13,7 +13,7 @@ export default class UserArts extends React.Component {
             </div>)
         else
             return (<div>
-                <h3>Queue for publication is empty</h3>
+                <h3 className="empty-queue">Queue for publication is empty</h3>
             </div>)
     }
 }

@@ -6,3 +6,8 @@ type User struct {
 	Email    string
 	PassHash []byte
 }
+
+type UsersInfo struct {
+	Names  []string
+	Emails []string
+}

@@ -19,16 +19,21 @@ type AuthService interface {
 	Refresh(ctx context.Context, refToken string) (int64, string, string, string, error)
 }
 
+type RegistrService interface {
+	CheckEmail(email string) (bool, error)
+	CheckUserName(userName string) (bool, error)
+}
+
 type Server struct {
 	port       int
 	log        *slog.Logger
 	gRPCServer *grpc.Server
 }
 
-func New(port int, log *slog.Logger, authService AuthService) *Server {
+func New(port int, log *slog.Logger, authService AuthService, registrService RegistrService) *Server {
 	grpcSrv := grpc.NewServer()
 
-	handler.Register(grpcSrv, authService)
+	handler.Register(grpcSrv, authService, registrService)
 
 	return &Server{
 		port:       port,

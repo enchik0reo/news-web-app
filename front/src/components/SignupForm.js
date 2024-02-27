@@ -1,42 +1,37 @@
 import React, { useEffect, useState } from 'react';
-import validation from './Validation';
 import axios from 'axios';
 import { toast } from 'react-toastify';
-import { Link } from 'react-router-dom';
+import Stage1 from './Stage1';
+import Stage2 from './Stage2';
 
 const baseurl = "/signup"
 
 const SignupForm = ({ submitForm }) => {
 
-    const [values, setValues] = useState({
-        fullname: "",
+    const [St2, setSt2] = useState(false)
+
+    const [values1, setValues1] = useState({
         email: "",
         password: "",
+        repassword: "",
+    })
+    const [values2, setValues2] = useState({
+        fullname: "",
     })
 
-    const [errors, setErrors] = useState({})
-    const [dataIsCorrect, setDataIsCorrect] = useState(false)
+    const [errors1, setErrors1] = useState({})
+    const [errors2, setErrors2] = useState({})
 
-    const handleChange = (event) => {
-        setValues({
-            ...values,
-            [event.target.name]: event.target.value,
-        })
-    }
-
-    const handleFormSubmit = (event) => {
-        event.preventDefault()
-        setErrors(validation(values))
-        setDataIsCorrect(true)
-    }
+    const [dataIsCorrect1, setDataIsCorrect1] = useState(false)
+    const [dataIsCorrect2, setDataIsCorrect2] = useState(false)
 
     useEffect(() => {
-        if (Object.keys(errors).length === 0 && dataIsCorrect) {
+        if (Object.keys(errors1).length === 0 && dataIsCorrect1 && Object.keys(errors2).length === 0 && dataIsCorrect2) {
 
             const jsonData = {
-                name: values.fullname,
-                email: values.email,
-                password: values.password
+                name: values2.fullname,
+                email: values1.email,
+                password: values1.password
             }
 
             axios.post(baseurl, jsonData, {}).then((r) => {
@@ -46,67 +41,28 @@ const SignupForm = ({ submitForm }) => {
                     if (error) {
                         toast.error("Internal server error. Please, try later.")
                         console.error('Internal server error:', error)
-                        setDataIsCorrect(false)
+                        setDataIsCorrect1(false)
+                        setDataIsCorrect2(false)
+                        setValues1({
+                            email: "",
+                            password: "",
+                            repassword: "",
+                        })
+                        setValues2({
+                            fullname: "",
+                        })
+                        setSt2(false)
                     }
                 })
         }
-    }, [errors, dataIsCorrect, submitForm, values])
+    }, [submitForm, errors1, errors2, dataIsCorrect1, dataIsCorrect2, values1, values2, St2])
 
     return (
-        <div>
-            <div className="app-wrapper">
-                <div>
-                    <h2 className="title">Create Account</h2>
-                </div>
-                <form className="form-wrapper">
-                    <div className="name">
-                        <label className="label">Name</label>
-                        <input
-                            className="input"
-                            type="text"
-                            name="fullname"
-                            value={values.fullname}
-                            onChange={handleChange}
-                        />
-                        {errors.fullname && <p className="error">{errors.fullname}</p>}
-                    </div>
-
-                    <div className="email">
-                        <label className="label">E-mail</label>
-                        <input
-                            className="input"
-                            type="email"
-                            name="email"
-                            value={values.email}
-                            onChange={handleChange}
-                        />
-                        {errors.email && <p className="error">{errors.email}</p>}
-                    </div>
-
-                    <div className="password">
-                        <label className="label">Password</label>
-                        <input
-                            className="input"
-                            type="password"
-                            name="password"
-                            value={values.password}
-                            onChange={handleChange}
-                        />
-                        {errors.password && <p className="error">{errors.password}</p>}
-                    </div>
-
-                    <div>
-                        <button className="submit" onClick={handleFormSubmit}>
-                            Sign Up
-                        </button>
-                    </div>
-                </form>
-            </div>
-            <div className="app-mini-login">
-                <p>Already have an account?</p>
-                <Link className="back-link" to="/login">Login</Link>
-            </div>
-        </div>
+        <>
+            {!St2
+                ? <Stage1 values={values1} onValues={setValues1} errors={errors1} onErrors={setErrors1} dataIsCorrect={dataIsCorrect1} onDataIsCorrect={setDataIsCorrect1} onSt2={setSt2} />
+                : <Stage2 values={values2} onValues={setValues2} errors={errors2} onErrors={setErrors2} dataIsCorrect={dataIsCorrect2} onDataIsCorrect={setDataIsCorrect2} />}
+        </>
     )
 }
 

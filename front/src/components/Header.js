@@ -29,7 +29,7 @@ const Header = () => {
 
     return (
         <div>
-            <Navbar fixed="top" collapseOnSelect expand="sm" bg="light" variant="light" >
+            <Navbar className="main-header" fixed="top" collapseOnSelect expand="sm" bg="light" variant="light" >
                 <Container>
                     <Navbar.Brand className="home-link" href="/">
                         <img
@@ -43,7 +43,7 @@ const Header = () => {
                     <Navbar.Toggle aria-controls="responsive-navbar-nav" />
                     <Navbar.Collapse id="responsive-navbar-nav" >
                         <Nav className="me-auto">
-                            <Nav.Link className="ms-4" href="/user_news" > User  News </Nav.Link>
+                            <Nav.Link className="ms-5" href="/user_news" > Offer  News </Nav.Link>
                         </Nav>
                         <Nav className="d-flex">
                             {loginB ? <LoginBtn /> : <LogoutBtn />}

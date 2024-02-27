@@ -22,6 +22,7 @@ func signup(timeout time.Duration, service AuthService, slog *slog.Logger) http.
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
 		req := signUpRequest{}
+
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			if !strings.Contains(err.Error(), "EOF") {
 				slog.Debug("Can't decode body from sign-up request", "err", err.Error())
@@ -77,9 +78,9 @@ type loginRequest struct {
 func login(timeout time.Duration, refTokTTL time.Duration, service AuthService, slog *slog.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
-		req := new(loginRequest)
+		req := loginRequest{}
 
-		if err := json.NewDecoder(r.Body).Decode(req); err != nil {
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			if !strings.Contains(err.Error(), "EOF") {
 				slog.Debug("Can't decode body from login request", "err", err.Error())
 
@@ -134,6 +135,90 @@ func login(timeout time.Duration, refTokTTL time.Duration, service AuthService, 
 		http.SetCookie(w, &ck)
 
 		err = responseJSON(w, http.StatusAccepted, 0, acsToken, nil)
+		if err != nil {
+			slog.Error("Can't make response", "err", err.Error())
+		}
+	}
+}
+
+type checkEmailRequest struct {
+	Email string `json:"email"`
+}
+
+func checkEmail(timeout time.Duration, service AuthService, slog *slog.Logger) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
+		req := checkEmailRequest{}
+
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			if !strings.Contains(err.Error(), "EOF") {
+				slog.Debug("Can't decode body from sign-up request", "err", err.Error())
+
+				err := responseJSONError(w, http.StatusBadRequest, 0, "", "Bad request")
+				if err != nil {
+					slog.Error("Can't make response", "err", err.Error())
+				}
+				return
+			}
+		}
+
+		ctx, cancel := context.WithTimeout(context.Background(), timeout)
+		defer cancel()
+
+		isExists, err := service.CheckEmail(ctx, req.Email)
+		if err != nil {
+			slog.Error("Can't check e-mail", "err", err.Error())
+
+			err = responseJSONError(w, http.StatusInternalServerError, 0, "", "Internal error")
+			if err != nil {
+				slog.Error("Can't make response", "err", err.Error())
+			}
+			return
+		}
+
+		err = responseCheckJSON(w, http.StatusOK, isExists)
+		if err != nil {
+			slog.Error("Can't make response", "err", err.Error())
+		}
+	}
+}
+
+type checkUserNameRequest struct {
+	UserName string `json:"user_name"`
+}
+
+func checkUserName(timeout time.Duration, service AuthService, slog *slog.Logger) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
+		req := checkUserNameRequest{}
+
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			if !strings.Contains(err.Error(), "EOF") {
+				slog.Debug("Can't decode body from sign-up request", "err", err.Error())
+
+				err := responseJSONError(w, http.StatusBadRequest, 0, "", "Bad request")
+				if err != nil {
+					slog.Error("Can't make response", "err", err.Error())
+				}
+				return
+			}
+		}
+
+		ctx, cancel := context.WithTimeout(context.Background(), timeout)
+		defer cancel()
+
+		isExists, err := service.CheckUserName(ctx, req.UserName)
+		if err != nil {
+			slog.Error("Can't check user name", "err", err.Error())
+
+			err = responseJSONError(w, http.StatusInternalServerError, 0, "", "Internal error")
+			if err != nil {
+				slog.Error("Can't make response", "err", err.Error())
+			}
+			return
+		}
+
+		err = responseCheckJSON(w, http.StatusOK, isExists)
 		if err != nil {
 			slog.Error("Can't make response", "err", err.Error())
 		}

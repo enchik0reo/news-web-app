@@ -130,7 +130,7 @@ type addRequest struct {
 func addArticle(timeout time.Duration, news UserNewsService, slog *slog.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
-		req := new(addRequest)
+		req := addRequest{}
 
 		id, acToken := getInfoFromCtx(r)
 
@@ -144,7 +144,7 @@ func addArticle(timeout time.Duration, news UserNewsService, slog *slog.Logger) 
 			return
 		}
 
-		if err := json.NewDecoder(r.Body).Decode(req); err != nil {
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			if !strings.Contains(err.Error(), "EOF") {
 				slog.Debug("Can't decode body from suggest-article request", "err", err.Error())
 
@@ -224,7 +224,7 @@ type updateRequest struct {
 func updateArticle(timeout time.Duration, news UserNewsService, slog *slog.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
-		req := new(updateRequest)
+		req := updateRequest{}
 
 		id, acToken := getInfoFromCtx(r)
 
@@ -238,7 +238,7 @@ func updateArticle(timeout time.Duration, news UserNewsService, slog *slog.Logge
 			return
 		}
 
-		if err := json.NewDecoder(r.Body).Decode(req); err != nil {
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			if !strings.Contains(err.Error(), "EOF") {
 				slog.Debug("Can't decode body from update-article request", "err", err.Error())
 
@@ -323,7 +323,7 @@ type deleteRequest struct {
 func deleteArticle(timeout time.Duration, news UserNewsService, slog *slog.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
-		req := new(deleteRequest)
+		req := deleteRequest{}
 
 		id, acToken := getInfoFromCtx(r)
 
@@ -337,7 +337,7 @@ func deleteArticle(timeout time.Duration, news UserNewsService, slog *slog.Logge
 			return
 		}
 
-		if err := json.NewDecoder(r.Body).Decode(req); err != nil {
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			if !strings.Contains(err.Error(), "EOF") {
 				slog.Debug("Can't decode body from delete-article request", "err", err.Error())
 

@@ -26,6 +26,8 @@ type AuthClient interface {
 	LoginUser(ctx context.Context, in *LoginUserRequest, opts ...grpc.CallOption) (*LoginUserResponse, error)
 	Parse(ctx context.Context, in *ParseRequest, opts ...grpc.CallOption) (*ParseResponse, error)
 	Refresh(ctx context.Context, in *RefreshRequest, opts ...grpc.CallOption) (*RefreshResponse, error)
+	CheckUserName(ctx context.Context, in *CheckUserNameRequest, opts ...grpc.CallOption) (*CheckUserNameResponse, error)
+	CheckEmail(ctx context.Context, in *CheckEmailRequest, opts ...grpc.CallOption) (*CheckEmailResponse, error)
 }
 
 type authClient struct {
@@ -72,6 +74,24 @@ func (c *authClient) Refresh(ctx context.Context, in *RefreshRequest, opts ...gr
 	return out, nil
 }
 
+func (c *authClient) CheckUserName(ctx context.Context, in *CheckUserNameRequest, opts ...grpc.CallOption) (*CheckUserNameResponse, error) {
+	out := new(CheckUserNameResponse)
+	err := c.cc.Invoke(ctx, "/auth.Auth/CheckUserName", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authClient) CheckEmail(ctx context.Context, in *CheckEmailRequest, opts ...grpc.CallOption) (*CheckEmailResponse, error) {
+	out := new(CheckEmailResponse)
+	err := c.cc.Invoke(ctx, "/auth.Auth/CheckEmail", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AuthServer is the server API for Auth service.
 // All implementations must embed UnimplementedAuthServer
 // for forward compatibility
@@ -80,6 +100,8 @@ type AuthServer interface {
 	LoginUser(context.Context, *LoginUserRequest) (*LoginUserResponse, error)
 	Parse(context.Context, *ParseRequest) (*ParseResponse, error)
 	Refresh(context.Context, *RefreshRequest) (*RefreshResponse, error)
+	CheckUserName(context.Context, *CheckUserNameRequest) (*CheckUserNameResponse, error)
+	CheckEmail(context.Context, *CheckEmailRequest) (*CheckEmailResponse, error)
 	mustEmbedUnimplementedAuthServer()
 }
 
@@ -98,6 +120,12 @@ func (UnimplementedAuthServer) Parse(context.Context, *ParseRequest) (*ParseResp
 }
 func (UnimplementedAuthServer) Refresh(context.Context, *RefreshRequest) (*RefreshResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Refresh not implemented")
+}
+func (UnimplementedAuthServer) CheckUserName(context.Context, *CheckUserNameRequest) (*CheckUserNameResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CheckUserName not implemented")
+}
+func (UnimplementedAuthServer) CheckEmail(context.Context, *CheckEmailRequest) (*CheckEmailResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CheckEmail not implemented")
 }
 func (UnimplementedAuthServer) mustEmbedUnimplementedAuthServer() {}
 
@@ -184,6 +212,42 @@ func _Auth_Refresh_Handler(srv interface{}, ctx context.Context, dec func(interf
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Auth_CheckUserName_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CheckUserNameRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServer).CheckUserName(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/auth.Auth/CheckUserName",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServer).CheckUserName(ctx, req.(*CheckUserNameRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Auth_CheckEmail_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CheckEmailRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServer).CheckEmail(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/auth.Auth/CheckEmail",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServer).CheckEmail(ctx, req.(*CheckEmailRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Auth_ServiceDesc is the grpc.ServiceDesc for Auth service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -206,6 +270,14 @@ var Auth_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Refresh",
 			Handler:    _Auth_Refresh_Handler,
+		},
+		{
+			MethodName: "CheckUserName",
+			Handler:    _Auth_CheckUserName_Handler,
+		},
+		{
+			MethodName: "CheckEmail",
+			Handler:    _Auth_CheckEmail_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

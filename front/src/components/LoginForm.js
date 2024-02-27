@@ -42,6 +42,9 @@ const LoginForm = ({ submitForm }) => {
                 if (r.data.status === 204) {
                     toast.warn("Wrong e-mail or password.")
                     setDataIsCorrect(false)
+                } else if (r.data.status === 400) {
+                    toast.warn("Name is empty.")
+                    setDataIsCorrect(false)
                 } else {
                     submitForm(r)
                 }

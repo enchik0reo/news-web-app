@@ -17,6 +17,7 @@ type respBody struct {
 	AcToken  string           `json:"access_token,omitempty"`
 	Articles []models.Article `json:"articles,omitempty"`
 	Error    string           `json:"error,omitempty"`
+	Exists   bool             `json:"exists,omitempty"`
 }
 
 func responseJSON(w http.ResponseWriter, status int, uID int64, acsToken string, articles []models.Article) error {
@@ -35,6 +36,28 @@ func responseJSON(w http.ResponseWriter, status int, uID int64, acsToken string,
 	if len(articles) > 0 {
 		resp.Body.Articles = articles
 	}
+
+	w.Header().Add("Content-Type", "application/json")
+
+	respJSON, err := json.Marshal(resp)
+	if err != nil {
+		return err
+	}
+
+	_, err = w.Write(respJSON)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func responseCheckJSON(w http.ResponseWriter, status int, isExists bool) error {
+	resp := response{
+		Status: status,
+	}
+
+	resp.Body.Exists = isExists
 
 	w.Header().Add("Content-Type", "application/json")
 

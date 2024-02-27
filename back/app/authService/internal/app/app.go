@@ -13,6 +13,7 @@ import (
 	"newsWebApp/app/authService/internal/config"
 	grpcServer "newsWebApp/app/authService/internal/grpc/server"
 	"newsWebApp/app/authService/internal/services/auth"
+	"newsWebApp/app/authService/internal/storage/memcached"
 	"newsWebApp/app/authService/internal/storage/psql"
 	"newsWebApp/app/authService/internal/storage/redis"
 	"newsWebApp/migrations/migrator"
@@ -24,6 +25,7 @@ type App struct {
 	log         *slog.Logger
 	db          *sql.DB
 	sessionStor *redis.Storage
+	registrStor *memcached.Storage
 	auth        *auth.Auth
 	gRPCServer  *grpcServer.Server
 }
@@ -65,9 +67,19 @@ func New() *App {
 		os.Exit(1)
 	}
 
-	a.auth = auth.New(userStor, a.sessionStor, a.log, &a.cfg.Manager)
+	a.registrStor, err = memcached.New(userStor,
+		a.cfg.RegistrStorage.Host,
+		a.cfg.RegistrStorage.Port,
+		a.cfg.RegistrStorage.Timeout,
+		a.log)
+	if err != nil {
+		a.log.Error("Failed to create new registration storage", "err", err.Error())
+		os.Exit(1)
+	}
 
-	a.gRPCServer = grpcServer.New(a.cfg.GRPC.Port, a.log, a.auth)
+	a.auth = auth.New(userStor, a.sessionStor, a.registrStor, a.log, &a.cfg.Manager)
+
+	a.gRPCServer = grpcServer.New(a.cfg.GRPC.Port, a.log, a.auth, a.registrStor)
 
 	return &a
 }
@@ -96,6 +108,10 @@ func (a *App) mustStop() {
 
 	if err := a.sessionStor.CloseConn(); err != nil {
 		a.log.Error("Closing connection to session storage", "err", err.Error())
+	}
+
+	if err := a.registrStor.CloseConn(); err != nil {
+		a.log.Error("Closing connection to registration storage", "err", err.Error())
 	}
 
 	a.gRPCServer.Stop()
