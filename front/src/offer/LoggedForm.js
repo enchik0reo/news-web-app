@@ -22,6 +22,10 @@ export default class LoggedForm extends React.Component {
         localStorage.setItem('access_token', 'Bearer ' + res.data.body.access_token)
       }
 
+      if (res.data.body.user_name) {
+        localStorage.setItem('user_name', res.data.body.user_name)
+      }
+
       if (res.data.status === 200) {
         this.setState({ articles: res.data.body.articles })
       } else if (res.data.status === 204) {
@@ -79,6 +83,11 @@ export default class LoggedForm extends React.Component {
       if (res.data.body.access_token) {
         localStorage.setItem('access_token', 'Bearer ' + res.data.body.access_token)
       }
+
+      if (res.data.body.user_name) {
+        localStorage.setItem('user_name', res.data.body.user_name)
+      }
+
       if (res.data.status === 500) {
         toast.error("Internal server error. Please try later.")
       } else if (res.data.status === 401) {
@@ -95,6 +104,10 @@ export default class LoggedForm extends React.Component {
         axios.get(baseurl, config).then((res) => {
           if (res.data.body.access_token) {
             localStorage.setItem('access_token', 'Bearer ' + res.data.body.access_token)
+          }
+
+          if (res.data.body.user_name) {
+            localStorage.setItem('user_name', res.data.body.user_name)
           }
 
           if (res.data.status === 200) {
@@ -142,6 +155,11 @@ export default class LoggedForm extends React.Component {
       if (res.data.body.access_token) {
         localStorage.setItem('access_token', 'Bearer ' + res.data.body.access_token)
       }
+
+      if (res.data.body.user_name) {
+        localStorage.setItem('user_name', res.data.body.user_name)
+      }
+
       if (res.data.status === 500) {
         toast.error("Internal server error. Please try later.")
       } else if (res.data.status === 401) {
@@ -164,6 +182,10 @@ export default class LoggedForm extends React.Component {
         axios.get(baseurl, config).then((res) => {
           if (res.data.body.access_token) {
             localStorage.setItem('access_token', 'Bearer ' + res.data.body.access_token)
+          }
+
+          if (res.data.body.user_name) {
+            localStorage.setItem('user_name', res.data.body.user_name)
           }
 
           if (res.data.status === 200) {
@@ -210,6 +232,11 @@ export default class LoggedForm extends React.Component {
       if (res.data.body.access_token) {
         localStorage.setItem('access_token', 'Bearer ' + res.data.body.access_token)
       }
+
+      if (res.data.body.user_name) {
+        localStorage.setItem('user_name', res.data.body.user_name)
+      }
+
       if (res.data.status === 500) {
         toast.error("Internal server error. Please try later.")
       } else if (res.data.status === 401) {

@@ -63,7 +63,9 @@ func signup(timeout time.Duration, service AuthService, slog *slog.Logger) http.
 			}
 		}
 
-		err := responseJSON(w, http.StatusCreated, 0, "", nil)
+		respBody := respBody{}
+
+		err := responseJSONOk(w, http.StatusCreated, respBody)
 		if err != nil {
 			slog.Error("Can't make response", "err", err.Error())
 		}
@@ -95,7 +97,7 @@ func login(timeout time.Duration, refTokTTL time.Duration, service AuthService, 
 		ctx, cancel := context.WithTimeout(context.Background(), timeout)
 		defer cancel()
 
-		_, _, acsToken, refToken, err := service.LoginUser(ctx, req.Email, req.Password)
+		id, uName, acsToken, refToken, err := service.LoginUser(ctx, req.Email, req.Password)
 		if err != nil {
 			switch {
 			case errors.Is(err, services.ErrUserDoesntExists):
@@ -134,7 +136,13 @@ func login(timeout time.Duration, refTokTTL time.Duration, service AuthService, 
 
 		http.SetCookie(w, &ck)
 
-		err = responseJSON(w, http.StatusAccepted, 0, acsToken, nil)
+		respBody := respBody{
+			UserID:   id,
+			UserName: uName,
+			AcToken:  acsToken,
+		}
+
+		err = responseJSONOk(w, http.StatusAccepted, respBody)
 		if err != nil {
 			slog.Error("Can't make response", "err", err.Error())
 		}

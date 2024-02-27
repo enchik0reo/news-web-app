@@ -63,7 +63,7 @@ func refresh(timeout, refTokTTL time.Duration, service AuthService, slog *slog.L
 			ctx, cancel := context.WithTimeout(context.Background(), timeout)
 			defer cancel()
 
-			id, _, err := service.Parse(ctx, auth)
+			id, uName, err := service.Parse(ctx, auth)
 			if err != nil {
 				switch {
 				case errors.Is(err, services.ErrTokenExpired):
@@ -83,7 +83,7 @@ func refresh(timeout, refTokTTL time.Duration, service AuthService, slog *slog.L
 					ctx, cancel := context.WithTimeout(context.Background(), timeout)
 					defer cancel()
 
-					id, _, acsToken, refToken, err := service.Refresh(ctx, cookie.Value)
+					id, uName, acsToken, refToken, err := service.Refresh(ctx, cookie.Value)
 					if err != nil {
 						slog.Debug("Can't do refresh tokens", "err", err.Error())
 						next.ServeHTTP(w, r)
@@ -92,6 +92,7 @@ func refresh(timeout, refTokTTL time.Duration, service AuthService, slog *slog.L
 
 					r = r.WithContext(context.WithValue(r.Context(), uid, id))
 					r = r.WithContext(context.WithValue(r.Context(), accessToken, acsToken))
+					r = r.WithContext(context.WithValue(r.Context(), userName, uName))
 
 					r.Header.Set("Authorization", "Bearer "+acsToken)
 
@@ -117,6 +118,7 @@ func refresh(timeout, refTokTTL time.Duration, service AuthService, slog *slog.L
 				}
 			} else {
 				r = r.WithContext(context.WithValue(r.Context(), uid, id))
+				r = r.WithContext(context.WithValue(r.Context(), userName, uName))
 
 				next.ServeHTTP(w, r)
 				return

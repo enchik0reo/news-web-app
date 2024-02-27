@@ -26,6 +26,10 @@ const Articles = () => {
                 localStorage.setItem('access_token', 'Bearer ' + res.data.body.access_token)
             }
 
+            if (res.data.body.user_name) {
+                localStorage.setItem('user_name', res.data.body.user_name)
+            }
+
             if (res.data.body.articles) {
                 setCurrentArticles(res.data.body.articles)
             }

@@ -14,27 +14,17 @@ type response struct {
 
 type respBody struct {
 	UserID   int64            `json:"uid,omitempty"`
+	UserName string           `json:"user_name,omitempty"`
 	AcToken  string           `json:"access_token,omitempty"`
 	Articles []models.Article `json:"articles,omitempty"`
 	Error    string           `json:"error,omitempty"`
 	Exists   bool             `json:"exists,omitempty"`
 }
 
-func responseJSON(w http.ResponseWriter, status int, uID int64, acsToken string, articles []models.Article) error {
+func responseJSONOk(w http.ResponseWriter, status int, body respBody) error {
 	resp := response{
 		Status: status,
-	}
-
-	if acsToken != "" {
-		resp.Body.AcToken = acsToken
-	}
-
-	if uID != 0 {
-		resp.Body.UserID = uID
-	}
-
-	if len(articles) > 0 {
-		resp.Body.Articles = articles
+		Body:   body,
 	}
 
 	w.Header().Add("Content-Type", "application/json")

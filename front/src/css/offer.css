@@ -23,10 +23,10 @@ aside {
       float: none;
       width: 80%;
       margin: 10px  auto;
+      margin-bottom: 40px;
     }
 
     .empty-queue{
-        margin: 20px  auto;
         text-align: center;
     }
 }

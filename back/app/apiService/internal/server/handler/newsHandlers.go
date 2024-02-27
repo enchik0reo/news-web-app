@@ -23,7 +23,7 @@ func home(timeout time.Duration, fetcher NewsFetcher, slog *slog.Logger) http.Ha
 			metrics.ObserveRequest(time.Since(start), statusCode)
 		}()
 
-		id, acToken := getInfoFromCtx(r)
+		id, uName, acToken := getInfoFromCtx(r)
 
 		currentPage := r.URL.Query().Get("page")
 
@@ -72,7 +72,14 @@ func home(timeout time.Duration, fetcher NewsFetcher, slog *slog.Logger) http.Ha
 
 		statusCode = http.StatusOK
 
-		if err = responseJSON(w, statusCode, id, acToken, arts); err != nil {
+		respBody := respBody{
+			UserID:   id,
+			UserName: uName,
+			AcToken:  acToken,
+			Articles: arts,
+		}
+
+		if err = responseJSONOk(w, statusCode, respBody); err != nil {
 			slog.Error("Can't make response", "err", err.Error())
 		}
 	}
@@ -80,7 +87,7 @@ func home(timeout time.Duration, fetcher NewsFetcher, slog *slog.Logger) http.Ha
 
 func userArticles(timeout time.Duration, news UserNewsService, slog *slog.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		id, acToken := getInfoFromCtx(r)
+		id, uName, acToken := getInfoFromCtx(r)
 
 		if id == 0 {
 			slog.Debug("Can't get user id")
@@ -115,8 +122,14 @@ func userArticles(timeout time.Duration, news UserNewsService, slog *slog.Logger
 			return
 		}
 
-		err = responseJSON(w, http.StatusOK, id, acToken, arts)
-		if err != nil {
+		respBody := respBody{
+			UserID:   id,
+			UserName: uName,
+			AcToken:  acToken,
+			Articles: arts,
+		}
+
+		if err = responseJSONOk(w, http.StatusOK, respBody); err != nil {
 			slog.Error("Can't make response", "err", err.Error())
 		}
 	}
@@ -132,7 +145,7 @@ func addArticle(timeout time.Duration, news UserNewsService, slog *slog.Logger) 
 		defer r.Body.Close()
 		req := addRequest{}
 
-		id, acToken := getInfoFromCtx(r)
+		id, uName, acToken := getInfoFromCtx(r)
 
 		if id == 0 {
 			slog.Debug("Can't get user id")
@@ -156,6 +169,12 @@ func addArticle(timeout time.Duration, news UserNewsService, slog *slog.Logger) 
 			}
 		}
 
+		respBody := respBody{
+			UserID:   id,
+			UserName: uName,
+			AcToken:  acToken,
+		}
+
 		ctx, cancel := context.WithTimeout(context.Background(), timeout)
 		defer cancel()
 
@@ -163,29 +182,33 @@ func addArticle(timeout time.Duration, news UserNewsService, slog *slog.Logger) 
 		if err != nil {
 			switch {
 			case errors.Is(err, services.ErrArticleSkipped):
-				slog.Debug("Can't save article", "err", err.Error())
+				respBody.Articles = arts
 
-				err = responseJSON(w, http.StatusNoContent, id, acToken, arts)
+				err = responseJSONOk(w, http.StatusNoContent, respBody)
 				if err != nil {
 					slog.Error("Can't make response", "err", err.Error())
 				}
 				return
 			case errors.Is(err, services.ErrArticleExists):
-				slog.Debug("Can't save article", "err", err.Error())
+				respBody.Articles = arts
 
-				err = responseJSON(w, http.StatusPartialContent, id, acToken, arts)
+				err = responseJSONOk(w, http.StatusPartialContent, respBody)
 				if err != nil {
 					slog.Error("Can't make response", "err", err.Error())
 				}
 				return
 			case errors.Is(err, services.ErrNoOfferedArticles):
-				err = responseJSON(w, http.StatusResetContent, id, acToken, arts)
+
+				respBody.Articles = arts
+				err = responseJSONOk(w, http.StatusResetContent, respBody)
 				if err != nil {
 					slog.Error("Can't make response", "err", err.Error())
 				}
 				return
 			case errors.Is(err, services.ErrInvalidUrl):
-				err = responseJSON(w, http.StatusMethodNotAllowed, id, acToken, arts)
+
+				respBody.Articles = arts
+				err = responseJSONOk(w, http.StatusMethodNotAllowed, respBody)
 				if err != nil {
 					slog.Error("Can't make response", "err", err.Error())
 				}
@@ -193,7 +216,8 @@ func addArticle(timeout time.Duration, news UserNewsService, slog *slog.Logger) 
 			default:
 				slog.Error("Can't save article", "err", err.Error())
 
-				err = responseJSON(w, http.StatusInternalServerError, id, acToken, arts)
+				respBody.Articles = arts
+				err = responseJSONOk(w, http.StatusInternalServerError, respBody)
 				if err != nil {
 					slog.Error("Can't make response", "err", err.Error())
 				}
@@ -209,8 +233,9 @@ func addArticle(timeout time.Duration, news UserNewsService, slog *slog.Logger) 
 			return
 		}
 
-		err = responseJSON(w, http.StatusCreated, id, acToken, arts)
-		if err != nil {
+		respBody.Articles = arts
+
+		if err = responseJSONOk(w, http.StatusCreated, respBody); err != nil {
 			slog.Error("Can't make response", "err", err.Error())
 		}
 	}
@@ -226,7 +251,7 @@ func updateArticle(timeout time.Duration, news UserNewsService, slog *slog.Logge
 		defer r.Body.Close()
 		req := updateRequest{}
 
-		id, acToken := getInfoFromCtx(r)
+		id, uName, acToken := getInfoFromCtx(r)
 
 		if id == 0 {
 			slog.Debug("Can't get user id")
@@ -250,6 +275,12 @@ func updateArticle(timeout time.Duration, news UserNewsService, slog *slog.Logge
 			}
 		}
 
+		respBody := respBody{
+			UserID:   id,
+			UserName: uName,
+			AcToken:  acToken,
+		}
+
 		ctx, cancel := context.WithTimeout(context.Background(), timeout)
 		defer cancel()
 
@@ -257,35 +288,41 @@ func updateArticle(timeout time.Duration, news UserNewsService, slog *slog.Logge
 		if err != nil {
 			switch {
 			case errors.Is(err, services.ErrArticleSkipped):
-				slog.Debug("Can't update article", "err", err.Error())
+				respBody.Articles = arts
 
-				err = responseJSON(w, http.StatusNoContent, id, acToken, arts)
+				err = responseJSONOk(w, http.StatusNoContent, respBody)
 				if err != nil {
 					slog.Error("Can't make response", "err", err.Error())
 				}
 				return
 			case errors.Is(err, services.ErrArticleExists):
-				slog.Debug("Can't update article", "err", err.Error())
+				respBody.Articles = arts
 
-				err = responseJSON(w, http.StatusPartialContent, id, acToken, arts)
+				err = responseJSONOk(w, http.StatusPartialContent, respBody)
 				if err != nil {
 					slog.Error("Can't make response", "err", err.Error())
 				}
 				return
 			case errors.Is(err, services.ErrNoOfferedArticles):
-				err = responseJSON(w, http.StatusResetContent, id, acToken, arts)
+				respBody.Articles = arts
+
+				err = responseJSONOk(w, http.StatusResetContent, respBody)
 				if err != nil {
 					slog.Error("Can't make response", "err", err.Error())
 				}
 				return
 			case errors.Is(err, services.ErrArticleNotAvailable):
-				err = responseJSON(w, http.StatusForbidden, id, acToken, arts)
+				respBody.Articles = arts
+
+				err = responseJSONOk(w, http.StatusForbidden, respBody)
 				if err != nil {
 					slog.Error("Can't make response", "err", err.Error())
 				}
 				return
 			case errors.Is(err, services.ErrInvalidUrl):
-				err = responseJSON(w, http.StatusMethodNotAllowed, id, acToken, arts)
+				respBody.Articles = arts
+
+				err = responseJSONOk(w, http.StatusMethodNotAllowed, respBody)
 				if err != nil {
 					slog.Error("Can't make response", "err", err.Error())
 				}
@@ -293,7 +330,9 @@ func updateArticle(timeout time.Duration, news UserNewsService, slog *slog.Logge
 			default:
 				slog.Error("Can't update article", "err", err.Error())
 
-				err = responseJSON(w, http.StatusInternalServerError, id, acToken, arts)
+				respBody.Articles = arts
+
+				err = responseJSONOk(w, http.StatusInternalServerError, respBody)
 				if err != nil {
 					slog.Error("Can't make response", "err", err.Error())
 				}
@@ -309,8 +348,9 @@ func updateArticle(timeout time.Duration, news UserNewsService, slog *slog.Logge
 			return
 		}
 
-		err = responseJSON(w, http.StatusAccepted, id, acToken, arts)
-		if err != nil {
+		respBody.Articles = arts
+
+		if err = responseJSONOk(w, http.StatusAccepted, respBody); err != nil {
 			slog.Error("Can't make response", "err", err.Error())
 		}
 	}
@@ -325,7 +365,7 @@ func deleteArticle(timeout time.Duration, news UserNewsService, slog *slog.Logge
 		defer r.Body.Close()
 		req := deleteRequest{}
 
-		id, acToken := getInfoFromCtx(r)
+		id, uName, acToken := getInfoFromCtx(r)
 
 		if id == 0 {
 			slog.Debug("Can't get user id")
@@ -349,6 +389,12 @@ func deleteArticle(timeout time.Duration, news UserNewsService, slog *slog.Logge
 			}
 		}
 
+		respBody := respBody{
+			UserID:   id,
+			UserName: uName,
+			AcToken:  acToken,
+		}
+
 		ctx, cancel := context.WithTimeout(context.Background(), timeout)
 		defer cancel()
 
@@ -356,19 +402,25 @@ func deleteArticle(timeout time.Duration, news UserNewsService, slog *slog.Logge
 		if err != nil {
 			switch {
 			case errors.Is(err, services.ErrNoOfferedArticles):
-				err = responseJSON(w, http.StatusNoContent, id, acToken, arts)
+				respBody.Articles = arts
+
+				err = responseJSONOk(w, http.StatusNoContent, respBody)
 				if err != nil {
 					slog.Error("Can't make response", "err", err.Error())
 				}
 				return
 			case errors.Is(err, services.ErrArticleNotAvailable):
-				err = responseJSON(w, http.StatusAlreadyReported, id, acToken, arts)
+				respBody.Articles = arts
+
+				err = responseJSONOk(w, http.StatusAlreadyReported, respBody)
 				if err != nil {
 					slog.Error("Can't make response", "err", err.Error())
 				}
 				return
 			default:
 				slog.Error("Can't delete article", "err", err.Error())
+
+				respBody.Articles = arts
 
 				err = responseJSONError(w, http.StatusResetContent, id, acToken, "Internal error")
 				if err != nil {
@@ -386,8 +438,9 @@ func deleteArticle(timeout time.Duration, news UserNewsService, slog *slog.Logge
 			return
 		}
 
-		err = responseJSON(w, http.StatusOK, id, acToken, arts)
-		if err != nil {
+		respBody.Articles = arts
+
+		if err = responseJSONOk(w, http.StatusOK, respBody); err != nil {
 			slog.Error("Can't make response", "err", err.Error())
 		}
 	}

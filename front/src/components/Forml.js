@@ -11,7 +11,13 @@ const Forml = ({ onLoginForm }) => {
   const submitForm = (props) => {
     if (props.data.status === 202) {
       setAnswer('You have successfully logged in!')
+
       localStorage.setItem('access_token', 'Bearer ' + props.data.body.access_token)
+
+      if (props.data.body.user_name) {
+        localStorage.setItem('user_name', props.data.body.user_name)
+      }
+
       setFormIsSubmitted(true)
       onLoginForm(true)
     } else {
