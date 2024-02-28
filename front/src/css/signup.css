@@ -177,3 +177,9 @@ button:active {
     justify-content: center;
     width: 95px;
 }
+
+.checked{
+    color: #20eb5d;
+    margin-bottom: 7px;
+    margin-left: 5px;
+}

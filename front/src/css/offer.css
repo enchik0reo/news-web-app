@@ -29,6 +29,22 @@ aside {
     .empty-queue{
         text-align: center;
     }
+
+    .offer-h3 {
+        margin-top: -25px;
+        text-align: center;
+    }
+
+    .small-title{
+        display: flex;
+        text-align: center;
+        flex-direction: column;
+    }
+}
+
+.small-title{
+    font-size: smaller;
+    font-weight: 100;
 }
 
 .offer-h3 {

@@ -3,6 +3,7 @@ import validation from './Valid2';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'react-toastify';
+import { IoCheckmark } from 'react-icons/io5';
 
 const baseurl = "/check/user_name"
 
@@ -81,6 +82,7 @@ const Stage2 = ({ values, onValues, errors, onErrors, dataIsCorrect, onDataIsCor
                 <form className="form-wrapper">
                     <div className="name">
                         <label className="label">Name</label>
+                        {!errors.fullname && postErr === "" && changed ? <IoCheckmark className="checked" /> : <></>}
                         <input
                             className="input"
                             type="text"

@@ -6,7 +6,7 @@ export default class UserArts extends React.Component {
         if (this.props.articles.length > 0)
             return (<div>
                 <h3 className="offer-h3">Queue for publication:</h3>
-                <small className="small-info">(Your articles will look like this)</small>
+                <small className="small-title">(Your articles will look like this)</small>
                 {this.props.articles.map((elem) => (
                     <Art onEdit={this.props.onEdit} onDelete={this.props.onDelete} key={elem.article_id} art={elem} />
                 ))}
