@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import validation from './Valid1';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
@@ -7,6 +7,8 @@ import { toast } from 'react-toastify';
 const baseurl = "/check/email"
 
 const Stage1 = ({ values, onValues, errors, onErrors, dataIsCorrect, onDataIsCorrect, onSt2 }) => {
+
+    const [doRequest, setDoRequest] = useState(false)
 
     const handleChange = (event) => {
         onValues({
@@ -17,15 +19,15 @@ const Stage1 = ({ values, onValues, errors, onErrors, dataIsCorrect, onDataIsCor
 
     const handleFormSubmit = (event) => {
         event.preventDefault()
-        onErrors(validation(values))
+        onErrors(validation(values, setDoRequest))
 
-        if (Object.keys(errors).length === 0 && values.email !== "" && !values.email.includes(' ')) {
+        if (doRequest && values.email !== "" && !values.email.includes(' ')) {
             const jsonData = {
                 email: values.email,
             }
             axios.post(baseurl, jsonData, {}).then((res) => {
                 if (res.data.body.exists) {
-                    toast.warn('User already exists')
+                    toast.warn('E-mail already exists.')
                     onDataIsCorrect(false)
                 } else {
                     onDataIsCorrect(true)
@@ -33,7 +35,7 @@ const Stage1 = ({ values, onValues, errors, onErrors, dataIsCorrect, onDataIsCor
             })
                 .catch((error) => {
                     console.error('Internal server error:', error)
-                    toast.error('Can`t check e-mail. Internal server error.')
+                    toast.error('Internal server error. Please try later.')
                     onDataIsCorrect(false)
                 })
         }
@@ -91,15 +93,15 @@ const Stage1 = ({ values, onValues, errors, onErrors, dataIsCorrect, onDataIsCor
                         {errors.repassword && <p className="error">{errors.repassword}</p>}
                     </div>
 
-                    {errors.email || errors.password || errors.repassword
+                    {doRequest
                         ? <div>
-                            <button className="fix-submit" onClick={handleFormSubmit}>
-                                Fix
+                            <button className="next-submit" onClick={handleFormSubmit}>
+                                Next
                             </button>
                         </div>
                         : <div>
-                            <button className="yes-submit" onClick={handleFormSubmit}>
-                                Next
+                            <button className="fix-submit" onClick={handleFormSubmit}>
+                                Check fields
                             </button>
                         </div>}
                 </form>

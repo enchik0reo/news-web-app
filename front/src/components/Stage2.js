@@ -35,7 +35,7 @@ const Stage2 = ({ values, onValues, errors, onErrors, dataIsCorrect, onDataIsCor
             })
                 .catch((error) => {
                     console.error('Internal server error:', error)
-                    toast.error('Can`t check user name. Internal server error.')
+                    toast.error('Internal server error. Please try later.')
                 })
         } else {
             setPostErr("")

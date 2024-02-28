@@ -153,7 +153,7 @@ func (s *Storage) CloseConn() error {
 func (s *Storage) warmUp() {
 	const op = "storage.memcached.warmUp"
 
-	ctx, cancel := context.WithTimeout(context.Background(), s.timeout)
+	ctx, cancel := context.WithTimeout(context.TODO(), s.timeout)
 	defer cancel()
 
 	usersInfo, err := s.db.GetInfo(ctx)

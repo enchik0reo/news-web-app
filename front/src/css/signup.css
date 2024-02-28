@@ -118,13 +118,31 @@
     transition: all 0.1s;
 }
 
-.fix-submit{
+.next-submit {
     display: flex;
     text-transform: uppercase;
     font-size: 20px;
     border-radius: 25px;
     color: white;
     padding: 10px 60px;
+    background: linear-gradient(to right, #13a390, #20eb5d);
+    box-shadow: rgba(0, 0, 0, 0.3) 0px 19px 38px,
+    rgba(0, 0, 0, 0.22) 0px 15px 12px;
+    margin: auto;
+    outline: none;
+    border: none;
+    cursor: pointer;
+    transition: all 0.1s;
+    margin-top: 44px;
+}
+
+.fix-submit{
+    display: flex;
+    text-transform: uppercase;
+    font-size: 18px;
+    border-radius: 25px;
+    color: white;
+    padding: 12px 40px;
     background: linear-gradient(to right, #d34114, #cac704de);
     box-shadow: rgba(0, 0, 0, 0.3) 0px 19px 38px,
     rgba(0, 0, 0, 0.22) 0px 15px 12px;
@@ -133,6 +151,7 @@
     border: none;
     cursor: pointer;
     transition: all 0.1s;
+    margin-top: 44px;
 }
   
 button:hover {
