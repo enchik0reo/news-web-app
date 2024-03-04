@@ -92,24 +92,22 @@ func (s *Storage) SaveUser(userName, email string) error {
 		return err
 	}
 
-	errors := make([]string, 2)
+	var err1, err2 error
 
-	if err := s.c.Set(&memcache.Item{Key: email, Value: []byte{}}); err != nil {
-		if err := s.c.Delete(userName); err != nil {
-			s.log.Error(op, "err", err.Error(), "user name", userName)
-			errors[1] = err.Error()
+	if err1 = s.c.Set(&memcache.Item{Key: email, Value: []byte{}}); err1 != nil {
+		if err2 = s.c.Delete(userName); err2 != nil {
+			s.log.Error(op, "err", err2.Error(), "user name", userName)
 		}
-		s.log.Error(op, "err", err.Error(), "email", email)
-		errors[0] = err.Error()
+		s.log.Error(op, "err", err1.Error(), "email", email)
 	}
 
 	switch {
-	case errors[0] != "" && errors[1] == "":
-		return fmt.Errorf(errors[0])
-	case errors[0] == "" && errors[1] != "":
-		return fmt.Errorf(errors[1])
-	case errors[0] != "" && errors[1] != "":
-		return fmt.Errorf("err save: %s; err delete: %s", errors[0], errors[1])
+	case err1 != nil && err2 != nil:
+		return errors.Join(err1, err2)
+	case err1 != nil:
+		return err1
+	case err2 != nil:
+		return err2
 	default:
 		return nil
 	}
@@ -123,24 +121,22 @@ func (s *Storage) DeleteUser(userName, email string) error {
 		return err
 	}
 
-	errors := make([]string, 2)
+	var err1, err2 error
 
-	if err := s.c.Delete(email); err != nil {
-		if err := s.c.Set(&memcache.Item{Key: userName, Value: []byte{}}); err != nil {
-			s.log.Error(op, "err", err.Error(), "user name", userName)
-			errors[1] = err.Error()
+	if err1 = s.c.Delete(email); err1 != nil {
+		if err2 = s.c.Set(&memcache.Item{Key: userName, Value: []byte{}}); err2 != nil {
+			s.log.Error(op, "err", err2.Error(), "user name", userName)
 		}
-		s.log.Error(op, "err", err.Error(), "email", email)
-		errors[0] = err.Error()
+		s.log.Error(op, "err", err1.Error(), "email", email)
 	}
 
 	switch {
-	case errors[0] != "" && errors[1] == "":
-		return fmt.Errorf(errors[0])
-	case errors[0] == "" && errors[1] != "":
-		return fmt.Errorf(errors[1])
-	case errors[0] != "" && errors[1] != "":
-		return fmt.Errorf("err delete: %s; err save: %s", errors[0], errors[1])
+	case err1 != nil && err2 != nil:
+		return errors.Join(err1, err2)
+	case err1 != nil:
+		return err1
+	case err2 != nil:
+		return err2
 	default:
 		return nil
 	}
